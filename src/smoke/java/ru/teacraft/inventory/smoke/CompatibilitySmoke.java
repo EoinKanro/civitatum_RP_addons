@@ -42,12 +42,12 @@ final class CompatibilitySmoke {
             check(screen.getMenu().getCarried().getCount()==7,"backpack pickup works");click(screen,inventorySlot(screen,1));next();
         }else if(stage==5&&mc.screen instanceof CivitatumInventoryScreen screen){
             check(screen.getMenu().getCarried().isEmpty()&&mc.player.getInventory().getItem(1).getCount()==7,"backpack transfer conserves items");
-            menuId=screen.getMenu().containerId;if(!screen.mapPanel().visible)screen.toggleMap();check(screen.mapPanel().visible,"embedded Xaero map is visible");next();
+            menuId=screen.getMenu().containerId;check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==6&&mc.screen instanceof CivitatumInventoryScreen screen){
-            var map=screen.mapPanel();screen.mouseScrolled(map.x+20,map.y+40,0,1);capture(mc,"09-xaero-world-map.png");next();
+            check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==7&&mc.screen instanceof CivitatumInventoryScreen screen){
-            check(screen.getMenu().containerId==menuId&&mc.player.containerMenu==screen.getMenu(),"Xaero returns to same live backpack menu");
-            check(mc.player.getInventory().getItem(1).getCount()==7,"map return preserves inventory state");screen.onClose();next();
+            check(screen.getMenu().containerId==menuId&&mc.player.containerMenu==screen.getMenu(),"removing map preserves live backpack menu");
+            check(mc.player.getInventory().getItem(1).getCount()==7,"blank clicks preserve inventory state");screen.onClose();next();
         }else if(stage==8){check(CompatBridge.openBackpack(),"reopen Camping request sent");next();
         }else if(stage==9&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.BACKPACK){
             check(screen.compatibilitySlots().getFirst().getItem().isEmpty(),"backpack changes persisted after closing");screen.onClose();
@@ -119,7 +119,25 @@ final class CompatibilitySmoke {
             check(screen.width==320&&screen.height==240,"Accessories compact GUI 320x240");bounds(screen);
             var p=screen.itemsPanel();screen.mouseScrolled(p.x+30,p.y+105,0,-3);bounds(screen);capture(mc,"13-accessories-compact.png");
             screen.onClose();mc.options.guiScale().set(2);mc.resizeDisplay();mc.setScreen(new InventoryScreen(mc.player));mc.getToasts().clear();mc.gui.getChat().clearMessages(true);next();
-        }else if(stage==33&&mc.screen instanceof CivitatumInventoryScreen screen){capture(mc,"00-overview.png");System.out.println("INVENTORY_COMPAT_ALL_PASS");return true;}
+        }else if(stage==33&&mc.screen instanceof CivitatumInventoryScreen screen){
+            capture(mc,"00-overview.png");if(!CompatBridge.loaded("curios")){System.out.println("INVENTORY_COMPAT_ALL_PASS");return true;}
+            press(screen,"Curios");next();
+        }else if(stage==34&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.CURIOS){
+            check(!screen.compatibilitySlots().isEmpty(),"Curios tab opens a fresh GUI after Accessories");
+            var p=screen.itemsPanel();screen.mouseClicked(p.x+10,p.y+p.height-22,0);screen.mouseReleased(p.x+10,p.y+p.height-22,0);next();
+        }else if(stage==35&&mc.screen instanceof CivitatumInventoryScreen screen){
+            check(screen.getMenu().getCarried().isEmpty(),"blank Curios click preserves cursor state");capture(mc,"47-curios-after-blank-click.png");press(screen,"Accessories");next();
+        }else if(stage==36&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.ACCESSORIES){
+            check(!screen.compatibilitySlots().isEmpty(),"Accessories tab rebuilds GUI directly from Curios");
+            check(screen.compatibilitySlots().stream().anyMatch(slot->slot.getItem().is(Items.DIAMOND)),"accessory item survives direct tab switch");
+            var p=screen.itemsPanel();screen.mouseClicked(p.x+10,p.y+p.height-22,0);screen.mouseReleased(p.x+10,p.y+p.height-22,0);next();
+        }else if(stage==37&&mc.screen instanceof CivitatumInventoryScreen screen){
+            check(screen.getMenu().getCarried().isEmpty(),"blank Accessories click preserves cursor state");capture(mc,"48-accessories-after-blank-click.png");press(screen,"Curios");next();
+        }else if(stage==38&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.CURIOS){
+            check(!screen.compatibilitySlots().isEmpty(),"second direct switch refreshes Curios");press(screen,"Accessories");next();
+        }else if(stage==39&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.ACCESSORIES){
+            check(!screen.compatibilitySlots().isEmpty(),"second direct switch refreshes Accessories");System.out.println("INVENTORY_COMPAT_ALL_PASS");return true;
+        }
         return false;
     }
     private void next(){stage++;ticks=0;System.out.println("COMPAT_STAGE "+stage);}

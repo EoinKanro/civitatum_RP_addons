@@ -178,24 +178,6 @@ public final class CompatBridge {
         if(kind(menu)==Kind.CURIOS) try {menu.getClass().getMethod("checkQuickMove").invoke(menu);}
         catch(ReflectiveOperationException ex){fail("Curios quick move",ex);}
     }
-    public static KeyMapping mapKey() {
-        if(!loaded("xaeroworldmap")) return null;
-        try {return (KeyMapping)Class.forName("xaero.map.controls.ControlsRegister").getField("keyOpenMap").get(null);}
-        catch(ReflectiveOperationException|LinkageError ex){return null;}
-    }
-    public static boolean openMap(CivitatumInventoryScreen parent) {
-        if(!loaded("xaeroworldmap") || !parent.getMenu().getCarried().isEmpty()) return false;
-        try {
-            var mc=Minecraft.getInstance();
-            Object session=Class.forName("xaero.map.WorldMapSession").getMethod("getCurrentSession").invoke(null);
-            if(session==null || !(boolean)session.getClass().getMethod("isUsable").invoke(session)) return false;
-            Object processor=session.getClass().getMethod("getMapProcessor").invoke(session);
-            Screen map=(Screen)Class.forName("xaero.map.gui.GuiMap").getConstructor(Screen.class,Screen.class,
-                Class.forName("xaero.map.MapProcessor"),net.minecraft.world.entity.Entity.class)
-                .newInstance(parent,parent,processor,mc.getCameraEntity());
-            parent.suspendForMap();mc.setScreen(map);return true;
-        } catch(ReflectiveOperationException|LinkageError ex){fail("Xaero World Map",ex);return false;}
-    }
     private static void fail(String integration,Throwable ex) {
         org.slf4j.LoggerFactory.getLogger("Civitatum Inventory").warn("{} integration unavailable: {}",integration,ex.toString());
     }

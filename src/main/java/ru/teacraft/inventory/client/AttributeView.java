@@ -38,14 +38,17 @@ public final class AttributeView {
         g.enableScissor(x,y,x+w,bottom);
         for(int i=0;i<entries.size();i++){
             var a=entries.get(i);int row=y+i*25-scroll;if(row+24<y||row>=bottom)continue;
-            g.drawString(font,font.plainSubstrByWidth(Component.translatable(a.getAttribute().value().getDescriptionId()).getString(),w-5),x,row,0xE9E3D4,false);
+            boolean hot=mx>=x&&mx<x+w&&my>=Math.max(y,row)&&my<Math.min(bottom,row+24);
+            g.fill(x-2,row-2,x+w,row+22,hot?0x664F4431:i%2==0?0x242C261C:0x1217130E);
+            g.drawString(font,font.plainSubstrByWidth(Component.translatable(a.getAttribute().value().getDescriptionId()).getString(),w-5),x+3,row,0xE9E3D4,false);
             Component value=a.getAttribute().is(DYNAMIC)?CivitatumInventoryScreen.tr("attributes.dynamic"):a.getAttribute().value().toValueComponent(null,a.getValue(),TooltipFlag.Default.NORMAL);
-            g.drawString(font,value,x+3,row+11,0xD3B478,false);
-            if(mx>=x&&mx<x+w&&my>=Math.max(y,row)&&my<Math.min(bottom,row+24))hover=details(player,a);
+            g.drawString(font,value,x+w-font.width(value)-4,row+11,0xD3B478,false);
+            g.fill(x,row+23,x+w,row+24,0x354F4330);
+            if(hot)hover=details(player,a);
         }
         g.disableScissor();return scroll;
     }
-    public static void tooltip(GuiGraphics g,Font font,int mx,int my){if(!hover.isEmpty())g.renderComponentTooltip(font,hover,mx,my);}
+    public static void tooltip(GuiGraphics g,Font font,InventoryPanel panel){SideTooltip.render(g,font,panel,hover);}
     private static List<Component> details(Player player,AttributeInstance a){
         var attr=a.getAttribute().value();var lines=new ArrayList<Component>();
         lines.add(Component.translatable(attr.getDescriptionId()).withColor(0xD3B478));

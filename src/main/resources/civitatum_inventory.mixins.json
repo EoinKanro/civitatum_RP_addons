@@ -4,8 +4,7 @@
   "package": "ru.teacraft.inventory.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
-    "SlotPositionAccessor",
-    "MinecraftTargetAccessor"
+    "SlotPositionAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

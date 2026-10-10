@@ -6,7 +6,7 @@
   "gui.civitatum_inventory.search": "Поиск предметов…",
   "gui.civitatum_inventory.statistics": "Статы",
   "gui.civitatum_inventory.powers": "Дары",
-  "gui.civitatum_inventory.activate": "Применить дар",
+  "gui.civitatum_inventory.activate": "Применить выбранное",
   "gui.civitatum_inventory.reset": "Сброс окон",
   "gui.civitatum_inventory.vanilla": "Обычный",
   "gui.civitatum_inventory.crafting": "Создание",
@@ -55,11 +55,9 @@
   "gui.civitatum_inventory.storage.inventory": "Вещи",
   "gui.civitatum_inventory.storage.backpack": "Рюкзак",
   "gui.civitatum_inventory.cosmetics": "Косметика",
-  "gui.civitatum_inventory.map": "Карта",
   "gui.civitatum_inventory.backpack_equipment_hint": "Для смены экипировки открой вкладку «Вещи».",
   "gui.civitatum_inventory.render_toggle": "Ctrl + ПКМ — видимость модели аксессуара",
   "gui.civitatum_inventory.container": "Контейнер",
-  "gui.civitatum_inventory.map.waiting": "Ожидание данных карты Xaero…",
   "gui.civitatum_inventory.attributes.short": "Атриб.",
   "gui.civitatum_inventory.attributes.all": "Все атрибуты",
   "gui.civitatum_inventory.attributes.modified": "Изменённые",
@@ -67,5 +65,11 @@
   "gui.civitatum_inventory.attributes.base": "Базовое: ",
   "gui.civitatum_inventory.attributes.dynamic": "По ситуации",
   "gui.civitatum_inventory.attributes.dynamic_hint": "Значение зависит от действия и цели.",
-  "gui.civitatum_inventory.container_equipment_hint": "Для изменения экипировки закройте контейнер."
+  "gui.civitatum_inventory.container_equipment_hint": "Для изменения экипировки закройте контейнер.",
+  "gui.civitatum_inventory.transparency": "Прозрачность: %s%%",
+  "gui.civitatum_inventory.slot_scale": "Размер слотов: %s%%",
+  "gui.civitatum_inventory.abilities": "Способности",
+  "key.civitatum_inventory.activate_key": "Применить выбранный дар / заклинание",
+  "key.civitatum_inventory.next_ability": "Выбрать следующий дар / заклинание",
+  "key.civitatum_inventory.previous_ability": "Выбрать предыдущий дар / заклинание"
 }

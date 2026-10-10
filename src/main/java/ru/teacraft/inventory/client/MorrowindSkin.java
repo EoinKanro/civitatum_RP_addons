@@ -11,8 +11,10 @@ public final class MorrowindSkin {
         g.flush();
         com.mojang.blaze3d.systems.RenderSystem.enableBlend();
         com.mojang.blaze3d.systems.RenderSystem.defaultBlendFunc();
+        g.setColor(1,1,1,(float)((1-InventoryPreferences.get().transparency)*255/PANEL_ALPHA));
         for(int dy=0;dy<h;dy+=32)for(int dx=0;dx<w;dx+=32)
             g.blit(STONE,x+dx,y+dy,0,0,Math.min(32,w-dx),Math.min(32,h-dy),32,32);
+        g.flush();g.setColor(1,1,1,1);
         com.mojang.blaze3d.systems.RenderSystem.disableBlend();
     }
     public static void frame(GuiGraphics g,int x,int y,int w,int h,boolean lit) {
