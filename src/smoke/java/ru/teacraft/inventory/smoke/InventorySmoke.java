@@ -167,7 +167,7 @@ public final class InventorySmoke {
             if(net.neoforged.fml.ModList.get().isLoaded("civitatum")) {
                 var details=RacesBridge.read(mc.player);
                 check(details!=null && details.name().equals("Арина") && details.race().equals("Человек"),"race adapter reads synchronized character");
-                var info=screen.powersPanel();click(screen,info.x+12,info.y+9,0);next(26);
+                var info=screen.powersPanel();click(screen,info.x+info.width-20,info.y+9,0);next(26);
             } else next(29);
         } else if(phase==26 && mc.screen instanceof CivitatumInventoryScreen screen && ticks>30) {
             capture(mc,"06-racial-powers.png");var info=screen.powersPanel();
@@ -177,7 +177,7 @@ public final class InventorySmoke {
             check(RacesBridge.read(mc.player).remainingTicks()>0,"ability request reaches server and cooldown synchronizes");
             mc.setScreen(new InventoryScreen(mc.player));next(28);
         } else if(phase==28 && mc.screen instanceof CivitatumInventoryScreen screen && ticks>30) {
-            var info=screen.powersPanel();click(screen,info.x+12,info.y+9,0);next(280);
+            var info=screen.powersPanel();click(screen,info.x+info.width-20,info.y+9,0);next(280);
         } else if(phase==280 && ticks>30) {
             capture(mc,"07-racial-cooldown.png");next(29);
         } else if(phase==29 && ticks>20) {

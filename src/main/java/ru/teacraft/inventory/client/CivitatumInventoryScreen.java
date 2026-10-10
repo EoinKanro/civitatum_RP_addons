@@ -96,7 +96,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if(CompatBridge.loaded("aether"))storageTabs.add(button(Component.literal("Aether"),b->CompatBridge.openAether(),54));
         gearButton=button(tr(kind==CompatBridge.Kind.BACKPACK?"equipment":"storage.backpack"),b->{if(kind==CompatBridge.Kind.BACKPACK)InventoryClient.personalInventory(true);else CompatBridge.openBackpack();},90);
         summaryTab=button(tr("statistics"),b->{page=0;scroll=0;},70);
-        
+
         attributeTab=button(tr("attributes.short"),b->{page=2;scroll=0;},50);
         attributeFilter=button(tr("attributes.all"),b->{modifiedAttributes=!modifiedAttributes;scroll=0;},100);
         ability=button(tr("activate"),b->{AbilitySelection.activate(player);onClose();},100);
@@ -153,7 +153,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         for(var slot:menu.slots)if(slot.x==x&&slot.y==y)return !isSlotCovered(slot)&&owners.get(slot)==topPane(mx,my)&&mx>=x&&mx<x+slotPixels(slot)&&my>=y&&my<y+slotPixels(slot);
         return super.isHovering(x,y,w,h,mx,my);
     }
-    
+
     public void allowAutoBackpack(boolean value){autoBackpack=value;}
 
     private void resetLayout() {
@@ -183,7 +183,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if(powersButton!=null)powersButton.active=menu.getCarried().isEmpty();
         int half=(information.width-20)/2;
         summaryTab.setPosition(information.x+8,information.y+25); summaryTab.setWidth(half);
-        
+
         attributeTab.setPosition(information.x+12+half,information.y+25);attributeTab.setWidth(half);
         attributeTab.visible=information.visible;
         attributeFilter.setPosition(information.x+8,information.y+information.height-27);attributeFilter.setWidth(information.width-16);
@@ -192,7 +192,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         gearButton.visible=equipment.visible&&CompatBridge.loaded("camping")&&kind!=CompatBridge.Kind.BLOCK&&kind!=CompatBridge.Kind.AETHER&&(!CompatBridge.backpack(player).isEmpty()||kind==CompatBridge.Kind.BACKPACK);
         gearButton.active=menu.getCarried().isEmpty();
         for(var b:categories)b.visible=items.height>=220;
-        ability.setPosition(powers.x+8,powers.y+powers.height-44); ability.setWidth(powers.width-16);
+        ability.setPosition(powers.x+8,powers.y+powers.height-23); ability.setWidth(powers.width-16);
         summaryTab.visible=information.visible;
         var details=RacesBridge.read(player);
         ability.visible=powers.visible;
@@ -485,7 +485,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     @Override public boolean mouseReleased(double mx,double my,int button){if(dragging!=null){dragging=null;saveLayout();return true;}return super.mouseReleased(mx,my,button);}
     @Override public boolean mouseScrolled(double mx,double my,double horizontal,double vertical){
         var top=topPane(mx,my);
-        if(top==powers){powersView.scroll(vertical);return true;}
+        if(top==powers){powersView.scroll(powers,player,my,vertical);return true;}
         if(top==information){scroll=Math.max(0,scroll-(int)(vertical*20));return true;}
         if(top==container){blockRow=Math.max(0,blockRow-(int)vertical);positionSlots();return true;}
         if(top==items){if(kind==CompatBridge.Kind.BACKPACK&&my>=bagTop()||extras)extraRow=Math.max(0,extraRow-(int)vertical);else playerRow=Math.max(0,playerRow-(int)vertical);positionSlots();return true;}
