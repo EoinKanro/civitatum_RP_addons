@@ -1,13 +1,10 @@
-# Original Civitatum Inventory Git history
+# Civitatum Inventory
 
-This bundle preserves the original local commits and annotated `v0.3.0` tag.
+Inventory windows inspired by Morrowind, for Minecraft 1.21.1 / NeoForge.
 
-SHA-256: `70650863815ceda4f915776e55dee57decf3486e2edf13a59c579e9d231e3127`
+- [Описание и установка на русском](README_RU.md)
+- [Проверки выпуска 0.3.0](VALIDATION_RU.md)
+- [Сохранение исходников и восстановление](BACKUP_RU.md)
 
-```sh
-git clone Civitatum_Inventory_Git_Backup.bundle CivitatumInventory
-cd CivitatumInventory
-git switch codex/civitatum-inventory
-```
-
-The bundle contains Git objects and refs, without credentials or Git configuration.
+Source checkpoints are saved every 10 minutes during active development.
+The verified 0.3.0 source is preserved separately in `codex/releases/v0.3.0`.
