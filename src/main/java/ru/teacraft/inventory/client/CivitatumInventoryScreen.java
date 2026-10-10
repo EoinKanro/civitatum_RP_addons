@@ -287,13 +287,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
     @Override protected void renderSlot(GuiGraphics g,Slot slot){} // Drawn inside its owner window, with that window's depth.
     @Override protected void renderSlotHighlight(GuiGraphics g,Slot slot,int mx,int my,float tick){
-        if(isSlotCovered(slot))return;int size=slotPixels(slot);g.pose().pushPose();g.pose().translate(0,0,panels.indexOf(owners.get(slot))*40+350);g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0x55FFFFFF);g.flush();g.pose().popPose();
+        if(isSlotCovered(slot))return;int size=slotPixels(slot);g.pose().pushPose();g.pose().translate(0,0,panels.indexOf(owners.get(slot))*40+210);g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0x55FFFFFF);g.flush();g.pose().popPose();
     }
     public boolean highlighted(Slot slot){return owners.get(slot)==items&&!slot.getItem().isEmpty()&&(!query.isBlank()||category!=0)&&matches(slot.getItem());}
     private void renderOwnedSlot(GuiGraphics g,Slot slot){
         int size=slotPixels(slot);renderSlotFrame(g,slot.x-1,slot.y-1,size+2);
-        g.pose().pushPose();float scale=slotScale(slot);g.pose().translate(slot.x,slot.y,5);g.pose().scale(scale,scale,1);g.pose().translate(-slot.x,-slot.y,0);super.renderSlot(g,slot);g.flush();g.pose().popPose();
-        g.pose().pushPose();g.pose().translate(0,0,350);
+        g.pose().pushPose();float scale=slotScale(slot);g.pose().translate(slot.x,slot.y,-95);g.pose().scale(scale,scale,1);g.pose().translate(-slot.x,-slot.y,0);super.renderSlot(g,slot);g.flush();g.pose().popPose();
+        g.pose().pushPose();g.pose().translate(0,0,210);
         if(owners.get(slot)==items&&!slot.getItem().isEmpty()){
             if(!matches(slot.getItem()))g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0xA518130E);
             else if(highlighted(slot)){MorrowindSkin.frame(g,slot.x-2,slot.y-2,size+4,size+4,true);g.fill(slot.x,slot.y+size-2,slot.x+size,slot.y+size,0xFFB5D78B);}

@@ -37,9 +37,9 @@ final class UpdateSmoke {
             check(InventoryPreferences.get().slotScale>1.9,"slot slider updates preference");
             source=inv(s,9);target=inv(s,10);check(s.slotPixels(source)>=30,"inventory items scale with slot slider");
             check(s.pickSlot(source.x+26,source.y+20)==source,"scaled slot hitbox extends past 16 pixels");
-            point(s,source.x+26,source.y+20);next();
+            point(s,source.x+26,source.y+20);cursor(mc,target.x+25,target.y+20);next();
         }else if(stage==4&&mc.screen instanceof CivitatumInventoryScreen s){
-            check(s.getMenu().getCarried().getCount()==7,"scaled slot pickup reaches server");point(s,target.x+25,target.y+20);next();
+            check(s.getMenu().getCarried().getCount()==7,"scaled slot pickup reaches server");capture(mc,"49-held-scaled-stack.png");point(s,target.x+25,target.y+20);next();
         }else if(stage==5&&mc.screen instanceof CivitatumInventoryScreen s){
             check(target.getItem().getCount()==7&&s.getMenu().getCarried().isEmpty(),"scaled slot transfer conserves items");capture(mc,"41-scaled-slots.png");
             var slider=(AbstractSliderButton)s.children().stream().filter(w->w instanceof AbstractSliderButton a&&a.getMessage().getString().startsWith("Прозрачность")).findFirst().orElseThrow();

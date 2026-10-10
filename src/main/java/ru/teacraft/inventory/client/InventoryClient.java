@@ -16,8 +16,8 @@ public final class InventoryClient {
         GLFW.GLFW_KEY_F8, "key.categories.civitatum_inventory");
     private static boolean bypass;
     public static final KeyMapping ACTIVATE=new KeyMapping("key.civitatum_inventory.activate_key",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_BACKSLASH,"key.categories.civitatum_inventory");
-    public static final KeyMapping NEXT=new KeyMapping("key.civitatum_inventory.next_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_RIGHT_BRACKET,"key.categories.civitatum_inventory");
-    public static final KeyMapping PREVIOUS=new KeyMapping("key.civitatum_inventory.previous_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_LEFT_BRACKET,"key.categories.civitatum_inventory");
+    public static final KeyMapping NEXT=new KeyMapping("key.civitatum_inventory.next_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_PAGE_DOWN,"key.categories.civitatum_inventory");
+    public static final KeyMapping PREVIOUS=new KeyMapping("key.civitatum_inventory.previous_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_PAGE_UP,"key.categories.civitatum_inventory");
     private static boolean skipBackpack;
     public static void register(IEventBus mod, IEventBus game) {
         mod.addListener((RegisterKeyMappingsEvent event) -> {event.register(TOGGLE);event.register(ACTIVATE);event.register(NEXT);event.register(PREVIOUS);});
