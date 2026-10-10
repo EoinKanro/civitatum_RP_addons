@@ -15,7 +15,7 @@ public final class InventoryClient {
     public static final KeyMapping TOGGLE = new KeyMapping("key.civitatum_inventory.toggle", InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_F8, "key.categories.civitatum_inventory");
     private static boolean bypass;
-    public static final KeyMapping ACTIVATE=new KeyMapping("key.civitatum_inventory.activate_key",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_G,"key.categories.civitatum_inventory");
+    public static final KeyMapping ACTIVATE=new KeyMapping("key.civitatum_inventory.activate_key",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_BACKSLASH,"key.categories.civitatum_inventory");
     public static final KeyMapping NEXT=new KeyMapping("key.civitatum_inventory.next_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_RIGHT_BRACKET,"key.categories.civitatum_inventory");
     public static final KeyMapping PREVIOUS=new KeyMapping("key.civitatum_inventory.previous_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_LEFT_BRACKET,"key.categories.civitatum_inventory");
     private static boolean skipBackpack;

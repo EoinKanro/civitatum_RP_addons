@@ -19,7 +19,7 @@ public final class CivitatumHud {
         if(id.getNamespace().equals("ars_nouveau")&&id.getPath().equals("mana_hud")&&ArsBridge.mana(Minecraft.getInstance().player)!=null)event.setCanceled(true);
     }
     public static void render(GuiGraphics g,DeltaTracker tick){
-        var mc=Minecraft.getInstance();if(!active()||mc.options.hideGui)return;var player=mc.player;
+        var mc=Minecraft.getInstance();if(!active()||mc.options.hideGui||mc.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<?>)return;var player=mc.player;
         int x=8,y=g.guiHeight()-34,w=Math.max(76,Math.min(116,g.guiWidth()/4));
         int healthColor=player.hasEffect(net.minecraft.world.effect.MobEffects.POISON)?0xFF80A33F:player.hasEffect(net.minecraft.world.effect.MobEffects.WITHER)?0xFF766B60:0xFFAE4236;
         bar(g,x,y,w,player.getHealth(),player.getMaxHealth(),healthColor);

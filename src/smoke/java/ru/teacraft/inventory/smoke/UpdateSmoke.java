@@ -62,7 +62,7 @@ final class UpdateSmoke {
         }else if(stage==10){
             check(AbilitySelection.selected(mc.player).id().equals("inventory_smoke:first"),"previous ability key cycles selection");KeyMapping.click(InventoryClient.ACTIVATE.getKey());next();
         }else if(stage==11){
-            check(casts==1,"activation key invokes only selected ability");check(CivitatumHud.active(),"custom HUD active in survival");
+            check(casts==1,"activation key invokes only selected ability");check(mc.screen==null,"activation does not trigger Curios inventory key");check(CivitatumHud.active(),"custom HUD active in survival");
             if(CompatBridge.loaded("ars_nouveau")){
                 mc.getSingleplayerServer().execute(()->{
                     try{var p=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());var cap=Class.forName("com.hollingsworth.arsnouveau.setup.registry.CapabilityRegistry").getMethod("getMana",net.minecraft.world.entity.LivingEntity.class).invoke(null,p);expectedManaMax=((Number)cap.getClass().getMethod("getMaxMana").invoke(cap)).intValue();cap.getClass().getMethod("setMana",double.class).invoke(cap,expectedManaMax*.5);cap.getClass().getMethod("syncToClient",net.minecraft.server.level.ServerPlayer.class).invoke(cap,p);}catch(Exception e){throw new IllegalStateException(e);}

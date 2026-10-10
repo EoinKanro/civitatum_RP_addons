@@ -13,6 +13,6 @@ public final class InventorySlider extends AbstractSliderButton {
         this.label=label;this.min=min;this.max=max;this.change=change;updateMessage();
     }
     @Override protected void updateMessage(){setMessage(CivitatumInventoryScreen.tr(label,Math.round((min+(max-min)*value)*100)));}
-    @Override protected void applyValue(){change.accept(min+(max-min)*value);}
+    @Override protected void applyValue(){double steps=min==1?20:100;double actual=Math.round((min+(max-min)*value)*steps)/steps;value=(actual-min)/(max-min);change.accept(actual);}
     @Override public void onRelease(double x,double y){super.onRelease(x,y);InventoryPreferences.get().save();}
 }
