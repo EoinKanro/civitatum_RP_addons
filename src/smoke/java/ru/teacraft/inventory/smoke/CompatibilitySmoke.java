@@ -42,9 +42,9 @@ final class CompatibilitySmoke {
             check(screen.getMenu().getCarried().getCount()==7,"backpack pickup works");click(screen,inventorySlot(screen,1));next();
         }else if(stage==5&&mc.screen instanceof CivitatumInventoryScreen screen){
             check(screen.getMenu().getCarried().isEmpty()&&mc.player.getInventory().getItem(1).getCount()==7,"backpack transfer conserves items");
-            menuId=screen.getMenu().containerId;if(!screen.mapPanel().visible)screen.toggleMap();check(screen.mapPanel().visible,"embedded Xaero map is visible");next();
+            check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==6&&mc.screen instanceof CivitatumInventoryScreen screen){
-            var map=screen.mapPanel();screen.mouseScrolled(map.x+20,map.y+40,0,1);capture(mc,"09-xaero-world-map.png");next();
+            check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==7&&mc.screen instanceof CivitatumInventoryScreen screen){
             check(screen.getMenu().containerId==menuId&&mc.player.containerMenu==screen.getMenu(),"Xaero returns to same live backpack menu");
             check(mc.player.getInventory().getItem(1).getCount()==7,"map return preserves inventory state");screen.onClose();next();
