@@ -34,3 +34,6 @@ if (project.hasProperty('apothic')) { dependencies { runtimeOnly fileTree(compat
 if (project.hasProperty('revisionSmoke')) { neoForge.runs.client.systemProperty 'inventory.smoke.revision', 'true' }
 if (project.hasProperty('compatOnly')) { neoForge.runs.client.systemProperty 'inventory.smoke.compatOnly', 'true' }
 if (project.hasProperty('accessoriesOnly')) { neoForge.runs.client.systemProperty 'inventory.smoke.accessoriesOnly', 'true' }
+
+if (project.hasProperty('ars')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'ars-nouveau.jar', 'geckolib.jar', 'curios.jar' } } }
+if (project.hasProperty('updateSmoke')) { neoForge.runs.client.systemProperty 'inventory.smoke.update', 'true' }

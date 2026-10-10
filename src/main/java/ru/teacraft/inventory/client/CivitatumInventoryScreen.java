@@ -136,12 +136,17 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return false;
     }
     private float containerSlotScale=1F;
-    private float slotScale(Slot slot){return owners.get(slot)==container&&!CompatBridge.storageGrid(menu)?containerSlotScale:owners.get(slot)==items||owners.get(slot)==container?(float)InventoryPreferences.get().slotScale:1F;}
+    private double itemScale(){double value=InventoryPreferences.get().slotScale;if(kind==CompatBridge.Kind.BACKPACK)value=Math.min(value,Math.max(1,(hotbarTop()-gridTop()-20)/36.0));return value;}
+    private float hotbarScale(){return (float)Math.min(InventoryPreferences.get().slotScale,Math.max(1,(items.width-20)/162.0));}
+    private float slotScale(Slot slot){
+        if(owners.get(slot)==items&&slot.container==player.getInventory()&&slot.getContainerSlot()<9)return hotbarScale();
+        return owners.get(slot)==container&&!CompatBridge.storageGrid(menu)?containerSlotScale:owners.get(slot)==items?(float)itemScale():owners.get(slot)==container?(float)InventoryPreferences.get().slotScale:1F;
+    }
     public int slotPixels(Slot slot){return Math.round(16*slotScale(slot));}
-    private int pitch(){return (int)Math.round(18*InventoryPreferences.get().slotScale);}
+    private int pitch(){return (int)Math.round(18*itemScale());}
     private int columns(){return Math.max(1,Math.min(9,(items.width-20)/pitch()));}
-    private int hotbarRows(){return (9+columns()-1)/columns();}
-    private int hotbarTop(){return items.y+items.height-24-hotbarRows()*pitch();}
+    private int hotbarRows(){return 1;}
+    private int hotbarTop(){return items.y+items.height-24-Math.round(18*hotbarScale());}
     public boolean isSlotCovered(Slot slot){return slot.x<0||covered(owners.get(slot),slot.x,slot.y,slotPixels(slot),slotPixels(slot));}
     public Slot pickSlot(double mx,double my){for(var slot:menu.slots)if(slot.isActive()&&!isSlotCovered(slot)&&owners.get(slot)==topPane(mx,my)&&mx>=slot.x&&mx<slot.x+slotPixels(slot)&&my>=slot.y&&my<slot.y+slotPixels(slot))return slot;return null;}
     @Override protected boolean isHovering(int x,int y,int w,int h,double mx,double my) {
@@ -221,7 +226,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         for(var slot:menu.slots)if(slot.container==player.getInventory()){
             int i=slot.getContainerSlot(),r=(i-9)/cols-playerRow;
             if(i>=9&&i<36&&(!extras||kind==CompatBridge.Kind.BACKPACK||kind==CompatBridge.Kind.BLOCK)&&r>=0&&r<rows)assign(slot,items,gx+(i-9)%cols*cell,gridTop()+r*cell);
-            else if(i>=0&&i<9)assign(slot,items,gx+i%cols*cell,hotbarTop()+i/cols*cell);
+            else if(i>=0&&i<9)assign(slot,items,items.x+(items.width-9*Math.round(18*hotbarScale()))/2+i*Math.round(18*hotbarScale()),hotbarTop());
             else if(i>=36&&i<=39&&equipment.visible)assign(slot,equipment,equipment.x+10,equipment.y+34+(39-i)*22);
             else if(i==40&&equipment.visible)assign(slot,equipment,equipment.x+equipment.width-28,equipment.y+100);
         }
@@ -332,12 +337,28 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if(b==gearButton)return equipment;return null;
     }
     private void renderProgress(GuiGraphics g){
-        double burn=0,fuel=0;
-        if(menu instanceof net.minecraft.world.inventory.AbstractFurnaceMenu){burn=CompatBridge.progress(menu,"getBurnProgress",1);fuel=CompatBridge.progress(menu,"getLitProgress",1);}
+        if(CompatBridge.storageGrid(menu)||extraSlots.isEmpty())return;
+        double burn=0,fuel=0;boolean furnace=menu instanceof net.minecraft.world.inventory.AbstractFurnaceMenu;
+        if(furnace){burn=CompatBridge.progress(menu,"getBurnProgress",1);fuel=CompatBridge.progress(menu,"getLitProgress",1);}
         else if(menu.getClass().getName().endsWith("AltarMenu")||menu.getClass().getName().endsWith("FreezerMenu")){burn=CompatBridge.progress(menu,"getBurnProgress",24);fuel=CompatBridge.progress(menu,"getLitProgress",13);}
-        else if(menu.getClass().getName().endsWith("IncubatorMenu")){burn=CompatBridge.progress(menu,"getIncubationProgressScaled",54);}
+        else if(menu.getClass().getName().endsWith("IncubatorMenu"))burn=CompatBridge.progress(menu,"getIncubationProgressScaled",54);
         else if(menu instanceof net.minecraft.world.inventory.BrewingStandMenu){burn=1-CompatBridge.progress(menu,"getBrewingTicks",400);fuel=CompatBridge.progress(menu,"getFuel",20);}
-        if(burn>0||fuel>0){int x=container.x+14,y=container.y+container.height-20,w=container.width-28;g.fill(x,y,x+w,y+5,0x66201810);g.fill(x,y,x+(int)(w*burn),y+5,0xFFBDA06B);g.fill(x,y+7,x+(int)(w*fuel),y+9,0xFFBB7744);}
+        Slot output=menu instanceof net.minecraft.world.inventory.CraftingMenu?extraSlots.getFirst():furnace&&extraSlots.size()>2?extraSlots.get(2):null;
+        if(output!=null){
+            int size=slotPixels(output),x=output.x-28,y=output.y+size/2-3;
+            g.fill(x,y,x+19,y+6,0xFF514631);
+            for(int n=0;n<6;n++)g.fill(x+19+n,y-3+n,x+20+n,y+9-n,0xFF8B7851);
+            g.fill(x,y,x+(int)(19*burn),y+6,0xFFD3B478);
+            // Subtle result recess distinguishes the output from ingredient cells.
+            MorrowindSkin.frame(g,output.x-3,output.y-3,size+6,size+6,true);
+            if(furnace){var input=extraSlots.getFirst();var coal=extraSlots.get(1);int fx=input.x+size/2-3,fy=(input.y+size+coal.y)/2-5;
+                g.fill(fx,fy,fx+6,fy+9,0xFF4D3929);g.fill(fx,fy+9-(int)(9*fuel),fx+6,fy+9,0xFFCC8B43);}
+        }
+        int x=container.x+14,y=container.y+container.height-20,w=container.width-28;
+        if(!(menu instanceof net.minecraft.world.inventory.CraftingMenu)){
+            g.fill(x,y,x+w,y+5,0x66201810);g.fill(x,y,x+(int)(w*burn),y+5,0xFFBDA06B);
+            g.fill(x,y+7,x+w,y+9,0x44201810);g.fill(x,y+7,x+(int)(w*fuel),y+9,0xFFBB7744);
+        }
     }
 
     private void renderPanel(GuiGraphics g,InventoryPanel p,Component label) {

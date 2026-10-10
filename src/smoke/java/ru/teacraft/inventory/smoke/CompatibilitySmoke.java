@@ -42,12 +42,12 @@ final class CompatibilitySmoke {
             check(screen.getMenu().getCarried().getCount()==7,"backpack pickup works");click(screen,inventorySlot(screen,1));next();
         }else if(stage==5&&mc.screen instanceof CivitatumInventoryScreen screen){
             check(screen.getMenu().getCarried().isEmpty()&&mc.player.getInventory().getItem(1).getCount()==7,"backpack transfer conserves items");
-            check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
+            menuId=screen.getMenu().containerId;check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==6&&mc.screen instanceof CivitatumInventoryScreen screen){
             check(screen.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==7&&mc.screen instanceof CivitatumInventoryScreen screen){
-            check(screen.getMenu().containerId==menuId&&mc.player.containerMenu==screen.getMenu(),"Xaero returns to same live backpack menu");
-            check(mc.player.getInventory().getItem(1).getCount()==7,"map return preserves inventory state");screen.onClose();next();
+            check(screen.getMenu().containerId==menuId&&mc.player.containerMenu==screen.getMenu(),"removing map preserves live backpack menu");
+            check(mc.player.getInventory().getItem(1).getCount()==7,"blank clicks preserve inventory state");screen.onClose();next();
         }else if(stage==8){check(CompatBridge.openBackpack(),"reopen Camping request sent");next();
         }else if(stage==9&&mc.screen instanceof CivitatumInventoryScreen screen&&screen.integrationKind()==CompatBridge.Kind.BACKPACK){
             check(screen.compatibilitySlots().getFirst().getItem().isEmpty(),"backpack changes persisted after closing");screen.onClose();
