@@ -25,9 +25,9 @@ public final class InventoryPanel {
     }
     public void constrain(int screenWidth, int screenHeight) {
         width = Math.min(screenWidth-8, Math.max(minWidth,width));
-        height = Math.min(screenHeight-48, Math.max(minHeight,height));
+        height = Math.min(screenHeight-69, Math.max(minHeight,height));
         x=Math.max(4,Math.min(screenWidth-width-4,x));
-        y=Math.max(25,Math.min(screenHeight-height-23,y));
+        y=Math.max(25,Math.min(screenHeight-height-44,y));
     }
     public void restore(InventoryPreferences.SavedPanel saved, int sw, int sh) {
         if(saved==null || !Float.isFinite(saved.x()) || !Float.isFinite(saved.y())) return;

@@ -15,9 +15,14 @@ public final class InventoryClient {
     public static final KeyMapping TOGGLE = new KeyMapping("key.civitatum_inventory.toggle", InputConstants.Type.KEYSYM,
         GLFW.GLFW_KEY_F8, "key.categories.civitatum_inventory");
     private static boolean bypass;
+    public static final KeyMapping ACTIVATE=new KeyMapping("key.civitatum_inventory.activate_key",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_BACKSLASH,"key.categories.civitatum_inventory");
+    public static final KeyMapping NEXT=new KeyMapping("key.civitatum_inventory.next_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_PAGE_DOWN,"key.categories.civitatum_inventory");
+    public static final KeyMapping PREVIOUS=new KeyMapping("key.civitatum_inventory.previous_ability",InputConstants.Type.KEYSYM,GLFW.GLFW_KEY_PAGE_UP,"key.categories.civitatum_inventory");
     private static boolean skipBackpack;
     public static void register(IEventBus mod, IEventBus game) {
-        mod.addListener((RegisterKeyMappingsEvent event) -> event.register(TOGGLE));
+        mod.addListener((RegisterKeyMappingsEvent event) -> {event.register(TOGGLE);event.register(ACTIVATE);event.register(NEXT);event.register(PREVIOUS);});
+        mod.addListener(CivitatumHud::register);
+        game.addListener(CivitatumHud::hideReplaced);
         game.addListener(InventoryClient::opening);
         game.addListener(InventoryClient::tick);
         game.addListener(InventoryClient::key);
@@ -42,6 +47,10 @@ public final class InventoryClient {
         while (TOGGLE.consumeClick()) {
             toggle();
         }
+        var mc=Minecraft.getInstance();
+        while(NEXT.consumeClick())if(mc.screen==null&&mc.player!=null)AbilitySelection.cycle(mc.player,1);
+        while(PREVIOUS.consumeClick())if(mc.screen==null&&mc.player!=null)AbilitySelection.cycle(mc.player,-1);
+        while(ACTIVATE.consumeClick())if(mc.screen==null&&mc.player!=null&&!mc.player.isSpectator())AbilitySelection.activate(mc.player);
     }
     private static void key(ScreenEvent.KeyPressed.Pre event) {
         if ((event.getScreen() instanceof CivitatumInventoryScreen || event.getScreen() instanceof InventoryScreen || CompatBridge.supported(event.getScreen()))

@@ -16,7 +16,9 @@ public final class RacesBridge {
         try {
             var client = Class.forName("ru.teacraft.civitatum.client.ClientCharacters");
             var state = client.getMethod("state", Player.class).invoke(null,player);
+            if(state==null)return null;
             var character = state.getClass().getMethod("character").invoke(state);
+            if(character==null)return null;
             if (!(boolean) character.getClass().getField("selected").get(character)) return null;
             String id = field(character,"race");
             var definition = Class.forName("ru.teacraft.civitatum.RaceCatalog").getMethod("get",String.class).invoke(null,id);
@@ -26,8 +28,11 @@ public final class RacesBridge {
             return new Details(field(character,"name"),field(definition,"name"),sign,field(definition,"positive"),
                 field(definition,"negative"),field(definition,"active"),integer(definition,"food"),integer(definition,"cooldown"),
                 Math.max(0,until-player.level().getGameTime()),((Number)state.getClass().getMethod("curseDeaths").invoke(state)).intValue());
-        } catch (ReflectiveOperationException | RuntimeException ex) {
+        } catch (ClassNotFoundException | NoSuchMethodException | NoSuchFieldException | IllegalAccessException ex) {
             failed=true; LogUtils.getLogger().warn("Civitatum Inventory: optional race adapter unavailable",ex); return null;
+        } catch (java.lang.reflect.InvocationTargetException | RuntimeException ex) {
+            // Character data may not yet have arrived when opening the first client screen.
+            return null;
         }
     }
     public static void activate() {
@@ -38,13 +43,13 @@ public final class RacesBridge {
             PacketDistributor.sendToServer((CustomPacketPayload)payload);
         } catch (ReflectiveOperationException | RuntimeException ex) { LogUtils.getLogger().warn("Civitatum Inventory: could not request ability",ex); }
     }
-    private static String field(Object object,String key) throws ReflectiveOperationException {
+    private static String field(Object object,String key) throws NoSuchFieldException,IllegalAccessException {
         var value=object.getClass().getField(key).get(object); return value==null?"":value.toString();
     }
     private static String optionalField(Object object,String key) {
         try { return field(object,key); } catch(ReflectiveOperationException ex) { return ""; }
     }
-    private static int integer(Object object,String key) throws ReflectiveOperationException {
+    private static int integer(Object object,String key) throws NoSuchFieldException,IllegalAccessException {
         return ((Number)object.getClass().getField(key).get(object)).intValue();
     }
 }

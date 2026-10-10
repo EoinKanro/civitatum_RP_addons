@@ -3,9 +3,9 @@ loaderVersion="[4,)"
 license="MIT"
 [[mods]]
 modId="civitatum_inventory"
-version="0.3.0"
+version="0.4.0"
 displayName="Civitatum Inventory"
-authors="TeaCraft"
+authors="Civitatum Team"
 displayTest="IGNORE_ALL_VERSION"
 description='''An independent, client-side Minecraft inventory with movable character, item and statistics windows inspired by Morrowind.'''
 [[dependencies.civitatum_inventory]]

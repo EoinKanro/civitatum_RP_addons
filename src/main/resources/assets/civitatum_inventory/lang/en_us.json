@@ -6,7 +6,7 @@
   "gui.civitatum_inventory.search": "Search items…",
   "gui.civitatum_inventory.statistics": "Stats",
   "gui.civitatum_inventory.powers": "Powers",
-  "gui.civitatum_inventory.activate": "Use power",
+  "gui.civitatum_inventory.activate": "Use selected ability",
   "gui.civitatum_inventory.reset": "Reset",
   "gui.civitatum_inventory.vanilla": "Vanilla",
   "gui.civitatum_inventory.crafting": "Crafting",
@@ -55,11 +55,9 @@
   "gui.civitatum_inventory.storage.inventory": "Items",
   "gui.civitatum_inventory.storage.backpack": "Pack",
   "gui.civitatum_inventory.cosmetics": "Cosmetic",
-  "gui.civitatum_inventory.map": "Map",
   "gui.civitatum_inventory.backpack_equipment_hint": "Open Items to change equipment.",
   "gui.civitatum_inventory.render_toggle": "Ctrl + right click toggles accessory visibility",
   "gui.civitatum_inventory.container": "Container",
-  "gui.civitatum_inventory.map.waiting": "Waiting for Xaero map data…",
   "gui.civitatum_inventory.attributes.short": "Attrib.",
   "gui.civitatum_inventory.attributes.all": "All attributes",
   "gui.civitatum_inventory.attributes.modified": "Modified attributes",
@@ -67,5 +65,11 @@
   "gui.civitatum_inventory.attributes.base": "Base: ",
   "gui.civitatum_inventory.attributes.dynamic": "Situational",
   "gui.civitatum_inventory.attributes.dynamic_hint": "The value depends on the action and target.",
-  "gui.civitatum_inventory.container_equipment_hint": "Close the container to change equipment."
+  "gui.civitatum_inventory.container_equipment_hint": "Close the container to change equipment.",
+  "gui.civitatum_inventory.transparency": "Transparency: %s%%",
+  "gui.civitatum_inventory.slot_scale": "Slot size: %s%%",
+  "gui.civitatum_inventory.abilities": "Abilities",
+  "key.civitatum_inventory.activate_key": "Activate selected ability / spell",
+  "key.civitatum_inventory.next_ability": "Select next ability / spell",
+  "key.civitatum_inventory.previous_ability": "Select previous ability / spell"
 }

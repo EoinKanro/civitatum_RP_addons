@@ -42,9 +42,9 @@ final class RevisionSmoke {
         }else if(stage==6&&mc.screen instanceof CivitatumInventoryScreen s){check(s.compatibilitySlots().get(1).getItem().getCount()==6,"regular inventory to backpack");mc.gameMode.handleInventoryMouseClick(s.getMenu().containerId,s.compatibilitySlots().get(1).index,0,ClickType.QUICK_MOVE,mc.player);next();
         }else if(stage==7&&mc.screen instanceof CivitatumInventoryScreen s){
             check(s.compatibilitySlots().get(1).getItem().isEmpty(),"backpack shift transfer");int count=0;for(int i=0;i<36;i++)if(mc.player.getInventory().getItem(i).is(Items.DIAMOND))count+=mc.player.getInventory().getItem(i).getCount();check(count==6,"shift transfer conserves count");
-            menuId=s.getMenu().containerId;if(!s.mapPanel().visible)s.toggleMap();next();
+            check(s.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==8&&mc.screen instanceof CivitatumInventoryScreen s){
-            check(s.mapReady()&&mc.player.containerMenu==s.getMenu()&&s.getMenu().containerId==menuId,"embedded map retains live menu");var p=s.mapPanel();s.mouseScrolled(p.x+30,p.y+40,0,1);s.mouseClicked(p.x+30,p.y+40,0);s.mouseDragged(p.x+40,p.y+45,0,10,5);s.mouseReleased(p.x+40,p.y+45,0);capture(mc,"21-embedded-xaero.png");next();
+            check(s.powersPanel()!=null,"separate gifts window replaces map");next();
         }else if(stage==9&&mc.screen instanceof CivitatumInventoryScreen s){
             var p=s.informationPanel();
             for(int edge:new int[]{1,2,4,8,5,6,9,10}){
