@@ -20,6 +20,7 @@ public final class InventorySmoke {
     private int originalX,originalY;
     private CompatibilitySmoke compatibility;
     private RevisionSmoke revision;
+    private UpdateSmoke update;
     public InventorySmoke() {NeoForge.EVENT_BUS.addListener(this::tick);}
     private void tick(ClientTickEvent.Post event) {
         var mc=Minecraft.getInstance();ticks++;total++;
@@ -166,26 +167,29 @@ public final class InventorySmoke {
             if(net.neoforged.fml.ModList.get().isLoaded("civitatum")) {
                 var details=RacesBridge.read(mc.player);
                 check(details!=null && details.name().equals("Арина") && details.race().equals("Человек"),"race adapter reads synchronized character");
-                var info=screen.informationPanel();click(screen,info.x+info.width-30,info.y+33,0);next(26);
+                var info=screen.powersPanel();click(screen,info.x+12,info.y+9,0);next(26);
             } else next(29);
         } else if(phase==26 && mc.screen instanceof CivitatumInventoryScreen screen && ticks>30) {
-            capture(mc,"06-racial-powers.png");var info=screen.informationPanel();
+            capture(mc,"06-racial-powers.png");var info=screen.powersPanel();
             click(screen,info.x+30,info.y+info.height-21,0);next(27);
         } else if(phase==27 && ticks>25) {
             check(mc.screen==null,"ability button closes inventory");
             check(RacesBridge.read(mc.player).remainingTicks()>0,"ability request reaches server and cooldown synchronizes");
             mc.setScreen(new InventoryScreen(mc.player));next(28);
         } else if(phase==28 && mc.screen instanceof CivitatumInventoryScreen screen && ticks>30) {
-            var info=screen.informationPanel();click(screen,info.x+info.width-30,info.y+33,0);next(280);
+            var info=screen.powersPanel();click(screen,info.x+12,info.y+9,0);next(280);
         } else if(phase==280 && ticks>30) {
             capture(mc,"07-racial-cooldown.png");next(29);
         } else if(phase==29 && ticks>20) {
             mc.getToasts().clear();mc.gui.getChat().clearMessages(true);mc.setScreen(new InventoryScreen(mc.player));next(30);
         } else if(phase==30 && ticks>30) {
             capture(mc,"00-overview.png");
-            if(Boolean.getBoolean("inventory.smoke.revision")){revision=new RevisionSmoke();next(32);}
+            if(Boolean.getBoolean("inventory.smoke.update")){update=new UpdateSmoke();next(33);}
+            else if(Boolean.getBoolean("inventory.smoke.revision")){revision=new RevisionSmoke();next(32);}
             else if(CompatBridge.loaded("camping")||Boolean.getBoolean("inventory.smoke.accessoriesOnly")) {compatibility=new CompatibilitySmoke();next(31);}
             else {System.out.println("INVENTORY_SMOKE_ALL_PASS");mc.stop();}
+        } else if(phase==33 && update!=null) {
+            if(update.tick(mc)){System.out.println("INVENTORY_SMOKE_ALL_PASS");mc.stop();}
         } else if(phase==32 && revision!=null) {
             if(revision.tick(mc)){System.out.println("INVENTORY_SMOKE_ALL_PASS");mc.stop();}
         } else if(phase==31 && compatibility!=null) {

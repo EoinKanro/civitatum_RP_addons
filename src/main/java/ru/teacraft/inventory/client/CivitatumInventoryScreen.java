@@ -113,11 +113,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         positionControls();positionSlots();
     }
     private Button button(Component label,Button.OnPress action,int w) {var b=addWidget(new MorrowindButton(label,action,w));widgets.add(b);return b;}
-    private String layoutKey(InventoryPanel panel) {return "v4."+(compact?"compact.":"wide.")+(kind==CompatBridge.Kind.BACKPACK?"joint.":kind==CompatBridge.Kind.BLOCK?"block.":kind==CompatBridge.Kind.AETHER?"aether.":"")+panel.id;}
+    private String layoutKey(InventoryPanel panel) {return "v4."+(compact?"compact.":"wide.")+(kind==CompatBridge.Kind.BACKPACK?"joint.":kind==CompatBridge.Kind.BLOCK?"block."+menu.getClass().getSimpleName()+".":kind==CompatBridge.Kind.AETHER?"aether.":"")+panel.id;}
     private void updateVisibility() {
         equipment.visible=!compact||!compactInfo;information.visible=!compact||compactInfo;
         container.visible=kind==CompatBridge.Kind.BLOCK;
-        powers.visible=InventoryPreferences.get().powersVisible&&!compact;
+        powers.visible=InventoryPreferences.get().powersVisible&&!compact&&kind!=CompatBridge.Kind.BLOCK;
         dockEquipment();
     }
     private void dockEquipment() {
@@ -281,13 +281,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
     @Override protected void renderSlot(GuiGraphics g,Slot slot){} // Drawn inside its owner window, with that window's depth.
     @Override protected void renderSlotHighlight(GuiGraphics g,Slot slot,int mx,int my,float tick){
-        if(isSlotCovered(slot))return;int size=slotPixels(slot);g.pose().pushPose();g.pose().translate(0,0,panels.indexOf(owners.get(slot))*40+25);g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0x55FFFFFF);g.flush();g.pose().popPose();
+        if(isSlotCovered(slot))return;int size=slotPixels(slot);g.pose().pushPose();g.pose().translate(0,0,panels.indexOf(owners.get(slot))*40+350);g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0x55FFFFFF);g.flush();g.pose().popPose();
     }
     public boolean highlighted(Slot slot){return owners.get(slot)==items&&!slot.getItem().isEmpty()&&(!query.isBlank()||category!=0)&&matches(slot.getItem());}
     private void renderOwnedSlot(GuiGraphics g,Slot slot){
         int size=slotPixels(slot);renderSlotFrame(g,slot.x-1,slot.y-1,size+2);
         g.pose().pushPose();float scale=slotScale(slot);g.pose().translate(slot.x,slot.y,5);g.pose().scale(scale,scale,1);g.pose().translate(-slot.x,-slot.y,0);super.renderSlot(g,slot);g.flush();g.pose().popPose();
-        g.pose().pushPose();g.pose().translate(0,0,10);
+        g.pose().pushPose();g.pose().translate(0,0,350);
         if(owners.get(slot)==items&&!slot.getItem().isEmpty()){
             if(!matches(slot.getItem()))g.fill(slot.x,slot.y,slot.x+size,slot.y+size,0xA518130E);
             else if(highlighted(slot)){MorrowindSkin.frame(g,slot.x-2,slot.y-2,size+4,size+4,true);g.fill(slot.x,slot.y+size-2,slot.x+size,slot.y+size,0xFFB5D78B);}
@@ -304,7 +304,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 int px=equipment.x+32,py=equipment.y+25,pw=equipment.width-41,ph=equipment.height-(kind==CompatBridge.Kind.AETHER?144:gearButton.visible&&hasCraftGrid()?128:94);
                 g.fill(px,py,px+pw,py+ph,0x3018130E);
                 InventoryScreen.renderEntityInInventoryFollowsMouse(g,px+1,py+1,px+pw-1,py+ph-1,modelScale(),0.0625F,px+pw/2F+8,py+ph/2F+6,player);
-                if(hasCraftGrid())g.drawString(font,tr("crafting"),equipment.x+9,equipment.y+equipment.height-67,MUTED,false);
+                if(hasCraftGrid()){
+                    g.drawString(font,tr("crafting"),equipment.x+9,equipment.y+equipment.height-67,MUTED,false);
+                    var out=menu.slots.getFirst();int ax=out.x-26,ay=out.y+6;g.fill(ax,ay,ax+17,ay+5,0xFFB29A6B);
+                    for(int n=0;n<4;n++)g.fill(ax+17+n,ay-2+n,ax+18+n,ay+7-n,0xFFB29A6B);
+                    MorrowindSkin.frame(g,out.x-3,out.y-3,22,22,true);
+                }
                 if(kind==CompatBridge.Kind.AETHER)g.drawString(font,"Aether",equipment.x+9,equipment.y+equipment.height-123,GOLD,false);
                 if(kind==CompatBridge.Kind.BACKPACK||kind==CompatBridge.Kind.BLOCK){
                     var armor=new net.minecraft.world.entity.EquipmentSlot[]{net.minecraft.world.entity.EquipmentSlot.HEAD,net.minecraft.world.entity.EquipmentSlot.CHEST,net.minecraft.world.entity.EquipmentSlot.LEGS,net.minecraft.world.entity.EquipmentSlot.FEET};
