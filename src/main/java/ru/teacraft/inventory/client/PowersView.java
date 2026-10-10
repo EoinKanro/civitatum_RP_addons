@@ -28,13 +28,13 @@ public final class PowersView {
         g.enableScissor(p.x+6,p.y+40,p.x+p.width-6,bottom);
         if(race!=null){
             for(int n=0;n<2;n++){
-                int x=p.x+10+i%columns*24,y=p.y+42+(i/columns-effectScroll)*24;i++;
+                int x=p.x+10+i%columns*24,y=p.y+42+(i/columns-effectScroll)*24;i++;if(y<p.y+40||y+20>bottom)continue;
                 MorrowindSkin.frame(g,x-1,y-1,20,20,false);g.renderItem(new ItemStack(n==0?Items.OAK_SAPLING:Items.FLINT),x+1,y+1);
                 if(mx>=x&&mx<x+20&&my>=Math.max(y,p.y+40)&&my<y+20&&my<bottom)hover=List.of(Component.literal(race.race()).withColor(0xD3B478),CivitatumInventoryScreen.tr(n==0?"benefits":"limitations"),Component.literal(n==0?race.positive():race.negative()));
             }
         }
         for(var effect:player.getActiveEffects()){
-            int x=p.x+10+i%columns*24,y=p.y+42+(i/columns-effectScroll)*24;i++;
+            int x=p.x+10+i%columns*24,y=p.y+42+(i/columns-effectScroll)*24;i++;if(y<p.y+40||y+20>bottom)continue;
             MorrowindSkin.frame(g,x-1,y-1,20,20,false);
             g.blit(x+1,y+1,0,18,18,Minecraft.getInstance().getMobEffectTextures().get(effect.getEffect()));
             if(mx>=x&&mx<x+20&&my>=Math.max(y,p.y+40)&&my<y+20&&my<bottom)hover=List.of(effect.getEffect().value().getDisplayName().copy().append(" "+(effect.getAmplifier()+1)),MobEffectUtil.formatDuration(effect,1,player.level().tickRateManager().tickrate()));

@@ -70,10 +70,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int start=compact?4:Math.max(6,(width-584)/2), y=compact?28:32;
         int h=Math.min(kind==CompatBridge.Kind.BACKPACK||kind==CompatBridge.Kind.AETHER?302:236,height-54);
         int ew=compact?Math.max(112,Math.min(142,width-212)):146;
-        equipment=new InventoryPanel("equipment",start,y,ew,h,112,164);
-        items=new InventoryPanel("items",start+ew,y,compact?Math.min(196,width-ew-8):214,h,186,164);
-        information=new InventoryPanel("information",compact?start:items.x+items.width+8,y,compact?ew:208,Math.min(190,height-54),112,164);
-        container=new InventoryPanel("container",compact?4:items.x+items.width+8,compact?48:y,compact?width-8:208,Math.min(172,height-54),104,104);
+        equipment=new InventoryPanel("equipment",start,y,ew,h,112,kind==CompatBridge.Kind.BACKPACK?171:164);
+        items=new InventoryPanel("items",start+ew,y,compact?Math.min(196,width-ew-8):214,h,186,kind==CompatBridge.Kind.BACKPACK?171:164);
+        information=new InventoryPanel("information",compact?start:items.x+items.width+8,y,compact?ew:208,Math.min(190,height-54),112,128);
+        int minWorkWidth=104,minWorkHeight=104;
+        if(kind==CompatBridge.Kind.BLOCK&&!CompatBridge.storageGrid(menu)){
+            int minX=10000,maxX=0,minY=10000,maxY=0;
+            for(var slot:menu.slots)if(slot.container!=player.getInventory()){int[] xy=original.get(slot);minX=Math.min(minX,xy[0]);maxX=Math.max(maxX,xy[0]+16);minY=Math.min(minY,xy[1]);maxY=Math.max(maxY,xy[1]+16);}
+            minWorkWidth=Math.max(minWorkWidth,maxX-minX+40);minWorkHeight=Math.max(minWorkHeight,maxY-minY+55);
+        }
+        container=new InventoryPanel("container",compact?4:items.x+items.width+8,compact?48:y,compact?width-8:208,Math.min(172,height-54),minWorkWidth,minWorkHeight);
         information.height=Math.min(164,height-70);
         powers=new InventoryPanel("powers",compact?4:information.x,compact?48:y+information.height+8,compact?width-8:208,Math.min(180,height-70),160,144);
         if(kind==CompatBridge.Kind.BLOCK){container.height=CompatBridge.storageGrid(menu)?Math.min(240,52+((menu.slots.size()-36+8)/9)*18):148;}
@@ -347,7 +353,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if(furnace){burn=CompatBridge.progress(menu,"getBurnProgress",1);fuel=CompatBridge.progress(menu,"getLitProgress",1);}
         else if(menu.getClass().getName().endsWith("AltarMenu")||menu.getClass().getName().endsWith("FreezerMenu")){burn=CompatBridge.progress(menu,"getBurnProgress",24);fuel=CompatBridge.progress(menu,"getLitProgress",13);}
         else if(menu.getClass().getName().endsWith("IncubatorMenu"))burn=CompatBridge.progress(menu,"getIncubationProgressScaled",54);
-        else if(menu instanceof net.minecraft.world.inventory.BrewingStandMenu){burn=1-CompatBridge.progress(menu,"getBrewingTicks",400);fuel=CompatBridge.progress(menu,"getFuel",20);}
+        else if(menu instanceof net.minecraft.world.inventory.BrewingStandMenu){double brewing=CompatBridge.progress(menu,"getBrewingTicks",400);burn=brewing>0?1-brewing:0;fuel=CompatBridge.progress(menu,"getFuel",20);}
         Slot output=menu instanceof net.minecraft.world.inventory.CraftingMenu?extraSlots.getFirst():furnace&&extraSlots.size()>2?extraSlots.get(2):null;
         if(output!=null){
             int size=slotPixels(output),x=output.x-28,y=output.y+size/2-3;

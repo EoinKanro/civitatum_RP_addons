@@ -76,12 +76,22 @@ final class UpdateSmoke {
             var s=(CivitatumInventoryScreen)mc.screen;s.onClose();
             mc.getSingleplayerServer().execute(()->{var p=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());p.openMenu(new net.minecraft.world.SimpleMenuProvider((id,inv,player)->new CraftingMenu(id,inv),Component.literal("Верстак")));});next();
         }else if(stage==14&&mc.screen instanceof CivitatumInventoryScreen s&&s.getMenu() instanceof CraftingMenu){
-            check(s.compatibilitySlots().size()==10,"crafting uses ten native slots");check(s.containerPanel().height<=160,"compact workstation default height");capture(mc,"45-workbench.png");s.onClose();next();
+            check(s.compatibilitySlots().size()==10,"crafting uses ten native slots");check(s.containerPanel().height<=160,"compact workstation default height");capture(mc,"45-workbench.png");var p=s.containerPanel();
+            int x=p.x+p.width-2,y=p.y+p.height-2;s.mouseClicked(x,y,0);s.mouseDragged(x-100,y-100,0,-100,-100);s.mouseReleased(x-100,y-100,0);
+            for(var slot:s.compatibilitySlots())check(slot.x>=p.x&&slot.y>=p.y+20&&slot.x+s.slotPixels(slot)<=p.x+p.width&&slot.y+s.slotPixels(slot)<=p.y+p.height,"workbench resize keeps real slots inside window");
+            s.onClose();next();
         }else if(stage==15){
             mc.getSingleplayerServer().execute(()->{var p=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());var c=new net.minecraft.world.SimpleContainer(3);c.setItem(0,new ItemStack(Items.IRON_ORE));c.setItem(1,new ItemStack(Items.COAL));c.setItem(2,new ItemStack(Items.IRON_INGOT,3));var d=new net.minecraft.world.inventory.SimpleContainerData(4);d.set(0,100);d.set(1,200);d.set(2,50);d.set(3,200);p.openMenu(new net.minecraft.world.SimpleMenuProvider((id,inv,player)->new FurnaceMenu(id,inv,c,d),Component.literal("Печь")));});next();
         }else if(stage==16&&mc.screen instanceof CivitatumInventoryScreen s&&s.getMenu() instanceof FurnaceMenu){
             check(s.compatibilitySlots().size()==3,"furnace uses native input fuel output");capture(mc,"46-furnace.png");s.onClose();next();
-        }else if(stage==17){System.out.println("INVENTORY_UPDATE_ALL_PASS");return true;}
+        }else if(stage==17){
+            if(CompatBridge.loaded("xaeroworldmap")){
+                try{var mapping=(KeyMapping)Class.forName("xaero.map.controls.ControlsRegister").getField("keyOpenMap").get(null);KeyMapping.click(mapping.getKey());}catch(Exception e){throw new IllegalStateException(e);}
+                next();
+            }else{System.out.println("INVENTORY_UPDATE_ALL_PASS");return true;}
+        }else if(stage==18){
+            check(mc.screen!=null&&mc.screen.getClass().getName().equals("xaero.map.gui.GuiMap"),"Xaero own map key opens native GUI");mc.screen.onClose();System.out.println("INVENTORY_UPDATE_ALL_PASS");return true;
+        }
         return false;
     }
     private void next(){stage++;ticks=0;System.out.println("UPDATE_STAGE "+stage);}
