@@ -150,6 +150,10 @@ public final class ClientSmoke {
         int XSendEvent(Pointer display,NativeLong window,int propagate,NativeLong mask,Pointer event);
         int XFlush(Pointer display);
     }
+    public interface XTest extends Library {
+        XTest INSTANCE = Native.load("Xtst", XTest.class);
+        int XTestFakeKeyEvent(Pointer display, int keycode, int pressed, NativeLong delay);
+    }
     @Structure.FieldOrder({"type","serial","send_event","display","window","root","subwindow","time","x","y","x_root","y_root","state","keycode","same_screen"})
     public static class KeyEvent extends Structure {
         public int type;public NativeLong serial;public int send_event;public Pointer display;public NativeLong window,root,subwindow,time;
@@ -157,11 +161,9 @@ public final class ClientSmoke {
         public KeyEvent(Pointer pointer){super(pointer);}
     }
     private void key(Minecraft mc,boolean down){
-        Pointer display=new Pointer(GLFWNativeX11.glfwGetX11Display());NativeLong win=new NativeLong(GLFWNativeX11.glfwGetX11Window(mc.getWindow().getWindow()));
-        Memory mem=new Memory(192);mem.clear();KeyEvent e=new KeyEvent(mem);
-        e.type=down?2:3;e.serial=new NativeLong(0);e.send_event=1;e.display=display;e.window=win;e.root=Xlib.INSTANCE.XDefaultRootWindow(display);
-        e.subwindow=new NativeLong(0);e.time=new NativeLong(0);e.x=100;e.y=100;e.x_root=100;e.y_root=100;e.same_screen=1;
-        e.keycode=Xlib.INSTANCE.XKeysymToKeycode(display,new NativeLong('g'));e.write();
-        Xlib.INSTANCE.XSendEvent(display,win,1,new NativeLong(down?1:2),mem);Xlib.INSTANCE.XFlush(display);
+        Pointer display=new Pointer(GLFWNativeX11.glfwGetX11Display());
+        int code=Xlib.INSTANCE.XKeysymToKeycode(display,new NativeLong(0xffc6));
+        if(XTest.INSTANCE.XTestFakeKeyEvent(display,code,down?1:0,new NativeLong(0))==0)throw new IllegalStateException("XTest key input failed");
+        Xlib.INSTANCE.XFlush(display);
     }
 }

@@ -15,7 +15,7 @@
   "ui.civitatum_couple.invite_kiss": "%s wants to kiss you",
   "ui.civitatum_couple.respond": "[%s] Accept     [%s] Decline",
   "ui.civitatum_couple.seconds": "%s s remaining",
-  "ui.civitatum_couple.settings_title": "Civitatum Couple Interactions",
+  "ui.civitatum_couple.settings_title": "Civitatum Couple Interaction",
   "ui.civitatum_couple.settings_hint": "Aim at a player to interact",
   "setting.civitatum_couple.carry_requests": "Carry invitations",
   "setting.civitatum_couple.kiss_requests": "Kiss invitations",

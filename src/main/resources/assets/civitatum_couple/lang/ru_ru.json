@@ -15,7 +15,7 @@
   "ui.civitatum_couple.invite_kiss": "%s хочет вас поцеловать",
   "ui.civitatum_couple.respond": "[%s] Принять     [%s] Отказаться",
   "ui.civitatum_couple.seconds": "Осталось %s с",
-  "ui.civitatum_couple.settings_title": "Civitatum Couple Interactions",
+  "ui.civitatum_couple.settings_title": "Civitatum Couple Interaction",
   "ui.civitatum_couple.settings_hint": "Для действий наведите прицел на игрока",
   "setting.civitatum_couple.carry_requests": "Запросы на переноску",
   "setting.civitatum_couple.kiss_requests": "Запросы на поцелуй",

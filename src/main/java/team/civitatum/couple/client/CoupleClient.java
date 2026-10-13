@@ -17,7 +17,7 @@ import team.civitatum.couple.network.ClientBridge;
 @Mod(value = CoupleInteractions.ID, dist = Dist.CLIENT)
 public final class CoupleClient {
     private static final String CATEGORY = "key.categories.civitatum_couple";
-    public static final KeyMapping MENU = new KeyMapping("key.civitatum_couple.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, CATEGORY);
+    public static final KeyMapping MENU = new KeyMapping("key.civitatum_couple.menu", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_F9, CATEGORY);
     public static final KeyMapping ACCEPT = new KeyMapping("key.civitatum_couple.accept", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_Y, CATEGORY);
     public static final KeyMapping DECLINE = new KeyMapping("key.civitatum_couple.decline", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_N, CATEGORY);
 

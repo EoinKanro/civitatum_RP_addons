@@ -47,7 +47,7 @@ public final class RadialScreen extends Screen {
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         frames++;
         int cx = width / 2, cy = height / 2;
-        float outer = Math.max(56, Math.min(106, Math.min(width / 2F - 14, height / 2F - 34)));
+        float outer = outerRadius();
         float inner = outer * 0.43F;
         selected = RadialLayout.select(mouseX - cx, mouseY - cy, inner, outer, 3);
         g.fill(0, 0, width, height, 0x65080A0E);
@@ -80,11 +80,17 @@ public final class RadialScreen extends Screen {
         }
     }
     @Override public boolean mouseClicked(double x, double y, int button) {
-        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) { commit(); return true; }
+        if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+            float outer = outerRadius();
+            selected = RadialLayout.select(x - width / 2.0, y - height / 2.0, outer * 0.43, outer, 3);
+            commit(); return true;
+        }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) { onClose(); return true; }
         return super.mouseClicked(x, y, button);
     }
     @Override public void onClose() { committed = true; minecraft.setScreen(null); }
+
+    private float outerRadius() { return Math.max(56, Math.min(106, Math.min(width / 2F - 14, height / 2F - 34))); }
 
     private static void ring(PoseStack pose, float cx, float cy, float inner, float outer, int segment, int count, int color) {
         RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc();
