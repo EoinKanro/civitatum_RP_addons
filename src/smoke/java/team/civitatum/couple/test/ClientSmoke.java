@@ -157,13 +157,15 @@ public final class ClientSmoke {
             mc.options.guiScale().set(3);GLFW.glfwSetWindowSize(mc.getWindow().getWindow(),960,720);mc.resizeDisplay();
             mc.setScreen(new SettingsScreen(null));next(19);
         } else if(phase==19&&ticks>15){
+            mc.getToasts().clear();
             check(mc.screen.width==320&&mc.screen.height==240,"minimum GUI 320x240");
             for(var child:mc.screen.children())if(child instanceof net.minecraft.client.gui.components.AbstractWidget w)
                 check(w.getX()>=0&&w.getY()>=0&&w.getX()+w.getWidth()<=320&&w.getY()+w.getHeight()<=240,"compact setting remains inside screen");
             capture(mc,"09-compact-settings.png");key(mc,true);
             mc.setScreen(new RadialScreen(partner,net.minecraft.network.chat.Component.literal("Второй игрок"),false));
             cursor(mc,480,360-120);next(20);
-        } else if(phase==20&&ticks>15){
+        } else if(phase==20&&ticks==5){cursor(mc,480,360-120);}
+        else if(phase==20&&ticks>15){
             check(mc.screen instanceof RadialScreen,"compact radial remains open while holding F9");capture(mc,"10-compact-radial.png");
             cursor(mc,480,360);key(mc,false);next(21);
         } else if(phase==21&&ticks>15){

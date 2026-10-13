@@ -27,10 +27,12 @@ public final class SettingsScreen extends Screen {
         return Component.translatable("setting.civitatum_couple." + key).append(": ").append(Component.translatable(value ? "options.on" : "options.off"));
     }
     @Override public void render(GuiGraphics g, int x, int y, float delta) {
+        g.pose().pushPose();g.pose().translate(0,0,400);
         g.fill(0, 0, width, height, 0xE016181F);
         g.drawCenteredString(font, title, width / 2, 20, 0xFFF1E5D7);
         g.drawCenteredString(font, Component.translatable("ui.civitatum_couple.settings_hint"), width / 2, 34, 0xFFA9A3A0);
         super.render(g, x, y, delta);
+        g.flush();g.pose().popPose();
     }
     @Override public boolean isPauseScreen() { return false; }
     @Override public void onClose() { minecraft.setScreen(parent); }

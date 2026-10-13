@@ -43,6 +43,8 @@ public final class RadialScreen extends Screen {
         }
     }
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 400);
         frames++;
         int cx = width / 2, cy = height / 2;
         float outer = outerRadius();
@@ -59,14 +61,19 @@ public final class RadialScreen extends Screen {
             int color = i == selected ? 0xFFFFD6C9 : 0xFFDAD5CC;
             Component text = Component.translatable(i == 0 ? (release ? "action.civitatum_couple.release" : "action.civitatum_couple.carry")
                     : i == 1 ? "action.civitatum_couple.kiss" : "ui.civitatum_couple.settings");
-            var lines = font.split(text, Math.max(58, (int)(outer * 0.92)));
+            var lines = font.split(text, Math.max(70, (int)(outer * 0.92)));
             int lineY = y - lines.size() * 5;
             for (var line : lines) { g.drawString(font, line, x - font.width(line) / 2, lineY, color, false); lineY += 10; }
         }
         String name = font.plainSubstrByWidth(targetName.getString(), (int)(inner * 1.8));
         g.drawCenteredString(font, name, cx, cy - 10, 0xFFF3EDE4);
         g.drawCenteredString(font, Component.translatable("ui.civitatum_couple.cancel"), cx, cy + 5, 0xFF9198A4);
-        g.drawCenteredString(font, Component.translatable("ui.civitatum_couple.release_key", CoupleClient.MENU.getTranslatedKeyMessage()), cx, (int)(cy + outer + 12), 0xFFC9C2B8);
+        Component hint = Component.translatable("ui.civitatum_couple.release_key", CoupleClient.MENU.getTranslatedKeyMessage());
+        int hintY = (int)(cy + outer + 12), hintWidth = font.width(hint);
+        g.fill(cx-hintWidth/2-4,hintY-3,cx+hintWidth/2+4,hintY+11,0xED16181F);
+        g.drawCenteredString(font, hint, cx, hintY, 0xFFC9C2B8);
+        g.flush();
+        g.pose().popPose();
     }
     private void commit() {
         if (committed) return;
@@ -88,7 +95,7 @@ public final class RadialScreen extends Screen {
     }
     @Override public void onClose() { committed = true; minecraft.setScreen(null); }
 
-    private float outerRadius() { return Math.max(56, Math.min(106, Math.min(width / 2F - 14, height / 2F - 34))); }
+    private float outerRadius() { return Math.max(56, Math.min(106, Math.min(width / 2F - 14, height / 2F - 58))); }
     private int selectionAt(double x, double y) {
         float outer = outerRadius();
         return RadialLayout.select(x - width / 2.0, y - height / 2.0, outer * 0.43, outer, 3);
