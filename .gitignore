@@ -6,3 +6,5 @@ run/
 *.log
 *.bundle
 *.zip
+__pycache__/
+*.py[cod]
