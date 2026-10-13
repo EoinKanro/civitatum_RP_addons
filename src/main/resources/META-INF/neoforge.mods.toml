@@ -1,24 +1,27 @@
 modLoader="javafml"
 loaderVersion="[4,)"
-license="MIT"
+license="See LICENSE.txt"
+
 [[mods]]
-modId="civitatum_inventory"
-version="0.4.0"
-displayName="Civitatum Inventory"
+modId="civitatum_couple"
+version="0.1.0-alpha.1"
+displayName="Civitatum Couple Interactions"
 authors="Civitatum Team"
-displayTest="IGNORE_ALL_VERSION"
-description='''An independent, client-side Minecraft inventory with movable character, item and statistics windows inspired by Morrowind.'''
-[[dependencies.civitatum_inventory]]
+description='''Radial player interactions: bridal carrying and consensual cosmetic kisses. First public test build.'''
+
+[[mixins]]
+config="civitatum_couple.mixins.json"
+
+[[dependencies.civitatum_couple]]
 modId="neoforge"
 type="required"
 versionRange="[21.1.256,)"
 ordering="NONE"
-side="CLIENT"
-[[dependencies.civitatum_inventory]]
+side="BOTH"
+
+[[dependencies.civitatum_couple]]
 modId="minecraft"
 type="required"
-versionRange="[1.21.1]"
+versionRange="[1.21.1,1.21.2)"
 ordering="NONE"
-side="CLIENT"
-[[mixins]]
-config="civitatum_inventory.mixins.json"
+side="BOTH"

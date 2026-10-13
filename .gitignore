@@ -1,11 +1,8 @@
 .gradle/
 build/
 run/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
 *.log
-__pycache__/
-*.py[cod]
 *.bundle
-.env
-.env.*
-*.pem
-*.key
+*.zip

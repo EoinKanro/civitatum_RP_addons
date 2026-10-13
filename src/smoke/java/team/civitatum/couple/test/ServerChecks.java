@@ -1,0 +1,106 @@
+package team.civitatum.couple.test;
+
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.core.BlockPos;
+import net.minecraft.gametest.framework.GameTest;
+import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.network.Connection;
+import net.minecraft.network.PacketSendListener;
+import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.PacketFlow;
+import net.minecraft.network.protocol.common.ClientboundCustomPayloadPacket;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.CommonListenerCookie;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.gametest.GameTestHolder;
+import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import team.civitatum.couple.CarryGeometry;
+import team.civitatum.couple.CarryHooks;
+import team.civitatum.couple.CoupleInteractions;
+import team.civitatum.couple.core.Interaction;
+import team.civitatum.couple.network.CoupleNetwork;
+import team.civitatum.couple.server.CoupleServer;
+
+@GameTestHolder("couple_test")
+@PrefixGameTestTemplate(false)
+public final class ServerChecks {
+    public static final class Recorder extends ServerGamePacketListenerImpl {
+        public final List<CustomPacketPayload> payloads = new ArrayList<>();
+        public Recorder(ServerPlayer p) {
+            super(p.server, new Connection(PacketFlow.SERVERBOUND), p, CommonListenerCookie.createInitial(p.getGameProfile(), false));
+        }
+        @Override public void send(Packet<?> p) { if(p instanceof ClientboundCustomPayloadPacket payload) payloads.add(payload.payload()); }
+        @Override public void send(Packet<?> p, PacketSendListener listener) { send(p); }
+        @Override public void tick() {}
+        public CoupleNetwork.Invitation lastInvite() {
+            return payloads.stream().filter(p->p instanceof CoupleNetwork.Invitation).map(p->(CoupleNetwork.Invitation)p).reduce((a,b)->b).orElseThrow();
+        }
+    }
+
+    @GameTest(template="empty", timeoutTicks=200)
+    public static void carryConsentReleaseAndCleanup(GameTestHelper h) {
+        var level=h.getLevel();
+        for(int x=0;x<9;x++) for(int z=0;z<9;z++) h.setBlock(new BlockPos(x,1,z),Blocks.STONE);
+        ServerPlayer a=h.makeMockServerPlayerInLevel(), b=h.makeMockServerPlayerInLevel(), c=h.makeMockServerPlayerInLevel();
+        a.connection=new Recorder(a); b.connection=new Recorder(b); c.connection=new Recorder(c);
+        try {
+            Vec3 origin=Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(4,2,4)));
+            put(a,origin);put(b,origin.add(1,0,0));put(c,origin.add(0,0,1));
+            double speed=a.getAttributeValue(Attributes.MOVEMENT_SPEED);
+            CoupleServer.request(a,new CoupleNetwork.Action(b.getUUID(),Interaction.CARRY.ordinal()));
+            h.assertTrue(!b.isPassenger(),"request alone must not carry anyone");
+            var invite=((Recorder)b.connection).lastInvite();
+            CoupleServer.decide(c,new CoupleNetwork.Decision(invite.request(),true));
+            h.assertTrue(!b.isPassenger(),"unrelated player cannot accept");
+            CoupleServer.decide(b,new CoupleNetwork.Decision(invite.request(),true));
+            h.assertTrue(b.getVehicle()==a && CarryHooks.pair(a,b),"recipient acceptance establishes pair");
+            h.assertTrue(b.getBbHeight()<1 && b.getEyeHeight()<1,"carried dimensions and eye height applied");
+            h.assertTrue(a.getAttributeValue(Attributes.MOVEMENT_SPEED)<speed,"carrier speed modifier applied");
+            a.yBodyRot=90;a.positionRider(b);
+            h.assertTrue(b.position().distanceTo(CarryGeometry.anchorNow(a))<0.001,"passenger follows rotated carrier anchor");
+            CoupleServer.tick(new ServerTickEvent.Post(() -> true, a.server));
+            h.assertTrue(b.getVehicle()==a,"pair survives a regular server tick");
+            CoupleServer.request(c,new CoupleNetwork.Action(a.getUUID(),Interaction.RELEASE.ordinal()));
+            h.assertTrue(b.getVehicle()==a,"third player cannot release another pair");
+            CoupleServer.request(b,new CoupleNetwork.Action(a.getUUID(),Interaction.RELEASE.ordinal()));
+            h.assertTrue(!b.isPassenger()&&!CarryHooks.occupied(a)&&!CarryHooks.occupied(b),"passenger releases without approval");
+            h.assertTrue(b.getBbHeight()>1.7,"normal dimensions restored");
+            h.assertTrue(Math.abs(a.getAttributeValue(Attributes.MOVEMENT_SPEED)-speed)<0.000001,"speed modifier restored exactly");
+            h.assertTrue(level.noCollision(b,b.getBoundingBox()),"dismount position is collision-free");
+            put(a,origin);put(b,origin.add(1,0,0));
+            h.assertTrue(CoupleServer.beginCarry(a,b),"second carry starts");
+            b.stopRiding();CoupleServer.tick(new ServerTickEvent.Post(() -> true, a.server));
+            h.assertTrue(!CarryHooks.occupied(a)&&b.getBbHeight()>1.7,"vanilla sneak dismount cleans state");
+            put(a,origin);put(b,origin.add(1,0,0));
+            h.assertTrue(CoupleServer.beginCarry(a,b),"third carry starts");
+            a.teleportTo(origin.x+2,origin.y,origin.z);
+            h.assertTrue(!b.isPassenger()&&!CarryHooks.occupied(a),"teleport stops carrying before moving");
+            put(a,origin);put(b,origin.add(1,0,0));
+            h.assertTrue(CoupleServer.beginCarry(a,b),"fourth carry starts");
+            h.assertTrue(!CoupleServer.beginCarry(c,a),"nested carrying rejected");
+            CoupleServer.end(a,null);
+            put(a,origin);put(b,origin.add(6,0,0));
+            h.assertTrue("too_far".equals(CoupleServer.validate(a,b,Interaction.KISS)),"far-away kisses rejected");
+            put(b,origin.add(2,0,0));
+            h.setBlock(new BlockPos(5,3,4),Blocks.STONE);
+            h.assertTrue("too_far".equals(CoupleServer.validate(a,b,Interaction.KISS)),"wall blocks interaction");
+            h.setBlock(new BlockPos(5,3,4),Blocks.AIR);
+            System.out.println("COUPLE_SERVER_PASS consent,forgery,release,anchor,dimensions,speed,sneak,teleport,nesting,distance,wall");
+            h.succeed();
+        } finally {
+            CoupleServer.end(a,null);CoupleServer.end(b,null);CoupleServer.end(c,null);
+            for(ServerPlayer p:List.of(a,b,c)) { level.getServer().getPlayerList().remove(p); p.discard(); }
+        }
+    }
+    private static void put(ServerPlayer p,Vec3 pos) {
+        p.setPos(pos);p.setOnGround(true);p.setGameMode(GameType.SURVIVAL);p.getAbilities().flying=false;
+        p.setDeltaMovement(Vec3.ZERO);p.setHealth(p.getMaxHealth());p.yBodyRot=0;
+    }
+}
