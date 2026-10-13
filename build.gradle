@@ -23,6 +23,8 @@ tasks.register('verifyLogic', JavaExec) {
     classpath = sourceSets.test.runtimeClasspath
     mainClass = 'team.civitatum.couple.LogicChecks'
 }
+tasks.named('test', Test) { exclude '**/LogicChecks.class' }
+tasks.named('check') { dependsOn tasks.named('verifyLogic') }
 if (project.hasProperty('smoke')) {
     sourceSets { smoke {} }
     configurations.smokeImplementation.extendsFrom configurations.implementation
@@ -30,3 +32,5 @@ if (project.hasProperty('smoke')) {
     sourceSets.smoke.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
     neoForge.mods { couple_test { sourceSet(sourceSets.smoke) } }
 }
+if (project.hasProperty('ciJar')) { dependencies { runtimeOnly files(project.property('ciJar')) } }
+if (project.hasProperty('curiosJar')) { dependencies { runtimeOnly files(project.property('curiosJar')) } }

@@ -34,6 +34,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWNativeX11;
 import team.civitatum.couple.CarryHooks;
+import team.civitatum.couple.CarryGeometry;
 import team.civitatum.couple.client.ClientState;
 import team.civitatum.couple.client.RadialScreen;
 import team.civitatum.couple.client.SettingsScreen;
@@ -112,9 +113,14 @@ public final class ClientSmoke {
                 CoupleServer.request(b,new CoupleNetwork.Action(a.getUUID(),Interaction.CARRY.ordinal()));
             });next(10);
         } else if(phase==10&&ClientState.invitation!=null&&ticks>12){
-            capture(mc,"03-invitation.png");ClientState.decide(true);next(11);
+            capture(mc,"03-invitation.png");key(mc,true,'y');next(11);
         } else if(phase==11&&CarryHooks.carried(mc.player)&&mc.player.isPassenger()&&ticks>25){
+            key(mc,false,'y');
+            check(ClientState.invitation==null,"accept key clears the invitation");
             check(mc.player.getEyeHeight()<1,"client carried eye height synced");
+            var camera=mc.gameRenderer.getMainCamera();
+            check(camera.getPosition().distanceTo(CarryGeometry.head(mc.player,CarryHooks.carrier(mc.player),1))<0.25,"passenger camera follows the head anchor");
+            check(camera.getUpVector().y()>0.98,"passenger camera has a level horizon");
             capture(mc,"04-carried-first-person.png");mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);mc.player.setYRot(180);mc.player.setXRot(9);next(12);
         } else if(phase==12&&ticks>25){
             capture(mc,"05-carried-third-person.png");
@@ -126,7 +132,9 @@ public final class ClientSmoke {
             });mc.player.setYRot(0);mc.player.setXRot(7);next(13);
         } else if(phase==13&&CarryHooks.carrying(mc.player)&&ticks>30){
             check(!mc.player.isPassenger(),"carrier retains own movement");capture(mc,"06-carrying-armor.png");
-            PacketDistributor.sendToServer(new CoupleNetwork.Action(partner,Interaction.KISS.ordinal()));next(14);
+            mc.setScreen(new RadialScreen(mc.level.getPlayerByUUID(partner)));
+            mc.screen.mouseClicked(mc.screen.width/2.0+65,mc.screen.height/2.0+37,0);
+            check(mc.screen==null,"click selects the current sector before another render");next(14);
         } else if(phase==14&&ticks>15){
             server(mc,()->{var b=mc.getSingleplayerServer().getPlayerList().getPlayer(partner);var r=((ServerChecks.Recorder)b.connection).lastInvite();CoupleServer.decide(b,new CoupleNetwork.Decision(r.request(),true));});next(15);
         } else if(phase==15&&kisses>0&&ticks>3){
@@ -156,12 +164,13 @@ public final class ClientSmoke {
         public int x,y,x_root,y_root,state,keycode,same_screen;
         public KeyEvent(Pointer pointer){super(pointer);}
     }
-    private void key(Minecraft mc,boolean down){
+    private void key(Minecraft mc,boolean down){ key(mc,down,0xffc6); }
+    private void key(Minecraft mc,boolean down,int keysym){
         Pointer display=new Pointer(GLFWNativeX11.glfwGetX11Display());NativeLong win=new NativeLong(GLFWNativeX11.glfwGetX11Window(mc.getWindow().getWindow()));
         Memory mem=new Memory(192);mem.clear();KeyEvent e=new KeyEvent(mem);
         e.type=down?2:3;e.serial=new NativeLong(0);e.send_event=1;e.display=display;e.window=win;e.root=Xlib.INSTANCE.XDefaultRootWindow(display);
         e.subwindow=new NativeLong(0);e.time=new NativeLong(0);e.x=100;e.y=100;e.x_root=100;e.y_root=100;e.same_screen=1;
-        e.keycode=Xlib.INSTANCE.XKeysymToKeycode(display,new NativeLong(0xffc6));e.write();
+        e.keycode=Xlib.INSTANCE.XKeysymToKeycode(display,new NativeLong(keysym));e.write();
         Xlib.INSTANCE.XSendEvent(display,win,1,new NativeLong(down?1:2),mem);Xlib.INSTANCE.XFlush(display);
     }
 }

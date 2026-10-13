@@ -42,7 +42,11 @@ public final class RadialScreen extends Screen {
     @Override public void tick() {
         if (minecraft.player == null || !minecraft.player.isAlive()) { onClose(); return; }
         // Screens reset KeyMapping state on opening. Poll the physical rebound key instead.
-        if (frames > 1 && !ClientEvents.held(CoupleClient.MENU)) commit();
+        if (frames > 1 && !ClientEvents.held(CoupleClient.MENU)) {
+            selected = selectionAt(minecraft.mouseHandler.xpos() * width / minecraft.getWindow().getScreenWidth(),
+                    minecraft.mouseHandler.ypos() * height / minecraft.getWindow().getScreenHeight());
+            commit();
+        }
     }
     @Override public void render(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
         frames++;
@@ -81,8 +85,7 @@ public final class RadialScreen extends Screen {
     }
     @Override public boolean mouseClicked(double x, double y, int button) {
         if (button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
-            float outer = outerRadius();
-            selected = RadialLayout.select(x - width / 2.0, y - height / 2.0, outer * 0.43, outer, 3);
+            selected = selectionAt(x, y);
             commit(); return true;
         }
         if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) { onClose(); return true; }
@@ -91,6 +94,10 @@ public final class RadialScreen extends Screen {
     @Override public void onClose() { committed = true; minecraft.setScreen(null); }
 
     private float outerRadius() { return Math.max(56, Math.min(106, Math.min(width / 2F - 14, height / 2F - 34))); }
+    private int selectionAt(double x, double y) {
+        float outer = outerRadius();
+        return RadialLayout.select(x - width / 2.0, y - height / 2.0, outer * 0.43, outer, 3);
+    }
 
     private static void ring(PoseStack pose, float cx, float cy, float inner, float outer, int segment, int count, int color) {
         RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc();
