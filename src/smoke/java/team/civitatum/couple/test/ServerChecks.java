@@ -22,6 +22,8 @@ import net.minecraft.world.phys.Vec3;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
+import net.neoforged.neoforge.network.registration.ChannelAttributes;
+import net.neoforged.neoforge.network.connection.ConnectionType;
 import team.civitatum.couple.CarryGeometry;
 import team.civitatum.couple.CarryHooks;
 import team.civitatum.couple.CoupleInteractions;
@@ -35,7 +37,16 @@ public final class ServerChecks {
     public static final class Recorder extends ServerGamePacketListenerImpl {
         public final List<CustomPacketPayload> payloads = new ArrayList<>();
         public Recorder(ServerPlayer p) {
-            super(p.server, embedded(), p, CommonListenerCookie.createInitial(p.getGameProfile(), false));
+            super(p.server, connectionOf(p), p, new CommonListenerCookie(p.getGameProfile(),0,
+                    net.minecraft.server.level.ClientInformation.createDefault(),false,connectionType(p)));
+        }
+        private static Connection connectionOf(ServerPlayer p) {
+            if(p.connection!=null&&p.connection.getConnection().channel()!=null)return p.connection.getConnection();
+            return embedded();
+        }
+        private static ConnectionType connectionType(ServerPlayer p) {
+            if(p.connection!=null&&p.connection.getConnection().channel()!=null){var type=ChannelAttributes.getConnectionType(p.connection.getConnection());if(type!=null)return type;}
+            return ConnectionType.OTHER;
         }
         private static Connection embedded() {
             var connection = new Connection(PacketFlow.SERVERBOUND);

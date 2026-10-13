@@ -31,6 +31,7 @@ import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.registration.ChannelAttributes;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWNativeX11;
 import team.civitatum.couple.CarryHooks;
@@ -86,7 +87,10 @@ public final class ClientSmoke {
                     var profile=new GameProfile(UUID.nameUUIDFromBytes("CouplePartner".getBytes(java.nio.charset.StandardCharsets.UTF_8)),"CouplePartner");
                     ServerPlayer b=new ServerPlayer(server,level,profile,ClientInformation.createDefault());
                     Connection connection=new Connection(PacketFlow.SERVERBOUND);new EmbeddedChannel(connection);
-                    server.getPlayerList().placeNewPlayer(connection,b,CommonListenerCookie.createInitial(profile,false));
+                    ChannelAttributes.setPayloadSetup(connection,ChannelAttributes.getPayloadSetup(a.connection.getConnection()));
+                    var type=ChannelAttributes.getConnectionType(a.connection.getConnection());
+                    ChannelAttributes.setConnectionType(connection,type);
+                    server.getPlayerList().placeNewPlayer(connection,b,new CommonListenerCookie(profile,0,ClientInformation.createDefault(),false,type));
                     b.connection=new ServerChecks.Recorder(b);
                     b.teleportTo(a.getX(),a.getY(),a.getZ()+1.5);b.setOnGround(true);b.setGameMode(GameType.SURVIVAL);b.setYRot(180);b.yBodyRot=180;
                     partner=b.getUUID();
@@ -97,10 +101,10 @@ public final class ClientSmoke {
             mc.player.setYRot(0);mc.player.setXRot(0);next(4);
         } else if(phase==4&&ticks>10){key(mc,true);next(5);}
         else if(phase==5&&mc.screen instanceof RadialScreen&&ticks>12){
-            GLFW.glfwSetCursorPos(mc.getWindow().getWindow(),mc.getWindow().getScreenWidth()/2.0,mc.getWindow().getScreenHeight()/2.0-145);next(6);
+            cursor(mc,mc.getWindow().getScreenWidth()/2.0,mc.getWindow().getScreenHeight()/2.0-145);next(6);
         } else if(phase==6&&ticks>15){
             check(mc.screen instanceof RadialScreen,"hold key opens radial wheel on aimed player");capture(mc,"01-radial.png");
-            GLFW.glfwSetCursorPos(mc.getWindow().getWindow(),mc.getWindow().getScreenWidth()/2.0,mc.getWindow().getScreenHeight()/2.0);next(7);
+            cursor(mc,mc.getWindow().getScreenWidth()/2.0,mc.getWindow().getScreenHeight()/2.0);next(7);
         } else if(phase==7&&ticks>5){key(mc,false);next(8);}
         else if(phase==8&&ticks>15){
             check(mc.screen==null,"release key in center cancels wheel");
@@ -125,6 +129,9 @@ public final class ClientSmoke {
             capture(mc,"04-carried-first-person.png");mc.options.setCameraType(CameraType.THIRD_PERSON_FRONT);mc.player.setYRot(180);mc.player.setXRot(9);next(12);
         } else if(phase==12&&ticks>25){
             capture(mc,"05-carried-third-person.png");
+            key(mc,true,0xffe1);next(18);
+        } else if(phase==18&&!CarryHooks.occupied(mc.player)&&!mc.player.isPassenger()&&ticks>10){
+            key(mc,false,0xffe1);check(true,"Shift exits carrying through the real client");
             server(mc,()->{
                 var a=mc.getSingleplayerServer().getPlayerList().getPlayer(mc.player.getUUID());var b=mc.getSingleplayerServer().getPlayerList().getPlayer(partner);
                 CoupleServer.end(a,null);b.teleportTo(a.getX(),a.getY(),a.getZ()+1.4);a.setOnGround(true);b.setOnGround(true);a.yBodyRot=0;a.setYRot(0);
@@ -146,12 +153,33 @@ public final class ClientSmoke {
             check(mc.player.getBbHeight()>1.7,"client dimensions restored after release");
             mc.options.setCameraType(CameraType.FIRST_PERSON);capture(mc,"08-released.png");
             server(mc,()->{var s=mc.getSingleplayerServer();var b=s.getPlayerList().getPlayer(partner);CoupleServer.end(b,null);s.getPlayerList().remove(b);b.discard();staged=true;});next(17);
-        } else if(phase==17&&staged&&ticks>10){System.out.println("COUPLE_CLIENT_ALL_PASS");mc.stop();}
+        } else if(phase==17&&staged&&ticks>10){
+            mc.options.guiScale().set(3);GLFW.glfwSetWindowSize(mc.getWindow().getWindow(),960,720);mc.resizeDisplay();
+            mc.setScreen(new SettingsScreen(null));next(19);
+        } else if(phase==19&&ticks>15){
+            check(mc.screen.width==320&&mc.screen.height==240,"minimum GUI 320x240");
+            for(var child:mc.screen.children())if(child instanceof net.minecraft.client.gui.components.AbstractWidget w)
+                check(w.getX()>=0&&w.getY()>=0&&w.getX()+w.getWidth()<=320&&w.getY()+w.getHeight()<=240,"compact setting remains inside screen");
+            capture(mc,"09-compact-settings.png");key(mc,true);
+            mc.setScreen(new RadialScreen(partner,net.minecraft.network.chat.Component.literal("Второй игрок"),false));
+            cursor(mc,480,360-120);next(20);
+        } else if(phase==20&&ticks>15){
+            check(mc.screen instanceof RadialScreen,"compact radial remains open while holding F9");capture(mc,"10-compact-radial.png");
+            cursor(mc,480,360);key(mc,false);next(21);
+        } else if(phase==21&&ticks>15){
+            check(mc.screen==null,"compact radial center cancels on key release");
+            System.out.println("COUPLE_CLIENT_ALL_PASS");mc.stop();
+        }
     }
     private void server(Minecraft mc,Runnable run){mc.getSingleplayerServer().execute(()->{try{run.run();}catch(Throwable e){serverFailure="COUPLE SERVER CHECK: "+e;e.printStackTrace();}});}
     private void next(int p){phase=p;ticks=0;System.out.println("COUPLE_CLIENT_NEXT "+p);}
     private void check(boolean c,String name){if(!c)throw new IllegalStateException("COUPLE_CLIENT_FAIL "+name);System.out.println("COUPLE_CLIENT_PASS "+name);}
     private void capture(Minecraft mc,String name){var dir=new java.io.File("../build/client-captures");dir.mkdirs();net.minecraft.client.Screenshot.grab(dir,name,mc.getMainRenderTarget(),c->System.out.println("COUPLE_CAPTURE "+name));}
+    private void cursor(Minecraft mc,double x,double y){
+        GLFW.glfwSetCursorPos(mc.getWindow().getWindow(),x,y);
+        try{var method=net.minecraft.client.MouseHandler.class.getDeclaredMethod("onMove",long.class,double.class,double.class);method.setAccessible(true);method.invoke(mc.mouseHandler,mc.getWindow().getWindow(),x,y);}
+        catch(Exception ex){throw new IllegalStateException("test cursor update failed",ex);}
+    }
 
     public interface Xlib extends Library {
         Xlib INSTANCE=Native.load("X11",Xlib.class);
