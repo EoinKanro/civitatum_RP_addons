@@ -1,16 +1,10 @@
 package team.civitatum.couple.client;
 
 import java.util.UUID;
-import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.BufferUploader;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.Tesselator;
-import com.mojang.blaze3d.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -57,7 +51,8 @@ public final class RadialScreen extends Screen {
         g.fill(0, 0, width, height, 0x65080A0E);
         g.drawCenteredString(font, title, cx, (int)(cy - outer - 23), 0xFFEAE3DA);
         g.flush();
-        for (int i = 0; i < 3; i++) ring(g.pose(), cx, cy, inner, outer, i, 3, i == selected ? 0xF05B3945 : 0xED20232B);
+        for (int i = 0; i < 3; i++) ring(g, cx, cy, inner, outer, i, 3, i == selected ? 0xF05B3945 : 0xED20232B);
+        g.flush();
         for (int i = 0; i < 3; i++) {
             double angle = RadialLayout.centerAngle(i, 3);
             int x = (int)(cx + Math.cos(angle) * outer * 0.72), y = (int)(cy + Math.sin(angle) * outer * 0.72);
@@ -99,23 +94,20 @@ public final class RadialScreen extends Screen {
         return RadialLayout.select(x - width / 2.0, y - height / 2.0, outer * 0.43, outer, 3);
     }
 
-    private static void ring(PoseStack pose, float cx, float cy, float inner, float outer, int segment, int count, int color) {
-        RenderSystem.enableBlend(); RenderSystem.defaultBlendFunc();
-        RenderSystem.setShader(GameRenderer::getPositionColorShader);
-        Matrix4f matrix = pose.last().pose();
-        BufferBuilder b = Tesselator.getInstance().begin(VertexFormat.Mode.TRIANGLES, DefaultVertexFormat.POSITION_COLOR);
+    private static void ring(GuiGraphics graphics, float cx, float cy, float inner, float outer, int segment, int count, int color) {
+        Matrix4f matrix = graphics.pose().last().pose();
+        VertexConsumer b = graphics.bufferSource().getBuffer(RenderType.gui());
         double center = RadialLayout.centerAngle(segment, count), span = Math.PI * 2 / count;
         double start = center - span / 2 + 0.035, end = center + span / 2 - 0.035;
         int steps = 32;
         for (int i = 0; i < steps; i++) {
             double a = start + (end - start) * i / steps, n = start + (end - start) * (i + 1) / steps;
-            vertex(b,matrix,cx,cy,inner,a,color); vertex(b,matrix,cx,cy,outer,a,color); vertex(b,matrix,cx,cy,outer,n,color);
-            vertex(b,matrix,cx,cy,inner,a,color); vertex(b,matrix,cx,cy,outer,n,color); vertex(b,matrix,cx,cy,inner,n,color);
+            // GUI projection reverses winding: emit the same front-face order as GuiGraphics.fill.
+            vertex(b,matrix,cx,cy,inner,a,color); vertex(b,matrix,cx,cy,inner,n,color);
+            vertex(b,matrix,cx,cy,outer,n,color); vertex(b,matrix,cx,cy,outer,a,color);
         }
-        BufferUploader.drawWithShader(b.buildOrThrow());
-        RenderSystem.disableBlend();
     }
-    private static void vertex(BufferBuilder b, Matrix4f m, float cx, float cy, float radius, double angle, int color) {
+    private static void vertex(VertexConsumer b, Matrix4f m, float cx, float cy, float radius, double angle, int color) {
         b.addVertex(m, cx + (float)Math.cos(angle) * radius, cy + (float)Math.sin(angle) * radius, 0).setColor(color);
     }
 }

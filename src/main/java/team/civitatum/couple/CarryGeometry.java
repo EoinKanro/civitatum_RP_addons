@@ -7,7 +7,8 @@ import net.minecraft.world.phys.Vec3;
 
 /** Shared anchor, deliberately independent of the passenger's look direction. */
 public final class CarryGeometry {
-    public static final EntityDimensions DIMENSIONS = EntityDimensions.scalable(0.7F, 0.75F).withEyeHeight(0.6F);
+    // The sideways body spans the carrier's arms; a standing-width box lets it enter walls.
+    public static final EntityDimensions DIMENSIONS = EntityDimensions.scalable(1.6F, 0.9F).withEyeHeight(0.6F);
     public static final double FORWARD = 0.48;
     public static final double HEIGHT = 0.86;
 

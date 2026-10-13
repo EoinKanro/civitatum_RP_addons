@@ -2,6 +2,7 @@ package team.civitatum.couple.test;
 
 import java.util.ArrayList;
 import java.util.List;
+import io.netty.channel.embedded.EmbeddedChannel;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -34,11 +35,16 @@ public final class ServerChecks {
     public static final class Recorder extends ServerGamePacketListenerImpl {
         public final List<CustomPacketPayload> payloads = new ArrayList<>();
         public Recorder(ServerPlayer p) {
-            super(p.server, new Connection(PacketFlow.SERVERBOUND), p, CommonListenerCookie.createInitial(p.getGameProfile(), false));
+            super(p.server, embedded(), p, CommonListenerCookie.createInitial(p.getGameProfile(), false));
+        }
+        private static Connection embedded() {
+            var connection = new Connection(PacketFlow.SERVERBOUND);
+            new EmbeddedChannel(connection);
+            return connection;
         }
         @Override public void send(Packet<?> p) { if(p instanceof ClientboundCustomPayloadPacket payload) payloads.add(payload.payload()); }
         @Override public void send(Packet<?> p, PacketSendListener listener) { send(p); }
-        @Override public void tick() {}
+        @Override public void tick() { player.doTick(); }
         public CoupleNetwork.Invitation lastInvite() {
             return payloads.stream().filter(p->p instanceof CoupleNetwork.Invitation).map(p->(CoupleNetwork.Invitation)p).reduce((a,b)->b).orElseThrow();
         }
@@ -92,7 +98,13 @@ public final class ServerChecks {
             h.setBlock(new BlockPos(5,3,4),Blocks.STONE);
             h.assertTrue("too_far".equals(CoupleServer.validate(a,b,Interaction.KISS)),"wall blocks interaction");
             h.setBlock(new BlockPos(5,3,4),Blocks.AIR);
-            System.out.println("COUPLE_SERVER_PASS consent,forgery,release,anchor,dimensions,speed,sneak,teleport,nesting,distance,wall");
+            put(a,origin);put(b,origin.add(1,0,0));
+            h.assertTrue(CoupleServer.beginCarry(a,b),"carry starts for lateral collision test");a.positionRider(b);
+            h.setBlock(new BlockPos(5,3,4),Blocks.STONE);
+            CoupleServer.tick(new ServerTickEvent.Post(() -> true, a.server));
+            h.assertTrue(!CarryHooks.occupied(a)&&!b.isPassenger(),"sideways body cannot remain inside a wall");
+            h.setBlock(new BlockPos(5,3,4),Blocks.AIR);
+            System.out.println("COUPLE_SERVER_PASS consent,forgery,release,anchor,dimensions,speed,sneak,teleport,nesting,distance,wall,lateral_collision");
             h.succeed();
         } finally {
             CoupleServer.end(a,null);CoupleServer.end(b,null);CoupleServer.end(c,null);

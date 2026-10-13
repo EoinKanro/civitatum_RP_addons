@@ -50,12 +50,13 @@ public final class ClientSmoke {
     private volatile UUID partner;
     private volatile String serverFailure;
     private volatile boolean staged;
+    private boolean hooked;
     public ClientSmoke() {
         NeoForge.EVENT_BUS.addListener(this::tick);
-        ClientBridge.kissEffect = p -> { kisses++; ClientState.kiss(p); };
     }
     private void tick(ClientTickEvent.Post event) {
         var mc=Minecraft.getInstance();ticks++;total++;
+        if(!hooked){var previous=ClientBridge.kissEffect;ClientBridge.kissEffect=p->{kisses++;previous.accept(p);};hooked=true;}
         if(total%200==0)System.out.println("COUPLE_CLIENT_STAGE "+phase+" "+(mc.screen==null?"world":mc.screen.getClass().getSimpleName()));
         if(serverFailure!=null)throw new IllegalStateException(serverFailure);
         if(total>9000)throw new IllegalStateException("COUPLE_CLIENT_TIMEOUT phase="+phase);
@@ -131,7 +132,8 @@ public final class ClientSmoke {
                 if(!CoupleServer.beginCarry(a,b))throw new IllegalStateException("cannot reverse carrying roles");
             });mc.player.setYRot(0);mc.player.setXRot(7);next(13);
         } else if(phase==13&&CarryHooks.carrying(mc.player)&&ticks>30){
-            check(!mc.player.isPassenger(),"carrier retains own movement");capture(mc,"06-carrying-armor.png");
+            check(!mc.player.isPassenger(),"carrier retains own movement");
+            check(mc.level.getPlayerByUUID(partner).getItemBySlot(EquipmentSlot.LEGS).is(Items.IRON_LEGGINGS),"passenger armor reaches the real client");capture(mc,"06-carrying-armor.png");
             mc.setScreen(new RadialScreen(mc.level.getPlayerByUUID(partner)));
             mc.screen.mouseClicked(mc.screen.width/2.0+65,mc.screen.height/2.0+37,0);
             check(mc.screen==null,"click selects the current sector before another render");next(14);
