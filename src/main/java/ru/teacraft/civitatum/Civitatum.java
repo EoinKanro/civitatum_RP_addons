@@ -21,8 +21,12 @@ public final class Civitatum {
         () -> AttachmentType.builder(() -> RaceState.EMPTY).serialize(RaceState.CODEC).copyOnDeath().build());
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(ID);
     public static final DeferredItem<Item> SHARD = ITEMS.registerSimpleItem("demitara_shard", new Item.Properties().stacksTo(64));
+    public static final DeferredItem<Item> MIRROR = ITEMS.registerSimpleItem("appearance_mirror", new Item.Properties().stacksTo(16));
     public Civitatum(IEventBus bus) {
         ATTACHMENTS.register(bus); ITEMS.register(bus);
+        bus.addListener((net.neoforged.neoforge.event.BuildCreativeModeTabContentsEvent e)->{
+            if(e.getTabKey()==net.minecraft.world.item.CreativeModeTabs.TOOLS_AND_UTILITIES){e.accept(MIRROR.get());e.accept(SHARD.get());}
+        });
         bus.addListener(RaceNetwork::register);
         bus.addListener((net.neoforged.fml.event.lifecycle.FMLCommonSetupEvent e) -> e.enqueueWork(CompatPatches::init));
         RaceCatalog.all();

@@ -13,11 +13,12 @@ import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.entity.EquipmentSlot;
 import ru.teacraft.civitatum.*;
 
-/** Original cuboid prototypes, extending the recovered PlayerAppearance layer approach. */
+/** Racial geometry and skinned body details, attached to the animated player skeleton. */
 public final class CharacterLayer extends RenderLayer<AbstractClientPlayer,PlayerModel<AbstractClientPlayer>> {
     public static final ModelLayerLocation MODEL=new ModelLayerLocation(Civitatum.res("body_details"),"main");
     private static final net.minecraft.resources.ResourceLocation TEXTURE=Civitatum.res("textures/entity/details.png");
     private final ModelPart root;
+    private final AlgnorLegs leftAlgnorLeg=new AlgnorLegs(true),rightAlgnorLeg=new AlgnorLegs(false);
     private final ModelPart bust=createBustModel().bakeRoot();
     public CharacterLayer(RenderLayerParent<AbstractClientPlayer,PlayerModel<AbstractClientPlayer>> parent,ModelPart root) { super(parent);this.root=root; }
     @Override public void render(PoseStack pose,MultiBufferSource buffers,int light,AbstractClientPlayer p,
@@ -31,35 +32,31 @@ public final class CharacterLayer extends RenderLayer<AbstractClientPlayer,Playe
         boolean helmet=!p.getItemBySlot(EquipmentSlot.HEAD).isEmpty();
         if(!helmet) {
             pair(pose,buffer,light,getParentModel().head,"ears"+c.ears,c.ears!=0,r.color("skin",c.skin),1,c.earPitch,c.earYaw,c.earRoll,c.earOffset,false);
-            if(c.beard!=0) attached(pose,buffer,light,getParentModel().head,"beard"+c.beard,r.color("hair",c.hair));
-            if(c.hairAsset.isEmpty() && c.hairStyle!=0 && r.hairAllowed) attached(pose,buffer,light,getParentModel().head,"hair"+c.hairStyle,r.color("hair",c.hair));
+            if(c.beard!=0) attached(pose,buffer,light,getParentModel().head,"beard"+c.beard,SkinTemplates.hairColor(c));
+            if(c.hairAsset.isEmpty() && c.hairStyle!=0 && r.hairAllowed) attached(pose,buffer,light,getParentModel().head,"hair"+c.hairStyle,SkinTemplates.hairColor(c));
             if(r.id.equals("orc")) attached(pose,buffer,light,getParentModel().head,"tusks",0xEADBB7);
             if(r.id.equals("firbolg")) attached(pose,buffer,light,getParentModel().head,"nose",r.color("skin",c.skin));
             if(r.dragon()) attached(pose,buffer,light,getParentModel().head,"muzzle",r.color("skin",c.skin));
-            attached(pose,buffer,r.id.equals("jahar") ? 0xF000F0 : light,getParentModel().head,"eyes",r.color("eyes",c.eyes));
-            if(c.tattoo!=0 && r.id.equals("jahar")) attached(pose,buffer,light,getParentModel().head,"jaharTattoo"+c.tattoo,r.color("tattoo",c.tattooColor));
+
         }
         if(c.horns!=0) pair(pose,buffer,light,getParentModel().head,"horns"+c.horns,true,r.color("horn",c.hornColor),c.hornSize,
             c.hornPitch,c.hornYaw,c.hornRoll,c.hornOffset,c.hornOnForehead);
         if(c.tail!=0) {
             pose.pushPose();getParentModel().body.translateAndRotate(pose);
-            var tail=root.getChild("tail");
+            var tail=root.getChild("tail"+c.tail);
             tail.yRot=(float)Math.sin(age*.09f)*.2f;
             tail.render(pose,buffer,light,OverlayTexture.NO_OVERLAY,0xFF000000|r.color("skin",c.skin));
             pose.popPose();
         }
         if(r.algnor()) {
-            attached(pose,buffer,light,getParentModel().leftLeg,"hoof",r.color("skin",c.skin));
-            attached(pose,buffer,light,getParentModel().rightLeg,"hoof",r.color("skin",c.skin));
+            leftAlgnorLeg.render(pose,buffers,light,getParentModel().leftLeg,r.color("skin",c.skin),p.getSkin().texture());
+            rightAlgnorLeg.render(pose,buffers,light,getParentModel().rightLeg,r.color("skin",c.skin),p.getSkin().texture());
         } else if(r.id.equals("hobbit")) {
             attached(pose,buffer,light,getParentModel().leftLeg,"foot",r.color("skin",c.skin));
             attached(pose,buffer,light,getParentModel().rightLeg,"foot",r.color("skin",c.skin));
         }
-        if(c.tattoo!=0 && r.id.equals("orthosian")) {
-            attached(pose,buffer,c.glow ? 0xF000F0 : light,getParentModel().head,"orthoHead"+c.tattoo,r.color("tattoo",c.tattooColor));
-            if(p.getItemBySlot(EquipmentSlot.CHEST).isEmpty())
-                attached(pose,buffer,c.glow ? 0xF000F0 : light,getParentModel().body,"orthoBody"+c.tattoo,r.color("tattoo",c.tattooColor));
-        }
+        var glow=SkinTemplates.glow(p.getSkin().texture());
+        if(glow!=null)getParentModel().renderToBuffer(pose,buffers.getBuffer(RenderType.eyes(glow)),0xF000F0,OverlayTexture.NO_OVERLAY);
         if(c.female() && c.bust>0 && !r.id.equals("forged") && (!FemaleGenderBridge.available() || ClientCharacters.isPreview(p))
             && (p.getItemBySlot(EquipmentSlot.CHEST).isEmpty() || c.showInArmor)) {
             pose.pushPose();getParentModel().body.translateAndRotate(pose);
@@ -121,12 +118,12 @@ public final class CharacterLayer extends RenderLayer<AbstractClientPlayer,Playe
         for(int style=1;style<=7;style++) {
             var ears=root.addOrReplaceChild("ears"+style,cube(),PartPose.ZERO);
             for(int sign:new int[]{-1,1}) {
-                float height=switch(style) { case 3,6 -> 7;case 5 -> 5;default -> 4; };
-                float width=style==5?2:1.1f;
+                float height=switch(style) { case 3,6 -> 7;case 2,4,5 -> 5;default -> 4; };
+                float width=style==5?2:style==2?1.6f:1.1f;
                 var build=cube().addBox(-width/2,-height,-.65f,width,height,1.3f)
                     .addBox(-width/4,-height-1,-.4f,width/2,1,.8f);
-                float roll=switch(style) {case 3,6 -> sign*1.1f;case 5 -> sign*1.8f;case 7 -> sign*.8f;default -> sign*.6f;};
-                ears.addOrReplaceChild(sign<0?"left":"right",build,PartPose.offsetAndRotation(sign*4,-3.6f,0,0,0,roll));
+                float roll=switch(style) {case 3,6 -> sign*1.1f;case 2 -> sign*.9f;case 4 -> sign*.75f;case 5 -> sign*1.8f;case 7 -> sign*.8f;default -> sign*.6f;};
+                ears.addOrReplaceChild(sign<0?"left":"right",build,PartPose.offsetAndRotation(sign*4,-3.6f,0,0,style==4?sign*.55f:0,roll));
             }
         }
         for(int style=1;style<=10;style++) {
@@ -148,6 +145,8 @@ public final class CharacterLayer extends RenderLayer<AbstractClientPlayer,Playe
         box(root,"beard1",-3,-.4f,-4.2f,6,2,1);
         root.addOrReplaceChild("beard2",cube().addBox(-3.5f,0,-4.2f,7,3,1.4f).addBox(-2,3,-3.8f,4,3,1),PartPose.ZERO);
         box(root,"beard3",-3,-1.5f,-4.15f,6,1,1);
+        root.addOrReplaceChild("beard4",cube().addBox(-2.5f,0,-4.2f,5,3,1).addBox(-1,3,-4,2,4,1),PartPose.ZERO);
+        root.addOrReplaceChild("beard5",cube().addBox(-3.7f,-2,-4.2f,1.3f,4.5f,1).addBox(2.4f,-2,-4.2f,1.3f,4.5f,1).addBox(-2.5f,1,-4.2f,5,2,1),PartPose.ZERO);
         box(root,"hair1",-4.2f,-8.3f,-4.2f,8.4f,1.5f,8.4f);
         root.addOrReplaceChild("hair2",cube().addBox(-4.2f,-8.3f,-4.2f,8.4f,1.6f,8.4f).addBox(-4.2f,-6.7f,2.7f,8.4f,7,1.6f),PartPose.ZERO);
         root.addOrReplaceChild("hair3",cube().addBox(-4.2f,-8.3f,-4.2f,8.4f,1.4f,8.4f).addBox(-1.3f,-5.5f,4,2.6f,7,2),PartPose.ZERO);
@@ -155,31 +154,10 @@ public final class CharacterLayer extends RenderLayer<AbstractClientPlayer,Playe
         root.addOrReplaceChild("tusks",cube().addBox(-2.8f,-1.8f,-4.6f,1,2.4f,1).addBox(1.8f,-1.8f,-4.6f,1,2.4f,1),PartPose.ZERO);
         box(root,"nose",-1,-4,-5.2f,2,2.5f,1.3f);
         box(root,"muzzle",-2.5f,-2.8f,-5.5f,5,2.8f,1.7f);
-        root.addOrReplaceChild("eyes",cube().addBox(-2.7f,-5,-4.025f,.7f,.7f,.025f).addBox(1.8f,-5,-4.025f,.7f,.7f,.025f),PartPose.ZERO);
-        root.addOrReplaceChild("tail",cube().addBox(-1.2f,8,1.5f,2.4f,4,2.8f),PartPose.rotation(.3f,0,0));
-        root.addOrReplaceChild("hoof",cube().addBox(-2.1f,0,-1.8f,4.2f,6,3.6f).addBox(-1.6f,5.5f,.4f,3.2f,4,3.3f)
-            .addBox(-2.3f,9.2f,-2.1f,4.6f,2.8f,5),PartPose.ZERO);
+        root.addOrReplaceChild("tail1",cube().addBox(-1.2f,8,1.5f,2.4f,4,2.8f),PartPose.rotation(.3f,0,0));
+        root.addOrReplaceChild("tail2",cube().addBox(-.8f,8,1.5f,1.6f,7,1.8f),PartPose.rotation(.35f,0,0));
+        root.addOrReplaceChild("tail3",cube().addBox(-1.5f,8,1.5f,3,3,3.5f),PartPose.rotation(.2f,0,0));
         box(root,"foot",-2.7f,9,-3.8f,5.4f,3.1f,6.2f);
-        box(root,"chestleft",-3.9f,1.8f,-5.5f,3.8f,4.1f,3.4f);
-        box(root,"chestright",.1f,1.8f,-5.5f,3.8f,4.1f,3.4f);
-        for(int n=1;n<=6;n++) {
-            var face=cube();
-            face.addBox(-2.7f,-7,-4.04f,.45f,4.5f,.03f).addBox(2.25f,-7,-4.04f,.45f,4.5f,.03f);
-            if(n%2==0) face.addBox(-2.7f,-6,-4.04f,5.4f,.45f,.03f);
-            if(n>=3) face.addBox(-.25f,-7.8f,-4.04f,.5f,4,.03f);
-            if(n>=5) face.addBox(-2,-3,-4.04f,4,.5f,.03f);
-            root.addOrReplaceChild("orthoHead"+n,face,PartPose.ZERO);
-            var body=cube().addBox(-3,2,-2.04f,.5f,7,.03f).addBox(2.5f,2,-2.04f,.5f,7,.03f);
-            for(int row=0;row<n;row++) body.addBox(-3,2+row*1.3f,-2.04f,6,.35f,.03f);
-            root.addOrReplaceChild("orthoBody"+n,body,PartPose.ZERO);
-        }
-        for(int n=1;n<=4;n++) {
-            var tattoo=cube().addBox(-3.5f,-7,-4.045f,.35f,5,.03f).addBox(3.15f,-7,-4.045f,.35f,5,.03f);
-            if(n>1) tattoo.addBox(-2,-7,-4.045f,4,.35f,.03f);
-            if(n>2) tattoo.addBox(-.2f,-7,-4.045f,.4f,3,.03f);
-            if(n>3) tattoo.addBox(-2,-3,-4.045f,4,.35f,.03f);
-            root.addOrReplaceChild("jaharTattoo"+n,tattoo,PartPose.ZERO);
-        }
         return LayerDefinition.create(mesh,32,32);
     }
 }
