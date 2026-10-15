@@ -36,6 +36,8 @@ import team.civitatum.couple.CarryHooks;
 import team.civitatum.couple.CoupleConfig;
 import team.civitatum.couple.CoupleInteractions;
 import team.civitatum.couple.core.Interaction;
+import team.civitatum.couple.core.PlayerPreferences;
+import team.civitatum.couple.core.Consent;
 import team.civitatum.couple.core.RequestBook;
 import team.civitatum.couple.network.CoupleNetwork;
 
@@ -55,6 +57,7 @@ public final class CoupleServer {
         Vec3 lastSafe;
         Vec3 previousCarrier;
         boolean closing;
+        int obstructedTicks;
         Pair(ServerPlayer carrier, ServerPlayer passenger) {
             this.carrier = carrier; this.passenger = passenger;
             previousCarrier = carrier.position();
@@ -71,6 +74,10 @@ public final class CoupleServer {
         return p != null && p.carrier.getUUID().equals(carrier) ? p.passenger.getUUID() : null;
     }
 
+    public static PlayerPreferences preferencesOf(Player p) {
+        var data=p.getPersistentData();String json=data.getString("CivitatumCouplePreferences");
+        return json.isEmpty()?PlayerPreferences.legacy(!data.getBoolean(DENY_CARRY),!data.getBoolean(DENY_KISS)):PlayerPreferences.read(json);
+    }
     public static void request(ServerPlayer sender, CoupleNetwork.Action packet) {
         Interaction action = Interaction.fromWire(packet.action());
         if (action == null) return;
@@ -87,9 +94,10 @@ public final class CoupleServer {
         ServerPlayer target = sender.server.getPlayerList().getPlayer(packet.target());
         String invalid = validate(sender, target, action);
         if (invalid != null) { message(sender, invalid); return; }
-        if (target.getPersistentData().getBoolean(action == Interaction.CARRY ? DENY_CARRY : DENY_KISS)) {
-            message(sender, "not_accepting"); return;
-        }
+        var preferences=preferencesOf(target);var policy=preferences.policy(action);
+        if(policy==Consent.BLOCK){message(sender,"not_accepting");return;}
+        if(requests.busy(sender.getUUID()) || requests.busy(target.getUUID())){message(sender,"busy_request");return;}
+        if(policy.automatic(preferences.trusted.contains(sender.getUUID()))){startInteraction(sender,target,action);return;}
         int duration = CoupleConfig.REQUEST_SECONDS.get() * 20;
         RequestBook.Request request = requests.create(sender.getUUID(), target.getUUID(), action, ticks + duration);
         if (request == null) { message(sender, "busy_request"); return; }
@@ -107,25 +115,18 @@ public final class CoupleServer {
         // A menu may remain open while players move, die, sleep or change dimensions.
         String invalid = validate(sender, recipient, request.action());
         if (invalid != null) { message(sender, invalid); message(recipient, invalid); return; }
-        if (recipient.getPersistentData().getBoolean(request.action() == Interaction.CARRY ? DENY_CARRY : DENY_KISS)) {
-            message(sender, "not_accepting"); return;
-        }
-        if (request.action() == Interaction.CARRY) {
-            if (!beginCarry(sender, recipient)) { message(sender, "mount_failed"); message(recipient, "mount_failed"); }
-        } else {
-            CoupleNetwork.KissEffect effect = new CoupleNetwork.KissEffect(sender.getUUID(), recipient.getUUID());
-            for (ServerPlayer observer : sender.serverLevel().players()) {
-                if (observer.distanceToSqr(sender) <= 32 * 32 || observer == recipient) send(observer, effect);
-            }
-            message(sender, "kissed", recipient.getDisplayName());
-            message(recipient, "kissed", sender.getDisplayName());
-        }
+        if(preferencesOf(recipient).policy(request.action())==Consent.BLOCK){message(sender,"not_accepting");return;}
+        startInteraction(sender,recipient,request.action());
     }
-
-    public static void preferences(ServerPlayer player, CoupleNetwork.Preferences p) {
-        player.getPersistentData().putBoolean(DENY_CARRY, !p.carry());
-        player.getPersistentData().putBoolean(DENY_KISS, !p.kiss());
-        if (!p.carry() || !p.kiss()) cancelRequest(player);
+    private static void startInteraction(ServerPlayer sender,ServerPlayer recipient,Interaction action){
+        boolean success=action==Interaction.CARRY?beginCarry(sender,recipient):SocialSessions.begin(sender,recipient,action);
+        if(!success){message(sender,"mount_failed");message(recipient,"mount_failed");}
+        else {cancelRequest(sender);cancelRequest(recipient);if(action!=Interaction.CARRY){message(sender,"started_"+action.name().toLowerCase(java.util.Locale.ROOT),recipient.getDisplayName());message(recipient,"started_"+action.name().toLowerCase(java.util.Locale.ROOT),sender.getDisplayName());}}
+    }
+    public static void preferences(ServerPlayer player,CoupleNetwork.Preferences packet){
+        var p=PlayerPreferences.read(packet.data());player.getPersistentData().putString("CivitatumCouplePreferences",p.json());cancelRequest(player);
+        var social=SocialSessions.state(player.getUUID());if(social!=null && p.policy(Interaction.fromWire(social.action()))==Consent.BLOCK)SocialSessions.end(player.getUUID());
+        var carry=pairs.get(player.getUUID());if(carry!=null){if(p.policy(Interaction.CARRY)==Consent.BLOCK)end(player,"released");else broadcast(carry,true);}
     }
 
     public static String validate(ServerPlayer sender, ServerPlayer target, Interaction action) {
@@ -135,8 +136,10 @@ public final class CoupleServer {
         double reach = CoupleConfig.REACH.get();
         if (sender.distanceToSqr(target) > reach * reach || !sender.hasLineOfSight(target)) return "too_far";
         if (sender.isSleeping() || target.isSleeping()) return "unavailable";
-        if (action == Interaction.KISS) return CoupleConfig.ALLOW_KISS.get() ? null : "disabled";
-        if (!CoupleConfig.ALLOW_CARRY.get()) return "disabled";
+        boolean allowed=switch(action){case CARRY->CoupleConfig.ALLOW_CARRY.get();case KISS->CoupleConfig.ALLOW_KISS.get();case HUG->CoupleConfig.ALLOW_HUG.get();case REST->CoupleConfig.ALLOW_REST.get();default->false;};
+        if(!allowed)return "disabled";
+        if(SocialSessions.active(sender.getUUID()) || SocialSessions.active(target.getUUID()))return "already_carrying";
+        if(action==Interaction.KISS && (CarryHooks.pair(sender,target) || CarryHooks.pair(target,sender)))return null;
         if (pairs.containsKey(sender.getUUID()) || pairs.containsKey(target.getUUID())
                 || sender.isPassenger() || target.isPassenger() || sender.isVehicle() || target.isVehicle()) return "already_carrying";
         if (!sender.onGround() || !target.onGround() || sender.isInWaterOrBubble() || target.isInWaterOrBubble()
@@ -174,6 +177,7 @@ public final class CoupleServer {
     }
 
     public static void end(Player member, String reason) {
+        SocialSessions.end(member.getUUID());
         Pair pair = pairs.get(member.getUUID());
         if (pair == null || pair.closing) return;
         pair.closing = true;
@@ -238,7 +242,7 @@ public final class CoupleServer {
     }
 
     @SubscribeEvent public static void tick(ServerTickEvent.Post event) {
-        ticks++;
+        ticks++;SocialSessions.tick();
         for (RequestBook.Request request : requests.expire(ticks)) {
             ServerPlayer recipient = event.getServer().getPlayerList().getPlayer(request.recipient());
             ServerPlayer sender = event.getServer().getPlayerList().getPlayer(request.sender());
@@ -264,8 +268,31 @@ public final class CoupleServer {
                 Vec3 safe = findDismount(a, b);
                 if (safe != null) pair.lastSafe = safe;
             }
-            if (!a.level().noCollision(b, b.getBoundingBox().deflate(0.02))) end(a, "obstructed");
+            if (obstructed(pair)) end(a, "obstructed");
         }
+    }
+
+    private static boolean obstructed(Pair pair) {
+        var mode = CoupleConfig.CARRY_OBSTACLE_MODE.get();
+        if (mode == CoupleConfig.ObstacleMode.OFF) { pair.obstructedTicks = 0; return false; }
+        var passenger = pair.passenger;
+        var box = passenger.getBoundingBox().deflate(0.02);
+        if (mode == CoupleConfig.ObstacleMode.STRICT) {
+            pair.obstructedTicks = 0;
+            return !passenger.level().noCollision(passenger, box);
+        }
+        double inset = CoupleConfig.CARRY_OBSTACLE_TOLERANCE.get() * passenger.getScale();
+        double xInset = Math.min(inset, (box.maxX - box.minX) * 0.4);
+        double zInset = Math.min(inset, (box.maxZ - box.minZ) * 0.4);
+        // Feet, hands and a one-block step may touch while the carrier approaches or jumps.
+        // Only sustained obstruction of the upper central body triggers a relaxed release.
+        double floor = pair.carrier.getY() + Math.max(1.05, 1.05 * pair.carrier.getScale());
+        double bottom = Math.max(box.minY + Math.min(inset, 0.15 * passenger.getScale()), floor);
+        if (bottom >= box.maxY) { pair.obstructedTicks = 0; return false; }
+        var probe = new net.minecraft.world.phys.AABB(box.minX + xInset, bottom, box.minZ + zInset,
+                box.maxX - xInset, box.maxY, box.maxZ - zInset);
+        if (passenger.level().noCollision(passenger, probe)) { pair.obstructedTicks = 0; return false; }
+        return ++pair.obstructedTicks >= CoupleConfig.CARRY_OBSTACLE_GRACE.get();
     }
 
     @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent event) {
@@ -274,7 +301,7 @@ public final class CoupleServer {
             p.stopRiding(); p.getPersistentData().remove(CARRY_MARK); p.refreshDimensions();
         }
         var speed = p.getAttribute(Attributes.MOVEMENT_SPEED);
-        if (speed != null) speed.removeModifier(CoupleInteractions.id("carrying"));
+        if (speed != null) {speed.removeModifier(CoupleInteractions.id("carrying"));speed.removeModifier(CoupleInteractions.id("social_pose"));}
     }
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) {
@@ -285,18 +312,20 @@ public final class CoupleServer {
         Player p = event.getEntity(), old = event.getOriginal();
         p.getPersistentData().putBoolean(DENY_CARRY, old.getPersistentData().getBoolean(DENY_CARRY));
         p.getPersistentData().putBoolean(DENY_KISS, old.getPersistentData().getBoolean(DENY_KISS));
+        p.getPersistentData().putString("CivitatumCouplePreferences",preferencesOf(old).json());
         if (old instanceof ServerPlayer s) { cancelRequest(s); end(s, null); }
     }
     @SubscribeEvent public static void tracking(PlayerEvent.StartTracking event) {
         if (event.getEntity() instanceof ServerPlayer watcher && event.getTarget() instanceof Player target) {
             Pair pair = pairs.get(target.getUUID());
-            if (pair != null) send(watcher, new CoupleNetwork.CarryState(pair.carrier.getUUID(), pair.passenger.getUUID(), true));
+            if (pair != null) send(watcher, new CoupleNetwork.CarryState(pair.carrier.getUUID(), pair.passenger.getUUID(), true,preferencesOf(pair.passenger).pose.json()));
+            SocialSessions.tracking(watcher,target.getUUID());
         }
     }
     @SubscribeEvent public static void dimension(EntityTravelToDimensionEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) beforeTeleport(p);
     }
-    public static void beforeTeleport(ServerPlayer p) { cancelRequest(p); end(p, null); }
+    public static void beforeTeleport(ServerPlayer p) { if(SocialSessions.positioning())return;cancelRequest(p);end(p,null); }
     @SubscribeEvent public static void death(LivingDeathEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) { cancelRequest(p); end(p, null); }
     }
@@ -335,7 +364,7 @@ public final class CoupleServer {
         for (Pair pair : new HashSet<>(pairs.values())) end(pair.carrier, null);
         clear();
     }
-    private static void clear() { pairs.clear(); requests = new RequestBook(); lastRelease.clear(); ticks = 0; }
+    private static void clear() { SocialSessions.clear();pairs.clear(); requests = new RequestBook(); lastRelease.clear(); ticks = 0; }
 
     private static void cancelRequest(ServerPlayer member) {
         RequestBook.Request request = requests.cancel(member.getUUID());
@@ -344,11 +373,11 @@ public final class CoupleServer {
         if (recipient != null) send(recipient, new CoupleNetwork.ClearInvitation(request.id()));
     }
     private static void broadcast(Pair pair, boolean active) {
-        var packet = new CoupleNetwork.CarryState(pair.carrier.getUUID(), pair.passenger.getUUID(), active);
+        var packet = new CoupleNetwork.CarryState(pair.carrier.getUUID(), pair.passenger.getUUID(), active,preferencesOf(pair.passenger).pose.json());
         // State transitions only. All clients receive cleanup even if they stopped tracking the pair.
         for (ServerPlayer p : pair.carrier.server.getPlayerList().getPlayers()) send(p, packet);
     }
-    private static void send(ServerPlayer player, CustomPacketPayload payload) {
+    public static void send(ServerPlayer player, CustomPacketPayload payload) {
         if (!(player instanceof FakePlayer) && player.connection != null && !player.hasDisconnected()) PacketDistributor.sendToPlayer(player, payload);
     }
     private static void message(ServerPlayer player, String key, Object... args) {
