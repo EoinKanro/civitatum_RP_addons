@@ -2,6 +2,6 @@ modLoader="javafml"
 loaderVersion="[4,)"
 license="MIT"
 [[mods]]
-modId="inventory_smoke"
+modId="civitatum_smoke"
 version="1"
-displayName="Development-only inventory checks"
+displayName="Civitatum development checks"

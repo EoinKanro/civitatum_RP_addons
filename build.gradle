@@ -2,38 +2,40 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev' version '2.0.148'
 }
-version = '0.4.1'
-group = 'ru.teacraft.inventory'
-base { archivesName = 'civitatum-inventory-1.21.1' }
+version = '0.2.0'
+group = 'ru.teacraft.civitatum'
+base { archivesName = 'civitatum-races-1.21.1' }
 java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 repositories { mavenCentral() }
 neoForge {
     version = '21.1.256'
     runs {
-        client { client(); programArguments.addAll '--username', 'InventoryTest', '--width', '1440', '--height', '900' }
+        client { client(); programArguments.addAll '--username', 'CivitatumTest', '--width', '1440', '--height', '900' }
         server { server(); programArgument '--nogui' }
-        gameTestServer { type = 'gameTestServer'; systemProperty 'neoforge.enabledGameTestNamespaces', 'inventory_smoke' }
+        gameTestServer { type = 'gameTestServer'; systemProperty 'neoforge.enabledGameTestNamespaces', 'civitatum' }
     }
-    mods { civitatum_inventory { sourceSet(sourceSets.main) } }
+    mods { civitatum { sourceSet(sourceSets.main) } }
+}
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+    testImplementation 'com.mojang:datafixerupper:8.0.16'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }
-tasks.named('jar', Jar) { from('LICENSE.txt') }
+tasks.named('test', Test) { useJUnitPlatform() }
+tasks.named('jar', Jar) { from('LICENSE.txt'); from('NOTICE.txt') }
+
+// Automated in-game checks and screenshots are development-only.
 if (project.hasProperty('smoke')) {
     sourceSets { smoke {} }
     configurations.smokeImplementation.extendsFrom configurations.implementation
     sourceSets.smoke.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
     sourceSets.smoke.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
-    neoForge.mods { inventory_smoke { sourceSet(sourceSets.smoke) } }
+    neoForge.mods { civitatum_smoke { sourceSet(sourceSets.smoke) } }
+    neoForge.runs.gameTestServer { systemProperty 'neoforge.enabledGameTestNamespaces', 'civitatum_smoke' }
 }
-if (project.hasProperty('racesJar')) { dependencies { runtimeOnly files(project.property('racesJar')) } }
-def compatDirectory = project.findProperty('compatDir') ?: '../compat-reference'
-if (project.hasProperty('compat')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'camping.jar', 'curios.jar', 'xaeros-world-map.jar', 'xaerolib.jar' } } }
-if (project.hasProperty('accessories')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'accessories.jar', 'owo-lib.jar' } } }
-if (project.hasProperty('aether')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'aether.jar', 'owo-lib.jar' } } }
-if (project.hasProperty('apothic')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'apothic-attributes.jar', 'placebo.jar' } } }
-if (project.hasProperty('revisionSmoke')) { neoForge.runs.client.systemProperty 'inventory.smoke.revision', 'true' }
-if (project.hasProperty('compatOnly')) { neoForge.runs.client.systemProperty 'inventory.smoke.compatOnly', 'true' }
-if (project.hasProperty('accessoriesOnly')) { neoForge.runs.client.systemProperty 'inventory.smoke.accessoriesOnly', 'true' }
-
-if (project.hasProperty('ars')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'ars-nouveau.jar', 'geckolib.jar', 'curios.jar' } } }
-if (project.hasProperty('updateSmoke')) { neoForge.runs.client.systemProperty 'inventory.smoke.update', 'true' }
+if (project.hasProperty('female')) {
+    dependencies { runtimeOnly files(project.findProperty('femaleJar') ?: 'libs/FemaleGenderMod.jar') }
+}
