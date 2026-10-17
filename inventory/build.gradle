@@ -2,6 +2,7 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev'
 }
+
 version = '0.4.1'
 neoForge {
     runs {
@@ -10,7 +11,7 @@ neoForge {
     }
     mods { civitatum_inventory { sourceSet(sourceSets.main) } }
 }
-tasks.named('jar', Jar) { from(rootProject.file('LICENSE.txt')) }
+
 if (project.hasProperty('racesJar')) { dependencies { runtimeOnly files(project.property('racesJar')) } }
 def compatDirectory = project.findProperty('compatDir') ?: "${rootDir}/../compat-reference"
 if (project.hasProperty('compat')) { dependencies { runtimeOnly fileTree(compatDirectory) { include 'camping.jar', 'curios.jar', 'xaeros-world-map.jar', 'xaerolib.jar' } } }

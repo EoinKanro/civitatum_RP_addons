@@ -31,6 +31,11 @@ subprojects {
         tasks.withType(Test).configureEach {
             useJUnitPlatform()
         }
+
+        // every mod jar carries the repository's licence
+        tasks.named('jar', Jar) {
+            from(rootProject.file('LICENSE.txt'))
+        }
     }
 
     plugins.withId('net.neoforged.moddev') {
