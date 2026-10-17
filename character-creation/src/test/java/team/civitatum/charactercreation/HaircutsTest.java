@@ -21,7 +21,7 @@ class HaircutsTest {
             }
             variants++;
         }
-        assertEquals(38,variants);assertTrue(transitions>500);
+        assertEquals(46,variants);assertTrue(transitions>500); // 9 gradient + 14 single-colour styles with shade maps, two models each
     }
     @Test void linkedSecondaryColorsFollowTheMainHueAndRetainIndependentAccessories() {
         for(String id:List.of("hc_fall_leaves","hc_tangled","hc_blonde","hc_moonlit")){

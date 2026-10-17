@@ -1,6 +1,1388 @@
 {
   "entries": [
     {
+      "id": "black_long",
+      "name": "Black Long Hair",
+      "linked_shades": true,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Все волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#4D4D4D"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Оттенок волос",
+          "affects_ru": "Тени и более тёмные пряди",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#090909"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/black_long/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/black_long/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "candied_love",
+      "name": "Candied Love",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#CB8658"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Завязка косы",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#FBD9BE"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/candied_love/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/candied_love/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "hair_base_1_2",
+      "name": "Hair Base 1-2",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#935746"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Розовый бант",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#F0CDD5"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/hair_base_1_2/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/hair_base_1_2/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "blond_12_1",
+      "name": "Blond 12-1",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#FEEEC5"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Светлые завязки",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#E6D7D3"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/blond_12_1/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/blond_12_1/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "blond_16_1",
+      "name": "Blond 16-1",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#FEEEC5"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Зелёные завязки",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#C9E1B9"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/blond_16_1/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/blond_16_1/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "black_base_2",
+      "name": "Black Base 2",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#535353"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Светлые завязки",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#EAE5E3"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/black_base_2/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/black_base_2/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "long_auburn",
+      "name": "Long Auburn",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#773434"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Розовые декоративные вставки",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#C47C7C"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/long_auburn/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/long_auburn/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "pumpkin_spice",
+      "name": "Pumpkin Spice",
+      "linked_shades": true,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Все волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#F5CAA6"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Оттенок волос",
+          "affects_ru": "Тени и более тёмные пряди",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#EEAC75"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/pumpkin_spice/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/pumpkin_spice/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "shaggy_hooligan",
+      "name": "Shaggy Hooligan",
+      "linked_shades": true,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Все волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#3E2D2D"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Оттенок волос",
+          "affects_ru": "Тени и более тёмные пряди",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#2D1F1F"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/shaggy_hooligan/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/shaggy_hooligan/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "steve_weird",
+      "name": "Steve Weird Hair",
+      "linked_shades": true,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Все волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#422A12"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Оттенок волос",
+          "affects_ru": "Тени и более тёмные пряди",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#251809"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/steve_weird/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/steve_weird/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "tone_mask_main.png",
+            "decor_1": "tone_mask_decor_1.png"
+          },
+          "gradient_blending": {
+            "neutral": "tone_neutral.png",
+            "masks": {
+              "main": "tone_blend_main.png",
+              "decor_1": "tone_blend_decor_1.png"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "loose_plat",
+      "name": "Loose Plat",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Волосы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#A1E5E4"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Светлая завязка косы",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#ABEAE5"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/loose_plat/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/loose_plat/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "ombre_wreath",
+      "name": "Ombre + Wreath",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Основной цвет волос",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#AC8859"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Мелирование и светлые концы",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#D5C664"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            },
+            {
+              "label_ru": "Голубой",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Розовый",
+              "rgb": "#C36D8C"
+            },
+            {
+              "label_ru": "Сиреневый",
+              "rgb": "#A085CC"
+            }
+          ]
+        },
+        "decor_2": {
+          "label_ru": "Цвет декораций 2",
+          "affects_ru": "Весь венок",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#FFE165"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/ombre_wreath/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png",
+            "decor_2": "mask_decor_2.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/ombre_wreath/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png",
+            "decor_2": "mask_decor_2.png"
+          }
+        }
+      }
+    },
+    {
+      "id": "ponytail_streak",
+      "name": "Ponytail Streak",
+      "linked_shades": false,
+      "controls": {
+        "main": {
+          "label_ru": "Цвет волос",
+          "affects_ru": "Все волосы, включая передние пряди",
+          "kind": "hair",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#D4AFA3"
+            },
+            {
+              "label_ru": "Чёрный",
+              "rgb": "#353237"
+            },
+            {
+              "label_ru": "Каштановый",
+              "rgb": "#78513B"
+            },
+            {
+              "label_ru": "Красно-каштановый",
+              "rgb": "#9E5144"
+            },
+            {
+              "label_ru": "Рыжий",
+              "rgb": "#C17A42"
+            },
+            {
+              "label_ru": "Блонд",
+              "rgb": "#E4CC91"
+            },
+            {
+              "label_ru": "Серебристый",
+              "rgb": "#D9DDE2"
+            }
+          ]
+        },
+        "decor_1": {
+          "label_ru": "Цвет декораций 1",
+          "affects_ru": "Золотистая завязка",
+          "kind": "decor",
+          "palette": [
+            {
+              "label_ru": "Исходный",
+              "rgb": "#C78F5C"
+            },
+            {
+              "label_ru": "Бордовый",
+              "rgb": "#A94763"
+            },
+            {
+              "label_ru": "Светлый льняной",
+              "rgb": "#E5D9BB"
+            },
+            {
+              "label_ru": "Синий",
+              "rgb": "#6285BB"
+            },
+            {
+              "label_ru": "Зелёный",
+              "rgb": "#6D9668"
+            },
+            {
+              "label_ru": "Золотистый",
+              "rgb": "#C3A36C"
+            }
+          ]
+        }
+      },
+      "models": {
+        "slim": {
+          "directory": "assets/civitatum/textures/character/haircuts/ponytail_streak/slim",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        },
+        "classic": {
+          "directory": "assets/civitatum/textures/character/haircuts/ponytail_streak/classic",
+          "textures": {
+            "original": "original.png",
+            "neutral": "neutral.png"
+          },
+          "masks": {
+            "main": "mask_main.png",
+            "decor_1": "mask_decor_1.png"
+          }
+        }
+      }
+    },
+    {
       "id": "hc_beige",
       "name": "Beige",
       "linked_shades": false,
