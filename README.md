@@ -17,7 +17,10 @@
 ```
 ./gradlew build                          # все моды, с проверками; jar в <модуль>/build/libs
 ./gradlew :inventory:build               # один мод
+./gradlew :inventory:installToInstance   # собрать и положить в папку mods своей игры
 ```
+
+Для `installToInstance` один раз укажите путь к своей игре в `instanceDir` в личном `~/.gradle/gradle.properties` (на Windows — `C:\Users\<имя>\.gradle\gradle.properties`), примеры — в `gradle.properties` проекта. Задача удаляет из `mods` прежние версии этого мода и кладёт новую; если игра запущена, Windows не даст удалить старый jar — закройте игру.
 
 В IntelliJ IDEA открывается этот корневой каталог: все моды оказываются в одном окне.
 

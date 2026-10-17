@@ -54,4 +54,39 @@ subprojects {
             }
         }
     }
+
+    // Builds the jar and puts it into a local game instance, replacing older versions of the same mod.
+    tasks.register('installToInstance') {
+        group = 'modpack'
+        description = 'Builds the jar, removes older versions of it from the instance mods folder and puts the new one there.'
+
+        def jar = tasks.named('jar', Jar)
+        // the game's minecraft folder: instanceDir, absolute or relative to the user's home (see gradle.properties)
+        def modsDir = providers.gradleProperty('instanceDir').map { path ->
+            def dir = new File(path)
+            new File(dir.isAbsolute() ? dir : new File(System.getProperty('user.home'), path), 'mods')
+        }
+        dependsOn jar
+
+        doLast {
+            if (!modsDir.isPresent()) {
+                throw new GradleException('Set instanceDir in ~/.gradle/gradle.properties (see the root gradle.properties)')
+            }
+            def mods = modsDir.get()
+            if (!mods.isDirectory()) throw new GradleException("No mods folder at ${mods} - check instanceDir")
+            def newJar = jar.get().archiveFile.get().asFile
+            // older versions: <archivesName>-<version starting with a digit>.jar
+            def prefix = java.util.regex.Pattern.quote(jar.get().archiveBaseName.get())
+            mods.listFiles()
+                .findAll { it.isFile() && it.name ==~ /${prefix}-\d.*\.jar/ }
+                .each { old ->
+                    // on Windows a jar cannot be deleted while the game that loaded it is running
+                    if (!old.delete()) throw new GradleException("Could not remove ${old} - is the game still running?")
+                    logger.lifecycle("removed ${old.name}")
+                }
+            java.nio.file.Files.copy(newJar.toPath(), new File(mods, newJar.name).toPath(),
+                    java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            logger.lifecycle("installed ${newJar.name} into ${mods}")
+        }
+    }
 }
