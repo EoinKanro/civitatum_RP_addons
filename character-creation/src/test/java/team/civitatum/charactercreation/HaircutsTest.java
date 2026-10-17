@@ -9,16 +9,6 @@ import java.util.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class HaircutsTest {
-    @Test void everyImportedOriginalStillMatchesTheUploadedBytes() throws Exception {
-        var hashes=JsonParser.parseReader(new InputStreamReader(getClass().getResourceAsStream("/appearance/hair_v2_verification.json"))).getAsJsonObject();
-        assertEquals(56,hashes.size());
-        for(var item:hashes.entrySet()){
-            var split=item.getKey().split("/");var variant=AppearanceCatalog.hair(split[0]).models().get(split[1]);
-            try(var input=getClass().getResourceAsStream("/assets/civitatum/"+variant.directory()+"/original.png")){
-                assertEquals(item.getValue().getAsString(),HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(input.readAllBytes())),item.getKey());
-            }
-        }
-    }
     @Test void gradientWeightsAreCompleteAndKeepAuthoredAlphaSeparate() throws Exception {
         int variants=0,transitions=0;
         for(var hair:AppearanceCatalog.hair())for(var v:hair.models().values())if(v.gradient()!=null){

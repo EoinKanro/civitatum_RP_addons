@@ -21,7 +21,7 @@ public final class AppearanceCatalog {
     private static final Map<String,Asset> HAIR=new LinkedHashMap<>(), CLOTHES=new LinkedHashMap<>();
     private static final Map<String,Outfit> OUTFITS=new LinkedHashMap<>();
     static {
-        for(String set:List.of("hair","hair_v2"))for(var e:read(set)) {var o=e.getAsJsonObject();var a=asset(o.get("id").getAsString(),o.get("name").getAsString(),"any","",o);if(HAIR.put(a.id,a)!=null)throw new IllegalStateException("Duplicate hair: "+a.id);}
+        for(String set:List.of("hairstyles","haircuts"))for(var e:read(set)) {var o=e.getAsJsonObject();var a=asset(o.get("id").getAsString(),o.get("name").getAsString(),"any","",o);if(HAIR.put(a.id,a)!=null)throw new IllegalStateException("Duplicate hair: "+a.id);}
         for(var e:read("clothing")) {
             var o=e.getAsJsonObject();String id=o.get("id").getAsString(), name=o.get("name").getAsString(), gender=o.get("gender").getAsString();
             var items=new ArrayList<String>();

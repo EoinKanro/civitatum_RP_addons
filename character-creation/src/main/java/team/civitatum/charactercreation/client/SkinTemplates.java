@@ -40,14 +40,14 @@ public final class SkinTemplates {
             if (c.usePlayerSkin)
                 AppearanceTextures.remapArms(image, original.model() == PlayerSkin.Model.SLIM ? 3 : 4, model.equals("slim") ? 3 : 4);
             else
-                AppearanceTextures.paint(image, "textures/character/skin/base_07/" + model + "/original.png", "textures/character/skin/base_07/" + model + "/neutral.png",
-                        Map.of("textures/character/skin/base_07/" + model + "/mask_skin.png", c.skinOriginal ? -1 : race.color("skin", c.skin)), 0);
+                AppearanceTextures.paint(image, "textures/character/skin/" + model + "/original.png", "textures/character/skin/" + model + "/neutral.png",
+                        Map.of("textures/character/skin/" + model + "/mask_skin.png", c.skinOriginal ? -1 : race.color("skin", c.skin)), 0);
             // Skin -> race markings -> underwear -> eyes -> clothes -> facial hair -> hair.
             tattoos(image, emission, c, race);
             String underwear = "textures/character/underwear/underwear_" + (c.female() ? "fem" : "male") + ".png";
             AppearanceTextures.underwear(image, emission, underwear, UNDERWEAR_COLORS[c.underwearColor], UnderwearVisibility.of(c));
             if (!c.usePlayerSkin) {
-                String path = "textures/character/eyes/pmc_eyes/" + model;
+                String path = "textures/character/eyes/" + model;
                 var colors = new LinkedHashMap<String, Integer>();
                 colors.put(path + "/mask_iris.png", c.eyesOriginal ? -1 : race.color("eyes", c.eyes));
                 colors.put(path + "/mask_upper_contour.png", hairColor(c));

@@ -98,9 +98,24 @@ Female Gender Mod 3.2.2 необязателен и не включён в JAR: 
 
 Тесты в `src/test` в JAR не входят.
 
-- `tools/import_haircuts.py <архив>` повторно импортирует набор причёсок, сохраняя исходные PNG.
-- `./gradlew :character-creation:generateFacialHair` заново рисует текстуры бород и усов (`textures/character/facial_hair`). Узоры заданы в генераторе `src/tools/java/.../FacialHairTextures.java`; в JAR он не входит.
-- Исходные каталоги и сведения об ассетах — `src/main/resources/appearance/`.
+## Генерация текстур
+
+Текстуры персонажа и каталоги в `src/main/resources` не правятся руками: их пишут генераторы на Java (`src/tools/java`, в JAR не входят). Вход генераторов лежит в `input/`: исходные скины с PlanetMinecraft и метаданные с ручными настройками.
+
+| Задача | Вход | Результат |
+|---|---|---|
+| `generateSkin` | `input/skin/` | `textures/character/skin/` |
+| `generateEyes` | `input/eyes/` | `textures/character/eyes/` |
+| `generateHaircuts` | `input/haircuts/` | `textures/character/haircuts/`, `appearance/haircuts.json` |
+| `generateClothing` | `input/clothing/` | `textures/character/clothing/`, `appearance/clothing.json` |
+| `generateFacialHair` | узоры в коде генератора | `textures/character/facial_hair/` |
+| `generateTextures` | все сразу | |
+
+Запуск: `./gradlew :character-creation:generateHaircuts` или `main` генератора прямо из IDE (рабочая папка — `character-creation`). Каждый генератор перед записью очищает только свою папку.
+
+Метаданные — JSON рядом с исходниками, с пояснениями в поле `_help`. В них правила, которые раскладывают пиксели скина по цветовым полям, например `"when": "g > r && g > b", "zone": "decor_1"`: правила проверяются по порядку, побеждает первое подходящее. В условиях доступны каналы цвета `r g b`, яркость `lum`, тон и насыщенность `h s v`, положение `x y`, часть тела `group face surface row`.
+
+Готовыми файлами, без генератора, остаются 13 причёсок первого набора (`textures/character/hairstyles/`, `appearance/hairstyles.json`): их исходников нет. Сведения об авторах наборов — `input/*/CREDITS.md`.
 
 ## Лицензия
 
