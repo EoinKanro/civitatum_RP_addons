@@ -108,7 +108,7 @@ Female Gender Mod 3.2.2 необязателен и не включён в JAR: 
 | `generateEyes` | `input/eyes/` | `textures/character/eyes/` |
 | `generateHaircuts` | `input/haircuts/` | `textures/character/haircuts/`, `appearance/haircuts.json` |
 | `generateClothing` | `input/clothing/` | `textures/character/clothing/`, `appearance/clothing.json` |
-| `generateFacialHair` | узоры в коде генератора | `textures/character/facial_hair/` |
+| `generateFacialHair` | `input/facial_hair/` | `textures/character/facial_hair/` |
 | `generateTextures` | все сразу | |
 
 Запуск: `./gradlew :character-creation:generateHaircuts` или `main` генератора прямо из IDE (рабочая папка — `character-creation`). Каждый генератор перед записью очищает только свою папку.
