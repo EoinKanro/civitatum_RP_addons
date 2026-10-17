@@ -17,7 +17,6 @@
 ```
 ./gradlew build                          # все моды, с проверками; jar в <модуль>/build/libs
 ./gradlew :inventory:build               # один мод
-./gradlew :character-creation:runClient  # запустить игру с одним модом
 ```
 
 В IntelliJ IDEA открывается этот корневой каталог: все моды оказываются в одном окне.
@@ -26,7 +25,8 @@
 
 - `settings.gradle` — список модулей и версия плагина ModDevGradle;
 - `gradle.properties` — настройки Gradle и версия NeoForge (`neo_version`) для всех модов;
-- `build.gradle` — общее для всех модов: Java 21, кодировка UTF-8, Maven Central, версия NeoForge;
-- `<модуль>/build.gradle` — своё у каждого мода: версия, имя jar, запуски, тестовые наборы и необязательные зависимости.
+- `build.gradle` — общее для всех модов: Java 21, кодировка UTF-8, Maven Central, версия NeoForge, JUnit 5, группа `team.civitatum`, имя jar `civitatum-<модуль>-<версия>.jar`, лицензия в jar;
+- `<модуль>/build.gradle` — только своё у мода: плагины и собственные зависимости;
+- `<модуль>/src/main/resources/META-INF/neoforge.mods.toml` — modId и версия мода; Gradle берёт их отсюда.
 
 Исходники собраны из веток `codex/civitatum-inventory`, `codex/ccc/development` и `codex/cci/development` (версии 0.4.1, 0.4.2 и 0.2.0-alpha.1); эти ветки — родители коммита объединения, их история доступна из `main`.

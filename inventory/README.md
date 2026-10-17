@@ -64,11 +64,7 @@
 
 ```sh
 ./gradlew :inventory:build
-./gradlew :inventory:runClient
-./gradlew :inventory:runClient -Pcompat -Paccessories -Paether -Papothic -Pars -PcompatDir=/путь/к/модам
 ```
-
-Флаги `-Pcompat`, `-Paccessories`, `-Paether`, `-Papothic`, `-Pars` добавляют в запускаемую игру совместимые моды. Их JAR ожидаются в `compatDir` (по умолчанию `compat-reference` рядом с репозиторием): `camping.jar`, `curios.jar`, `accessories.jar`, `owo-lib.jar`, `aether.jar`, `apothic-attributes.jar`, `placebo.jar`, `xaeros-world-map.jar`, `xaerolib.jar`, `ars-nouveau.jar`, `geckolib.jar`. Civitatum Character Creation добавляется через `-PracesJar=/абсолютный/путь.jar`.
 
 `tools/create_ui_texture.py` заново генерирует каменный фон окон `textures/gui/stone.png`.
 

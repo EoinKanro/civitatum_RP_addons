@@ -3,9 +3,15 @@ plugins {
     id 'net.neoforged.moddev' apply false
 }
 
-// Settings shared by every mod. Each module's build.gradle keeps its own version, runs and extras.
+// Settings shared by every mod. Each module's build.gradle keeps only its own extras.
 subprojects {
     group = 'team.civitatum'
+
+    // mod id and version live in neoforge.mods.toml only (the first modId/version after [[mods]])
+    def modsToml = file('src/main/resources/META-INF/neoforge.mods.toml').text
+    def modsSection = modsToml.substring(modsToml.indexOf('[[mods]]'))
+    def modId = (modsSection =~ /(?m)^\s*modId\s*=\s*"([^"]+)"/)[0][1]
+    version = (modsSection =~ /(?m)^\s*version\s*=\s*"([^"]+)"/)[0][1]
 
     // the jar: civitatum-<module name>-<version>.jar
     plugins.withId('base') {
@@ -20,6 +26,8 @@ subprojects {
         java.toolchain.languageVersion = JavaLanguageVersion.of(21)
         tasks.withType(JavaCompile).configureEach {
             options.encoding = 'UTF-8'
+            // no Mixin annotation processor: NeoForge 1.21.1 runs on official names, the mixins need no refmap
+            options.compilerArgs << '-proc:none'
         }
 
         // unit tests: JUnit 5 in src/test, run by `test` (and so by `build`)
@@ -41,6 +49,9 @@ subprojects {
     plugins.withId('net.neoforged.moddev') {
         neoForge {
             version = neo_version
+            mods {
+                "${modId}" { sourceSet sourceSets.main }
+            }
         }
     }
 }

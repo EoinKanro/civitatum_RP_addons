@@ -2,7 +2,6 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev'
 }
-version = '0.2.0-alpha.1'
 
 repositories {
     maven { url = 'https://maven.kosmx.dev/' }
@@ -12,16 +11,3 @@ dependencies {
     compileOnly 'dev.kosmx.player-anim:player-animation-lib-forge:2.0.1+1.21.1'
     testImplementation 'com.google.code.gson:gson:2.10.1'
 }
-
-neoForge {
-    runs {
-        client { client(); programArguments.addAll '--username', 'CoupleDev', '--width', '1280', '--height', '800' }
-        server { server(); programArgument '--nogui' }
-    }
-    mods { civitatum_couple { sourceSet(sourceSets.main) } }
-}
-
-if (project.hasProperty('ciJar')) { dependencies { runtimeOnly files(project.property('ciJar')) } }
-if (project.hasProperty('curiosJar')) { dependencies { runtimeOnly files(project.property('curiosJar')) } }
-if (project.hasProperty('emotecraftJar')) { dependencies { runtimeOnly files(project.property('emotecraftJar')) } }
-if (project.hasProperty('cccJar')) { dependencies { runtimeOnly files(project.property('cccJar')) } }

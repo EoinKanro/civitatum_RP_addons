@@ -2,20 +2,8 @@ plugins {
     id 'java-library'
     id 'net.neoforged.moddev'
 }
-version = '0.4.2'
 
-neoForge {
-    runs {
-        client { client(); programArguments.addAll '--username', 'CivitatumTest', '--width', '1440', '--height', '900' }
-        server { server(); programArgument '--nogui' }
-    }
-    mods { civitatum { sourceSet(sourceSets.main) } }
-}
 dependencies {
     testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation 'com.mojang:datafixerupper:8.0.16'
-}
-
-if (project.hasProperty('female')) {
-    dependencies { runtimeOnly files(project.findProperty('femaleJar') ?: 'libs/FemaleGenderMod.jar') }
 }

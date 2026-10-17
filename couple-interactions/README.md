@@ -71,10 +71,8 @@ carryObstacleTolerance = 0.3
 
 ```sh
 ./gradlew :couple-interactions:build
-./gradlew :couple-interactions:runClient
-./gradlew :couple-interactions:runClient -PemotecraftJar=/path/to/emotecraft.jar -PcccJar=/path/to/ccc.jar
 ```
 
-`build` запускает юнит-тесты логики (`src/test`, JUnit 5). Параметры `-PemotecraftJar`, `-PcccJar`, `-PciJar`, `-PcuriosJar` добавляют в запускаемую игру необязательные моды для проверки совместимости.
+`build` запускает юнит-тесты логики (`src/test`, JUnit 5).
 
 Лицензия — MIT, см. `LICENSE.txt` в корне репозитория.

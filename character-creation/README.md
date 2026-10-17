@@ -93,9 +93,7 @@ Female Gender Mod 3.2.2 необязателен и не включён в JAR: 
 Из корня репозитория:
 
 ```sh
-./gradlew :character-creation:build      # сборка и тесты
-./gradlew :character-creation:runClient  # игра с модом
-./gradlew :character-creation:runClient -Pfemale -PfemaleJar=/path/to/FemaleGenderMod.jar
+./gradlew :character-creation:build   # сборка и тесты
 ```
 
 Тесты в `src/test` в JAR не входят.

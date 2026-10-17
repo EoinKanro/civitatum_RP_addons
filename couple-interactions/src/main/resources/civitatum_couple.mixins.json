@@ -3,7 +3,18 @@
   "minVersion": "0.8",
   "package": "team.civitatum.coupleinteractions.mixin",
   "compatibilityLevel": "JAVA_21",
-  "mixins": ["EntityCarryMixin", "PlayerDimensionsMixin", "ServerPlayerTeleportMixin"],
-  "client": ["HumanoidPoseMixin", "PlayerRendererMixin", "CameraMixin", "HeldItemMixin"],
-  "injectors": {"defaultRequire": 1}
+  "mixins": [
+    "EntityCarryMixin",
+    "PlayerDimensionsMixin",
+    "ServerPlayerTeleportMixin"
+  ],
+  "client": [
+    "HumanoidPoseMixin",
+    "PlayerRendererMixin",
+    "CameraMixin",
+    "HeldItemMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
 }
