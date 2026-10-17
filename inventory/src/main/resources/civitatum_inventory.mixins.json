@@ -1,7 +1,7 @@
 {
   "required": true,
   "minVersion": "0.8",
-  "package": "ru.teacraft.inventory.mixin",
+  "package": "team.civitatum.inventory.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
     "SlotPositionAccessor"

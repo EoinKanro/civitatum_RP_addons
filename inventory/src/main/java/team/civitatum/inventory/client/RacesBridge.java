@@ -14,14 +14,14 @@ public final class RacesBridge {
     public static Details read(Player player) {
         if (failed || !ModList.get().isLoaded("civitatum")) return null;
         try {
-            var client = Class.forName("ru.teacraft.civitatum.client.ClientCharacters");
+            var client = Class.forName("team.civitatum.charactercreation.client.ClientCharacters");
             var state = client.getMethod("state", Player.class).invoke(null,player);
             if(state==null)return null;
             var character = state.getClass().getMethod("character").invoke(state);
             if(character==null)return null;
             if (!(boolean) character.getClass().getField("selected").get(character)) return null;
             String id = field(character,"race");
-            var definition = Class.forName("ru.teacraft.civitatum.RaceCatalog").getMethod("get",String.class).invoke(null,id);
+            var definition = Class.forName("team.civitatum.charactercreation.RaceCatalog").getMethod("get",String.class).invoke(null,id);
             long until = ((Number)state.getClass().getMethod("cooldownUntil").invoke(state)).longValue();
             String sign = optionalField(character,"constellation");
             if (sign.isBlank()) sign = optionalField(character,"birthsign");
@@ -38,7 +38,7 @@ public final class RacesBridge {
     public static void activate() {
         if(failed || !ModList.get().isLoaded("civitatum")) return;
         try {
-            var payload=Class.forName("ru.teacraft.civitatum.RaceNetwork$Serverbound")
+            var payload=Class.forName("team.civitatum.charactercreation.RaceNetwork$Serverbound")
                 .getConstructor(int.class,long.class,String.class).newInstance(1,0L,"");
             PacketDistributor.sendToServer((CustomPacketPayload)payload);
         } catch (ReflectiveOperationException | RuntimeException ex) { LogUtils.getLogger().warn("Civitatum Inventory: could not request ability",ex); }
