@@ -9,6 +9,11 @@ import java.util.Locale;
 import java.util.Random;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.GenericMessageScreen;
+import net.minecraft.client.gui.screens.LevelLoadingScreen;
+import net.minecraft.client.gui.screens.ProgressScreen;
+import net.minecraft.client.gui.screens.ReceivingLevelScreen;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundEvent;
@@ -57,7 +62,7 @@ public final class MenuMusic {
 
     public static void tick(Minecraft minecraft) {
         if (session) {
-            if (minecraft.level == null && minecraft.getConnection() == null && MenuConfig.current.enabled) {
+            if (inMenu(minecraft) && MenuConfig.current.enabled) {
                 if (!MenuConfig.current.music
                     || MenuConfig.current.musicVolume <= 0.0
                     || minecraft.options.getSoundSourceVolume(SoundSource.MASTER) <= 0.0F
@@ -101,6 +106,17 @@ public final class MenuMusic {
                 SeasonalTitleScreen.releaseBackground(minecraft);
             }
         }
+    }
+
+    /**
+     * The menu ends as soon as a world or server starts loading, not only once the level exists: the game stops all
+     * sounds while loading, and the stopped track must not be taken for a broken one or restarted on the loading screen.
+     */
+    private static boolean inMenu(Minecraft minecraft) {
+        return minecraft.level == null && minecraft.getConnection() == null
+            && !(minecraft.screen instanceof LevelLoadingScreen || minecraft.screen instanceof ReceivingLevelScreen
+                || minecraft.screen instanceof ConnectScreen || minecraft.screen instanceof GenericMessageScreen
+                || minecraft.screen instanceof ProgressScreen);
     }
 
     public static String label() {
