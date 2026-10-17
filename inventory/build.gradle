@@ -3,8 +3,6 @@ plugins {
     id 'net.neoforged.moddev'
 }
 version = '0.4.1'
-group = 'ru.teacraft.inventory'
-base { archivesName = 'civitatum-inventory-1.21.1' }
 neoForge {
     runs {
         client { client(); programArguments.addAll '--username', 'InventoryTest', '--width', '1440', '--height', '900' }

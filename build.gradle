@@ -5,6 +5,13 @@ plugins {
 
 // Settings shared by every mod. Each module's build.gradle keeps its own version, runs and extras.
 subprojects {
+    group = 'team.civitatum'
+
+    // the jar: civitatum-<module name>-<version>.jar
+    plugins.withId('base') {
+        project.base.archivesName = "civitatum-${project.name}"
+    }
+
     repositories {
         mavenCentral()
     }

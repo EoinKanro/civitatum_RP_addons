@@ -3,8 +3,6 @@ plugins {
     id 'net.neoforged.moddev'
 }
 version = '0.4.2'
-group = 'ru.teacraft.civitatum'
-base { archivesName = 'civitatum-character-creation-1.21.1' }
 neoForge {
     runs {
         client { client(); programArguments.addAll '--username', 'CivitatumTest', '--width', '1440', '--height', '900' }

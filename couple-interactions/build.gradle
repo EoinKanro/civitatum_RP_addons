@@ -3,8 +3,6 @@ plugins {
     id 'net.neoforged.moddev'
 }
 version = '0.2.0-alpha.1'
-group = 'team.civitatum.couple'
-base { archivesName = 'civitatum-couple-interactions-1.21.1' }
 repositories { maven { url = 'https://maven.kosmx.dev/' } }
 dependencies { compileOnly 'dev.kosmx.player-anim:player-animation-lib-forge:2.0.1+1.21.1' }
 dependencies { testImplementation 'com.google.code.gson:gson:2.10.1' }
