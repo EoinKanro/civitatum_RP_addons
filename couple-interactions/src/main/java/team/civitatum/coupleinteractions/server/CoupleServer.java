@@ -2,6 +2,7 @@ package team.civitatum.coupleinteractions.server;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
@@ -45,6 +46,10 @@ public final class CoupleServer {
     private static RequestBook requests = new RequestBook();
     private static final Map<UUID, Pair> pairs = new HashMap<>();
     private static final Map<UUID, Long> lastRelease = new HashMap<>();
+    // Preferences are applied at most once per PREFERENCES_INTERVAL; the newest early upload waits for its turn.
+    private static final int PREFERENCES_INTERVAL = 10;
+    private static final Map<UUID, Long> lastPreferences = new HashMap<>();
+    private static final Map<UUID, CoupleNetwork.Preferences> pendingPreferences = new HashMap<>();
     private static long ticks;
     private static final String CARRY_MARK = "CivitatumCoupleCarried";
     private static final String DENY_CARRY = "CivitatumCoupleDenyCarry";
@@ -123,6 +128,8 @@ public final class CoupleServer {
         else {cancelRequest(sender);cancelRequest(recipient);if(action!=Interaction.CARRY){message(sender,"started_"+action.name().toLowerCase(java.util.Locale.ROOT),recipient.getDisplayName());message(recipient,"started_"+action.name().toLowerCase(java.util.Locale.ROOT),sender.getDisplayName());}}
     }
     public static void preferences(ServerPlayer player,CoupleNetwork.Preferences packet){
+        if(ticks-lastPreferences.getOrDefault(player.getUUID(),Long.MIN_VALUE/2)<PREFERENCES_INTERVAL){pendingPreferences.put(player.getUUID(),packet);return;}
+        lastPreferences.put(player.getUUID(),ticks);pendingPreferences.remove(player.getUUID());
         var p=PlayerPreferences.read(packet.data());player.getPersistentData().putString("CivitatumCouplePreferences",p.json());cancelRequest(player);
         var social=SocialSessions.state(player.getUUID());if(social!=null && p.policy(Interaction.fromWire(social.action()))==Consent.BLOCK)SocialSessions.end(player.getUUID());
         var carry=pairs.get(player.getUUID());if(carry!=null){if(p.policy(Interaction.CARRY)==Consent.BLOCK)end(player,"released");else broadcast(carry,true);}
@@ -249,6 +256,12 @@ public final class CoupleServer {
             if (sender != null) message(sender, "expired");
         }
         lastRelease.entrySet().removeIf(e -> e.getValue() < ticks - 20);
+        for (var entry : List.copyOf(pendingPreferences.entrySet())) {
+            if (ticks - lastPreferences.getOrDefault(entry.getKey(), Long.MIN_VALUE / 2) < PREFERENCES_INTERVAL) continue;
+            ServerPlayer player = event.getServer().getPlayerList().getPlayer(entry.getKey());
+            if (player == null) pendingPreferences.remove(entry.getKey()); else preferences(player, entry.getValue());
+        }
+        lastPreferences.entrySet().removeIf(e -> e.getValue() < ticks - PREFERENCES_INTERVAL && !pendingPreferences.containsKey(e.getKey()));
         for (Pair pair : new HashSet<>(pairs.values())) {
             var a = pair.carrier; var b = pair.passenger;
             if (a.isRemoved() || b.isRemoved() || !a.isAlive() || !b.isAlive() || a.level() != b.level()
@@ -305,6 +318,7 @@ public final class CoupleServer {
     @SubscribeEvent public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
         if (event.getEntity() instanceof ServerPlayer p) {
             cancelRequest(p); end(p, null); requests.forget(p.getUUID());
+            lastPreferences.remove(p.getUUID()); pendingPreferences.remove(p.getUUID());
         }
     }
     @SubscribeEvent public static void clonePlayer(PlayerEvent.Clone event) {
@@ -363,7 +377,7 @@ public final class CoupleServer {
         for (Pair pair : new HashSet<>(pairs.values())) end(pair.carrier, null);
         clear();
     }
-    private static void clear() { SocialSessions.clear();pairs.clear(); requests = new RequestBook(); lastRelease.clear(); ticks = 0; }
+    private static void clear() { SocialSessions.clear();pairs.clear(); requests = new RequestBook(); lastRelease.clear(); lastPreferences.clear(); pendingPreferences.clear(); ticks = 0; }
 
     private static void cancelRequest(ServerPlayer member) {
         RequestBook.Request request = requests.cancel(member.getUUID());
