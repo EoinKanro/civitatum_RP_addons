@@ -83,11 +83,14 @@ public final class CompatPatches {
         if(!ModConfig.INSTANCE.koboldsPatch || p.tickCount%100!=0) return;
         long now=RaceService.time(p);
         var history=p.getPersistentData().getCompound(GIFT_KEY);
+        long cooldown=ModConfig.INSTANCE.koboldPairCooldownSeconds*20L;
+        // An expired entry behaves exactly like a missing one; dropping it keeps gone kobolds out of the player's NBT.
+        for(String key:List.copyOf(history.getAllKeys())) if(now-history.getLong(key)>=cooldown) history.remove(key);
         for(Mob mob : p.serverLevel().getEntitiesOfClass(Mob.class,p.getBoundingBox().inflate(5),m ->
             BuiltInRegistries.ENTITY_TYPE.getKey(m.getType()).getNamespace().equals("kobolds"))) {
             String key=mob.getUUID().toString();
             long last=history.getLong(key);
-            if(last!=0 && now-last<ModConfig.INSTANCE.koboldPairCooldownSeconds*20L) continue;
+            if(last!=0 && now-last<cooldown) continue;
             history.putLong(key,now);
             if(p.getRandom().nextFloat()>.25f) continue;
             var item=switch(p.getRandom().nextInt(6)) {
