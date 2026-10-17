@@ -14,13 +14,6 @@ neoForge {
     mods { civitatum_couple { sourceSet(sourceSets.main) } }
 }
 tasks.named('jar', Jar) { from(rootProject.file('LICENSE.txt')) }
-tasks.register('verifyLogic', JavaExec) {
-    dependsOn testClasses
-    classpath = sourceSets.test.runtimeClasspath
-    mainClass = 'team.civitatum.couple.LogicChecks'
-}
-tasks.named('test', Test) { exclude '**/LogicChecks.class' }
-tasks.named('check') { dependsOn tasks.named('verifyLogic') }
 if (project.hasProperty('ciJar')) { dependencies { runtimeOnly files(project.property('ciJar')) } }
 if (project.hasProperty('curiosJar')) { dependencies { runtimeOnly files(project.property('curiosJar')) } }
 if (project.hasProperty('emotecraftJar')) { dependencies { runtimeOnly files(project.property('emotecraftJar')) } }

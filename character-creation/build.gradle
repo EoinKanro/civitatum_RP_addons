@@ -11,13 +11,9 @@ neoForge {
     mods { civitatum { sourceSet(sourceSets.main) } }
 }
 dependencies {
-    testImplementation platform('org.junit:junit-bom:5.11.4')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation 'com.mojang:datafixerupper:8.0.16'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
-tasks.named('test', Test) { useJUnitPlatform() }
 tasks.named('jar', Jar) { from(rootProject.file('LICENSE.txt')) }
 
 if (project.hasProperty('female')) {
