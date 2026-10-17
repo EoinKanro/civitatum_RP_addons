@@ -7,3 +7,16 @@ dependencies {
     testImplementation 'com.google.code.gson:gson:2.10.1'
     testImplementation 'com.mojang:datafixerupper:8.0.16'
 }
+
+// Generators for the mod's textures; not part of the mod jar.
+sourceSets {
+    tools
+}
+
+tasks.register('generateFacialHair', JavaExec) {
+    group = 'tools'
+    description = 'Regenerates the beard and mustache textures, textures/character/facial_hair/*.png.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.charactercreation.tools.FacialHairTextures'
+    workingDir = projectDir
+}

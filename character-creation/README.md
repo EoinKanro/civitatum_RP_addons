@@ -99,7 +99,7 @@ Female Gender Mod 3.2.2 необязателен и не включён в JAR: 
 Тесты в `src/test` в JAR не входят.
 
 - `tools/import_haircuts.py <архив>` повторно импортирует набор причёсок, сохраняя исходные PNG.
-- `tools/prepare_facial_hair.py` подготавливает текстуры и SVG-исходники бород и усов из `art/facial_hair`.
+- `./gradlew :character-creation:generateFacialHair` заново рисует текстуры бород и усов (`textures/character/facial_hair`). Узоры заданы в генераторе `src/tools/java/.../FacialHairTextures.java`; в JAR он не входит.
 - Исходные каталоги и сведения об ассетах — `src/main/resources/appearance/`.
 
 ## Лицензия
