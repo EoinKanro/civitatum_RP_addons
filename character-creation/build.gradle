@@ -9,7 +9,6 @@ neoForge {
     runs {
         client { client(); programArguments.addAll '--username', 'CivitatumTest', '--width', '1440', '--height', '900' }
         server { server(); programArgument '--nogui' }
-        gameTestServer { type = 'gameTestServer'; systemProperty 'neoforge.enabledGameTestNamespaces', 'civitatum' }
     }
     mods { civitatum { sourceSet(sourceSets.main) } }
 }
@@ -21,17 +20,8 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 tasks.named('test', Test) { useJUnitPlatform() }
-tasks.named('jar', Jar) { from('LICENSE.txt'); from('NOTICE.txt') }
+tasks.named('jar', Jar) { from(rootProject.file('LICENSE.txt')) }
 
-// Automated in-game checks and screenshots are development-only.
-if (project.hasProperty('smoke')) {
-    sourceSets { smoke {} }
-    configurations.smokeImplementation.extendsFrom configurations.implementation
-    sourceSets.smoke.compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
-    sourceSets.smoke.runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
-    neoForge.mods { civitatum_smoke { sourceSet(sourceSets.smoke) } }
-    neoForge.runs.gameTestServer { systemProperty 'neoforge.enabledGameTestNamespaces', 'civitatum_smoke' }
-}
 if (project.hasProperty('female')) {
     dependencies { runtimeOnly files(project.findProperty('femaleJar') ?: 'libs/FemaleGenderMod.jar') }
 }

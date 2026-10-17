@@ -1,6 +1,6 @@
 modLoader="javafml"
 loaderVersion="[4,)"
-license="See LICENSE.txt"
+license="MIT"
 
 [[mods]]
 modId="civitatum_couple"
