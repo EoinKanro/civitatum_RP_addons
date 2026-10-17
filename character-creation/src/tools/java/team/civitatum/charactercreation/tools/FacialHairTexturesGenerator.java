@@ -18,7 +18,7 @@ import javax.imageio.ImageIO;
  * without arguments it writes into the module's resources, relative to the working directory (the
  * {@code character-creation} module folder, the IDE's default). An argument overrides the output folder.
  */
-public final class FacialHairTextures {
+public final class FacialHairTexturesGenerator {
     private static final int SIZE = 64;
     private static final Path DEFAULT_OUTPUT = Path.of("src/main/resources/assets/civitatum/textures/character/facial_hair");
 
@@ -44,7 +44,7 @@ public final class FacialHairTextures {
     private record Style(List<String> face, List<String> chest) {
     }
 
-    private FacialHairTextures() {
+    private FacialHairTexturesGenerator() {
     }
 
     public static void main(String[] args) throws IOException {

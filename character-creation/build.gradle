@@ -17,6 +17,6 @@ tasks.register('generateFacialHair', JavaExec) {
     group = 'tools'
     description = 'Regenerates the beard and mustache textures, textures/character/facial_hair/*.png.'
     classpath = sourceSets.tools.runtimeClasspath
-    mainClass = 'team.civitatum.charactercreation.tools.FacialHairTextures'
+    mainClass = 'team.civitatum.charactercreation.tools.FacialHairTexturesGenerator'
     workingDir = projectDir
 }
