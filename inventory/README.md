@@ -64,8 +64,9 @@
 
 ```sh
 ./gradlew :inventory:build
+./gradlew :inventory:generateStoneTexture   # заново нарисовать каменный фон окон textures/gui/stone.png
 ```
 
-`tools/create_ui_texture.py` заново генерирует каменный фон окон `textures/gui/stone.png`.
+Генератор фона лежит в `src/tools/java` и в jar мода не входит. Шум берётся из `java.util.Random` с постоянным зерном, поэтому каждый запуск рисует одну и ту же картинку.
 
 Код и собственные текстуры — MIT, см. `LICENSE.txt` в корне репозитория; оригинальные ресурсы Morrowind и сторонние моды не включены.
