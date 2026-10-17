@@ -5,14 +5,20 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-/** Sparse Emotecraft tracks from the supplied idle.json, with its return tick and quadratic easing. */
+/**
+ * Sparse Emotecraft tracks from the supplied idle.json, with its return tick and quadratic easing.
+ *
+ * <p>The file is read straight from the jar, so it must not lie in {@code assets/<namespace>/animations/}: GeckoLib
+ * loads every JSON in such folders of every mod as one of its animations, and a file in another format makes it drop
+ * all GeckoLib animations of every mod.
+ */
 public final class IdleAnimation {
     private record Key(float tick,float value) {}
     private static final Map<String,List<Key>> TRACKS=new LinkedHashMap<>();
     public static final float BEGIN,RETURN,END;
     public static final float PLAYBACK_RATE=.5f,HOLD_TICKS=40;
     static {
-        try(var in=IdleAnimation.class.getResourceAsStream("/assets/civitatum/animations/idle.json")) {
+        try(var in=IdleAnimation.class.getResourceAsStream("/emote/idle.json")) {
             var emote=JsonParser.parseReader(new InputStreamReader(Objects.requireNonNull(in),StandardCharsets.UTF_8)).getAsJsonObject().getAsJsonObject("emote");
             BEGIN=emote.get("beginTick").getAsFloat();RETURN=emote.get("returnTick").getAsFloat();END=emote.get("endTick").getAsFloat();
             boolean degrees=emote.get("degrees").getAsBoolean();

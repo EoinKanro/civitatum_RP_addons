@@ -39,7 +39,7 @@ public final class ServerEvents {
         var config=Commands.literal("configreload").requires(s -> s.hasPermission(2)).executes(c -> {
             ModConfig.load();for(var p:c.getSource().getServer().getPlayerList().getPlayers()) {RaceService.apply(p);RaceNetwork.sync(p);}return 1;
         });
-        e.getDispatcher().register(Commands.literal("civitatum").then(race).then(config));
+        e.getDispatcher().register(Commands.literal("emote").then(race).then(config));
     }
     @SubscribeEvent public static void login(PlayerEvent.PlayerLoggedInEvent e) {
         if (!(e.getEntity() instanceof ServerPlayer p)) return;

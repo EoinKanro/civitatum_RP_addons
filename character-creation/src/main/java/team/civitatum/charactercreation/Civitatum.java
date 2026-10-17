@@ -12,7 +12,7 @@ import net.minecraft.world.item.Item;
 
 @Mod(Civitatum.ID)
 public final class Civitatum {
-    public static final String ID = "civitatum";
+    public static final String ID = "emote";
     public static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     public static final Logger LOGGER = LogUtils.getLogger();
     private static final DeferredRegister<AttachmentType<?>> ATTACHMENTS = DeferredRegister.create(NeoForgeRegistries.ATTACHMENT_TYPES, ID);
