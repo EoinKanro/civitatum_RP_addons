@@ -22,8 +22,6 @@ final class BookSession {
     boolean processingImage;
     long rateWindow;
     int receivedBytes;
-    long sentWindow;
-    int sentBytes;
 
     BookSession(UUID book, int slot, BlockPos lectern, ResourceKey<Level> dimension, BookDocument document) {
         this.book = book;
