@@ -249,7 +249,14 @@ public final class BookServer {
             throw new IllegalArgumentException("session");
         }
         LecternBlockEntity lectern = (LecternBlockEntity) player.level().getBlockEntity(session.lectern);
-        if (!player.getInventory().add(lectern.getBook().copy())) throw new IllegalArgumentException("inventory_full");
+        ItemStack remaining = lectern.getBook().copy();
+        player.getInventory().add(remaining);
+        // Inventory.add may insert only part of a modified stack; retain the exact remainder.
+        if (!remaining.isEmpty()) {
+            lectern.setBook(remaining);
+            markChanged(player, session.lectern);
+            throw new IllegalArgumentException("inventory_full");
+        }
         lectern.setBook(ItemStack.EMPTY);
         LecternBlock.resetBookState(player, player.level(), session.lectern, player.level().getBlockState(session.lectern), false);
         markChanged(player, session.lectern);

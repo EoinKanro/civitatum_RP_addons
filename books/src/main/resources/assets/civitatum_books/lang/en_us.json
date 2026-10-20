@@ -51,5 +51,7 @@
   "books.error.upload_order": "Transfer interrupted. Save again.",
   "books.error.upload_size": "Transfer size limit exceeded.",
   "books.error.timeout": "Server did not reply. A local draft has been saved.",
-  "books.error.failed": "Operation failed. A local draft has been saved."
+  "books.error.failed": "Operation failed. A local draft has been saved.",
+  "books.undo": "Undo",
+  "books.redo": "Redo"
 }

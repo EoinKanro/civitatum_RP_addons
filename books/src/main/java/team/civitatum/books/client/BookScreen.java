@@ -51,6 +51,7 @@ public final class BookScreen extends Screen {
     private boolean closeAfterSave;
     private boolean draggingText;
     private boolean resizingImage;
+    private ImageBox resizeOrigin;
     private boolean imageSelected;
     private boolean firstLayout = true;
     private int sidebarStart;
@@ -143,9 +144,9 @@ public final class BookScreen extends Screen {
             control(398, 61, 28, Component.literal("+"), () -> fontSize(1), editor.currentPage().fontSize < 14, false);
             button(434, 61, 96, "align_" + editor.currentPage().alignment, () -> mutate(() ->
                     editor.currentPage().alignment = (editor.currentPage().alignment + 1) % 3, true), true);
-            control(540, 61, 34, Component.literal("↶"), this::undo, true, false);
-            control(580, 61, 34, Component.literal("↷"), this::redo, true, false);
-            button(626, 61, 136, "add_png", this::importImage, true);
+            button(536, 61, 58, "undo", this::undo, true);
+            button(600, 61, 58, "redo", this::redo, true);
+            button(664, 61, 98, "add_png", this::importImage, true);
             if (recovery != null) button(872, 61, 108, "recover", this::recover, true);
         }
         button(770, 61, 93, "search", this::searchDialog, true);
@@ -194,7 +195,7 @@ public final class BookScreen extends Screen {
         drawPage(graphics, spread() + 1, PAGE_LEFT + PAGE_WIDTH + 8);
         graphics.fill(564, PAGE_TOP + 1, 572, PAGE_TOP + PAGE_HEIGHT - 1, 0xff9c835f);
         graphics.drawCenteredString(font, Component.translatable("books.page_count", editor.page + 1, editor.document.pages.size()), 526, 563, 0xffe3cd9e);
-        Component visibleStatus = busy ? text("saving") : status;
+        Component visibleStatus = status;
         graphics.drawString(font, font.plainSubstrByWidth(visibleStatus.getString(), 382), 20, 564, saveFailed ? 0xffffb0a0 : 0xffd6c09a, false);
         buildControls();
         float localMouseX = localX(mouseX);
@@ -389,6 +390,7 @@ public final class BookScreen extends Screen {
             if (editing() && x > box.x + box.width - 14 && y > box.y + box.height - 14) {
                 editor.remember();
                 resizingImage = true;
+                resizeOrigin = box;
             }
         } else {
             editor.cursor = hit(page, pageX, x, y);
@@ -404,7 +406,7 @@ public final class BookScreen extends Screen {
         BookPage page = editor.currentPage();
         int pageX = PAGE_LEFT + editor.page % 2 * (PAGE_WIDTH + 8);
         if (resizingImage && editing()) {
-            ImageBox box = imageBox(page, pageX);
+            ImageBox box = resizeOrigin;
             page.imageWidth = Math.clamp((localX(mouseX) - box.x) / BookEditor.PAGE_WIDTH, 0.25f, 1f);
             page.imageHeight = Math.clamp((int) (localY(mouseY) - box.y), 40, 240);
             return true;
