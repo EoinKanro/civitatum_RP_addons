@@ -1,0 +1,24 @@
+modLoader="javafml"
+loaderVersion="[4,)"
+license="MIT"
+
+[[mods]]
+modId="civitatum_books"
+version="0.1.0"
+displayName="Civitatum Books"
+authors="Civitatum Team"
+description='''An expanded book reader and editor with rich text, PNG illustrations and server-side storage.'''
+
+[[dependencies.civitatum_books]]
+modId="neoforge"
+type="required"
+versionRange="[21.1.256,)"
+ordering="NONE"
+side="BOTH"
+
+[[dependencies.civitatum_books]]
+modId="minecraft"
+type="required"
+versionRange="[1.21.1]"
+ordering="NONE"
+side="BOTH"
