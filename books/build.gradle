@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+dependencies {
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+}
+
+neoForge {
+    runs {
+        client {
+            client()
+            programArguments.addAll '--username', 'BookDev', '--width', '1600', '--height', '1000'
+        }
+        server {
+            server()
+            programArgument '--nogui'
+        }
+    }
+}
