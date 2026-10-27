@@ -17,6 +17,7 @@ public final class CivitatumHud {
     private static final String APPLESKIN = "appleskin";
     /** Full food bar, as in vanilla. */
     private static final int MAX_FOOD = 20;
+    private static final int FOOD_COLOR = 0xFF718D48, FOOD_PREVIEW = 0xFFB9D98A;
     private static final int BAR_HEIGHT = 9;
     private static final int SLOT = 24;
 
@@ -38,8 +39,8 @@ public final class CivitatumHud {
                 // Armour and experience are shown in the inventory's equipment window instead.
                 || id.equals(VanillaGuiLayers.ARMOR_LEVEL) || id.equals(VanillaGuiLayers.EXPERIENCE_BAR)
                 || id.equals(VanillaGuiLayers.EXPERIENCE_LEVEL)
-                // AppleSkin draws its own layers over the vanilla hearts and food bar; with those hidden they are
-                // left floating in empty space (the exhaustion underlay most visibly, while sprinting).
+                // AppleSkin's own layers sit on the vanilla hearts and food bar and are hidden with them; only its
+                // estimate of the held food is shown, on this HUD's food bar.
                 || id.getNamespace().equals(APPLESKIN)) {
             event.setCanceled(true);
         }
@@ -65,7 +66,14 @@ public final class CivitatumHud {
             int rw = (int) Math.min(w - 4, (w - 4) * mana.reserved());
             g.fill(x + w - 2 - rw, y + 12, x + w - 2, y + 17, 0xBB161C2D);
         }
-        bar(g, x, y + 20, w, player.getFoodData().getFoodLevel(), MAX_FOOD, 0xFF718D48);
+        int level = player.getFoodData().getFoodLevel();
+        bar(g, x, y + 20, w, level, MAX_FOOD, FOOD_COLOR);
+        // The food the held item would restore, flashing past the current level.
+        int restored = AppleSkinBridge.heldHunger(player);
+        if (restored > 0) {
+            int from = fill(w, level, MAX_FOOD), to = fill(w, level + restored, MAX_FOOD);
+            g.fill(x + 2 + from, y + 22, x + 2 + to, y + 27, alpha(FOOD_PREVIEW, flash(mc)));
+        }
         slot(g, player.getMainHandItem(), x + w + 8, y + 2);
         var selected = AbilitySelection.selected(player);
         slot(g, selected == null ? ItemStack.EMPTY : selected.icon(), x + w + 36, y + 2);
@@ -76,13 +84,25 @@ public final class CivitatumHud {
         if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x + w + 64, y + 2);
     }
 
+    /** Pulses between nothing and AppleSkin's flash alpha. */
+    private static float flash(Minecraft mc) {
+        float ticks = mc.gui.getGuiTicks() + mc.getTimer().getGameTimeDeltaPartialTick(false);
+        double wave = (Math.sin(ticks / 4.0) + 1) / 2;
+        return (float) (wave * AppleSkinBridge.flashAlpha());
+    }
+
+    private static int alpha(int color, float alpha) {
+        return (Math.round(Math.clamp(alpha, 0, 1) * 255) << 24) | (color & 0xFFFFFF);
+    }
+
+    private static int fill(int w, double current, double max) {
+        return (int) Math.round((w - 4) * Math.clamp(current / max, 0, 1));
+    }
+
     private static void bar(GuiGraphics g, int x, int y, int w, double current, double max, int color) {
         g.fill(x, y, x + w, y + BAR_HEIGHT, 0xCC17130E);
         MorrowindSkin.frame(g, x, y, w, BAR_HEIGHT, false);
-        if (max > 0) {
-            int filled = (int) Math.round((w - 4) * Math.clamp(current / max, 0, 1));
-            g.fill(x + 2, y + 2, x + 2 + filled, y + 7, color);
-        }
+        if (max > 0) g.fill(x + 2, y + 2, x + 2 + fill(w, current, max), y + 7, color);
     }
 
     private static void slot(GuiGraphics g, ItemStack item, int x, int y) {
