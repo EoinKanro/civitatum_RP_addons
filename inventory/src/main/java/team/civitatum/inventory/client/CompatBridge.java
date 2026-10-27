@@ -59,6 +59,7 @@ public final class CompatBridge {
     private static final Map<Class<?>, Map<String, Object>> FIELDS = new HashMap<>();
     private static long backpackRequestUntil;
     private static Method capabilityOf, shouldRender;
+    private static List<String> armorNames;
     private static boolean wornFailed;
 
     public static boolean loaded(String id) { return ModList.get().isLoaded(id); }
@@ -245,7 +246,11 @@ public final class CompatBridge {
      * containers are synced to the client; this is read where no Accessories menu is open (a backpack, a chest).
      */
     /** A worn accessory: its cosmetic look, the item, and whether Accessories draws that slot on the entity. */
-    public record Worn(ItemStack look, ItemStack item, boolean shown) {}
+    /**
+     * A worn accessory: its cosmetic look, the item, whether Accessories draws that slot on the entity, and for the
+     * armour slot types the armour row (0 head .. 3 feet), else -1.
+     */
+    public record Worn(ItemStack look, ItemStack item, boolean shown, int armor) {}
 
     public static List<Worn> wornAccessories(LivingEntity entity) {
         List<Worn> worn = new ArrayList<>();
@@ -258,13 +263,19 @@ public final class CompatBridge {
             if (capability == null) return worn;
             Method regular = method(containerType, "getAccessories");
             Method cosmetic = method(containerType, "getCosmeticAccessories");
-            for (Object container : ((Map<?, ?>) method(capabilityType, "getContainers").invoke(capability)).values()) {
+            var containers = (Map<?, ?>) method(capabilityType, "getContainers").invoke(capability);
+            for (var entry : containers.entrySet()) {
+                Object container = entry.getValue();
+                int armor = armorNames().indexOf(String.valueOf(entry.getKey()));
                 var items = (Container) regular.invoke(container);
                 var looks = (Container) cosmetic.invoke(container);
                 for (int i = 0; i < items.getContainerSize(); i++) {
                     ItemStack item = items.getItem(i);
                     ItemStack look = i < looks.getContainerSize() ? looks.getItem(i) : ItemStack.EMPTY;
-                    if (!item.isEmpty() || !look.isEmpty()) worn.add(new Worn(look, item, shouldRender(container, i)));
+                    // An armour slot is listed even when empty: hiding it hides the armour itself.
+                    if (armor >= 0 || !item.isEmpty() || !look.isEmpty()) {
+                        worn.add(new Worn(look, item, shouldRender(container, i), armor));
+                    }
                 }
             }
         } catch (ReflectiveOperationException | LinkageError | ClassCastException ex) {
@@ -294,6 +305,40 @@ public final class CompatBridge {
                 .getMethod("shouldRender", int.class);
         }
         return (boolean) shouldRender.invoke(container, index);
+    }
+
+    /**
+     * Row (0 head .. 3 feet) of a cosmetic armour slot of Accessories' experimental menu, or -1. Accessories draws the
+     * item there instead of the worn armour, and a hidden one hides that armour piece.
+     */
+    public static int cosmeticArmor(Slot slot) {
+        if (accessoryItemSlot(slot) || !accessorySlot(slot) || !cosmeticSlot(slot)) return -1;
+        try {
+            return armorNames().indexOf((String) method(slot.getClass(), "slotName").invoke(slot));
+        } catch (ReflectiveOperationException ex) {
+            return -1;
+        }
+    }
+
+    /**
+     * Names of Accessories' armour slot types, head to feet as the equipment window shows them. They are unique slot
+     * types registered at startup, so the names are read from {@code ArmorSlotTypes} rather than spelled out here.
+     * Empty while that fails; the lookup is retried.
+     */
+    private static List<String> armorNames() {
+        if (armorNames != null) return armorNames;
+        try {
+            Class<?> types = type("io.wispforest.accessories.menu.ArmorSlotTypes");
+            var names = new ArrayList<String>();
+            for (String reference : ARMOR_SLOT_TYPES) {
+                Object ref = method(types, reference).invoke(null);
+                names.add((String) method(ref.getClass(), "slotName").invoke(ref));
+            }
+            armorNames = List.copyOf(names);
+            return armorNames;
+        } catch (ReflectiveOperationException | LinkageError | NullPointerException ex) {
+            return List.of();
+        }
     }
 
     public static boolean originalAccessories(AbstractContainerMenu menu) {

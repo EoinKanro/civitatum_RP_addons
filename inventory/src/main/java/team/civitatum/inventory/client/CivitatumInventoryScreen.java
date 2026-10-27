@@ -313,14 +313,29 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             : InventoryPreferences.get().accessoryCosmetics;
     }
 
-    /** Two columns with cosmetics, or for Curios, which lays its slots out in two columns. */
-    private boolean twoAccessoryColumns() {
-        return kind == CompatBridge.Kind.CURIOS || cosmeticsShown();
+    /**
+     * One column of accessories; with cosmetics on, their cosmetic column and the cosmetic armour column on its left.
+     * Curios lays its slots out in two columns.
+     */
+    private int accessoryColumns() {
+        if (kind == CompatBridge.Kind.CURIOS) return 2;
+        if (!cosmeticsShown()) return 1;
+        return hasCosmeticArmor() ? 3 : 2;
     }
 
-    /** Left edge of the main accessory column; the cosmetic column, when shown, is on its left. */
+    /** Accessories' classic menu has no cosmetic armour slots; everywhere else they are shown or viewed. */
+    private boolean hasCosmeticArmor() {
+        return !classicAccessories();
+    }
+
+    /** Left edge of the main accessory column, the rightmost one; the cosmetic columns are on its left. */
     private int mainAccessoryX() {
-        return accessories.x + ACCESSORIES_MARGIN + (twoAccessoryColumns() ? accessoryPitch() + COLUMN_GAP : 0);
+        return accessories.x + ACCESSORIES_MARGIN + (accessoryColumns() - 1) * (accessoryPitch() + COLUMN_GAP);
+    }
+
+    /** Left edge of the accessories' cosmetic column, next to the main one. */
+    private int cosmeticAccessoryX() {
+        return mainAccessoryX() - accessoryPitch() - COLUMN_GAP;
     }
 
     private void togglePowers() {
@@ -365,7 +380,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     /** Equipment sticks to the left of the items window, and the accessories window to the left of equipment. */
     private void dockEquipment() {
-        int cell = accessoryPitch(), columns = twoAccessoryColumns() ? 2 : 1;
+        int cell = accessoryPitch(), columns = accessoryColumns();
         accessories.width = 2 * ACCESSORIES_MARGIN + columns * cell + (columns - 1) * COLUMN_GAP + SCROLL_BAR;
         int aw = accessories.visible ? accessories.width : 0;
         equipment.width = Math.max(equipment.minWidth, Math.min(equipment.width, width - items.width - 8 - aw));
@@ -596,7 +611,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             placeExtraGrid();
         } else if (accessories.visible && (kind == CompatBridge.Kind.ACCESSORIES || kind == CompatBridge.Kind.CURIOS)) {
             if (classicAccessories()) placeClassicAccessories();
-            else if (kind == CompatBridge.Kind.ACCESSORIES) placeAccessoryColumn();
+            else if (kind == CompatBridge.Kind.ACCESSORIES) {
+                placeAccessoryColumn();
+                if (cosmeticsShown()) placeCosmeticArmor();
+            }
             else placeAccessoryGrid();
         }
         if (equipment.visible && hasCraftGrid()) {
@@ -663,7 +681,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** Accessories' own column: rows as the menu scrolled them, the cosmetic column on the left. */
     private void placeClassicAccessories() {
         int cell = accessoryPitch(), shown = CompatBridge.integer(menu, "scrolledIndex", 0);
-        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
+        int main = mainAccessoryX(), left = cosmeticAccessoryX(), top = accessories.y + ACCESSORIES_TOP;
         for (var slot : extraSlots) {
             Integer row = accessoryRows.get(slot);
             if (row == null || row - shown < 0 || row - shown >= CLASSIC_ROWS) continue;
@@ -677,7 +695,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
      */
     private void placeAccessoryColumn() {
         int cell = accessoryPitch();
-        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
+        int main = mainAccessoryX(), left = cosmeticAccessoryX(), top = accessories.y + ACCESSORIES_TOP;
         // The menu adds every accessory as a pair: its cosmetic slot, then the slot itself.
         var rows = new ArrayList<Slot[]>();
         Slot cosmetic = null;
@@ -698,6 +716,18 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             int y = top + r * cell;
             if (cosmetics && row[0] != null) assign(row[0], accessories, left, y);
             assign(row[1], accessories, main, y);
+        }
+    }
+
+    /**
+     * The experimental menu's cosmetic armour slots, head to feet, in the leftmost column. They do not scroll with the
+     * accessory rows: each sits beside the same rows as the armour in the equipment window.
+     */
+    private void placeCosmeticArmor() {
+        int cell = accessoryPitch(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
+        for (var slot : menu.slots) {
+            int row = CompatBridge.cosmeticArmor(slot);
+            if (row >= 0 && slot.isActive()) assign(slot, accessories, left, top + row * cell);
         }
     }
 
@@ -957,37 +987,47 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
      */
     private void renderWornAccessories(GuiGraphics g, int mx, int my) {
         var worn = CompatBridge.wornAccessories(player);
-        accessoryRowCount = worn.size();
-        accessoryMaxRow = Math.max(0, worn.size() - CLASSIC_ROWS);
+        var rows = worn.stream().filter(w -> w.armor() < 0).toList();
+        accessoryRowCount = rows.size();
+        accessoryMaxRow = Math.max(0, rows.size() - CLASSIC_ROWS);
         accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
         int cell = accessoryPitch(), size = Math.round(ITEM * accessoryScale());
-        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
+        int main = mainAccessoryX(), looks = cosmeticAccessoryX(), top = accessories.y + ACCESSORIES_TOP;
         boolean cosmetics = cosmeticsShown(), here = topPane(mx, my) == accessories;
-        for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < worn.size(); r++) {
-            var accessory = worn.get(accessoryRow + r);
+        for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < rows.size(); r++) {
+            var accessory = rows.get(accessoryRow + r);
             int y = top + r * cell;
-            if (cosmetics) renderWorn(g, accessory.look(), accessory.shown(), left, y, size, here, mx, my);
+            if (cosmetics) renderWorn(g, accessory.look(), accessory.shown(), looks, y, size, here, mx, my);
             renderWorn(g, accessory.item(), accessory.shown(), main, y, size, here, mx, my);
+        }
+        if (!cosmetics) return;
+        // Cosmetic armour, head to feet, in the leftmost column.
+        for (var armor : worn) {
+            if (armor.armor() < 0) continue;
+            renderWorn(g, armor.look(), armor.shown(), accessories.x + ACCESSORIES_MARGIN, top + armor.armor() * cell,
+                size, here, mx, my);
         }
     }
 
     private void renderWorn(GuiGraphics g, ItemStack stack, boolean shown, int x, int y, int size, boolean here, int mx,
                             int my) {
         renderSlotFrame(g, x - 1, y - 1, size + 2);
-        if (stack.isEmpty()) return;
-        float scale = size / (float) ITEM;
-        g.pose().pushPose();
-        g.pose().translate(x, y, 0);
-        g.pose().scale(scale, scale, 1);
-        g.renderItem(stack, 0, 0);
-        g.pose().popPose();
+        if (!stack.isEmpty()) {
+            float scale = size / (float) ITEM;
+            g.pose().pushPose();
+            g.pose().translate(x, y, 0);
+            g.pose().scale(scale, scale, 1);
+            g.renderItem(stack, 0, 0);
+            g.pose().popPose();
+        }
+        // Also on an empty armour slot: hiding it hides the armour piece itself.
         if (!shown) {
             g.pose().pushPose();
             g.pose().translate(0, 0, OVERLAY_Z);
             renderHidden(g, x, y, size);
             g.pose().popPose();
         }
-        if (here && mx >= x && mx < x + size && my >= y && my < y + size) {
+        if (!stack.isEmpty() && here && mx >= x && mx < x + size && my >= y && my < y + size) {
             wornHover = stack;
             wornHoverShown = shown;
         }
