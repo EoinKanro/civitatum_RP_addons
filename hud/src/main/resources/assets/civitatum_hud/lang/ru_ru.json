@@ -74,5 +74,12 @@
   "key.civitatum_hud.activate_key": "Применить выбранный дар / заклинание",
   "key.civitatum_hud.next_ability": "Выбрать следующий дар / заклинание",
   "key.civitatum_hud.previous_ability": "Выбрать предыдущий дар / заклинание",
-  "gui.civitatum_hud.hidden_on_body": "Не отображается на персонаже (Ctrl+ПКМ)"
+  "gui.civitatum_hud.hidden_on_body": "Не отображается на персонаже (Ctrl+ПКМ)",
+  "gui.civitatum_hud.settings": "Настройки Civitatum HUD",
+  "gui.civitatum_hud.hotbar": "Хотбар: %s",
+  "gui.civitatum_hud.hotbar.morrowind": "Morrowind",
+  "gui.civitatum_hud.hotbar.classic": "Классический",
+  "gui.civitatum_hud.bars_scale": "Здоровье, мана, сытость: %s%%",
+  "gui.civitatum_hud.hotbar_scale": "Хотбар: %s%%",
+  "gui.civitatum_hud.effects_scale": "Эффекты: %s%%"
 }

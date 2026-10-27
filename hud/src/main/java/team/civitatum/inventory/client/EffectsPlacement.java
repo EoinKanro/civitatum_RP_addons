@@ -37,8 +37,9 @@ final class EffectsPlacement {
         return columns == 0 ? 0 : columns * STEP - (STEP - SIZE);
     }
 
-    static boolean fitsLeftOf(int mapX, int widestCount) {
-        return mapX - GAP - blockWidth(widestCount) >= 0;
+    /** @param scale the effects size setting, applied to the whole block */
+    static boolean fitsLeftOf(int mapX, int widestCount, float scale) {
+        return mapX - GAP - blockWidth(widestCount) * scale >= 0;
     }
 
     /**

@@ -49,9 +49,18 @@ class EffectsPlacementTest {
     @Test
     void blockThatExactlyFitsStaysOnTheLeft() {
         int mapX = EffectsPlacement.GAP + EffectsPlacement.blockWidth(3);
-        assertTrue(EffectsPlacement.fitsLeftOf(mapX, 3));
+        assertTrue(EffectsPlacement.fitsLeftOf(mapX, 3, 1));
         assertEquals(0, EffectsPlacement.x(true, mapX - EffectsPlacement.GAP, 2));
-        assertFalse(EffectsPlacement.fitsLeftOf(mapX - 1, 3));
+        assertFalse(EffectsPlacement.fitsLeftOf(mapX - 1, 3, 1));
+    }
+
+    @Test
+    void scaledBlockNeedsScaledRoom() {
+        int width = EffectsPlacement.blockWidth(3);
+        int mapX = EffectsPlacement.GAP + 2 * width;
+        assertTrue(EffectsPlacement.fitsLeftOf(mapX, 3, 2));
+        assertFalse(EffectsPlacement.fitsLeftOf(mapX - 1, 3, 2));
+        assertTrue(EffectsPlacement.fitsLeftOf(EffectsPlacement.GAP + width / 2, 3, 0.5F));
     }
 
     @Test

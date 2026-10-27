@@ -5,7 +5,7 @@ import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
 
 public final class InventorySlider extends AbstractSliderButton {
-    /** Slot scale moves in 5% steps, transparency in 1% steps. */
+    /** Slot scale moves in 5% steps, transparency and the HUD sizes in 1% steps. */
     private static final double SCALE_STEPS = 20, PERCENT_STEPS = 100;
     private final String label;
     private final double min, max;
