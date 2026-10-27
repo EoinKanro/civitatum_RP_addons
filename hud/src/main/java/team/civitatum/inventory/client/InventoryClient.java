@@ -6,9 +6,11 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.event.ScreenEvent;
@@ -37,6 +39,9 @@ public final class InventoryClient {
             event.register(PREVIOUS);
         });
         mod.addListener(CivitatumHud::register);
+        // Resource packs may replace ParCool's icons; they are recoloured again on the next draw.
+        mod.addListener((RegisterClientReloadListenersEvent event) ->
+            event.registerReloadListener((ResourceManagerReloadListener) manager -> ParCoolEnergyIcons.clear()));
         game.addListener(CivitatumHud::hideReplaced);
         // Last, so the layer is not run here when another listener cancels it.
         game.addListener(EventPriority.LOWEST, CivitatumHud::moveParCoolEnergy);

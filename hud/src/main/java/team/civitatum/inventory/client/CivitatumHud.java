@@ -107,7 +107,7 @@ public final class CivitatumHud {
      * even if a later listener cancels the event.
      */
     public static void moveParCoolEnergy(RenderGuiLayerEvent.Pre event) {
-        if (!event.getName().equals(ParCoolBridge.LAYER) || !active() || !ParCoolBridge.available()) return;
+        if (!event.getName().equals(ParCoolBridge.LAYER) || !placesParCoolEnergy()) return;
         event.setCanceled(true);
         var g = event.getGuiGraphics();
         float fit = Math.min(1, (float) barsWidth(g) / ParCoolBridge.WIDTH);
@@ -118,6 +118,11 @@ public final class CivitatumHud {
         g.pose().translate(-ParCoolBridge.left(g.guiWidth()), -ParCoolBridge.top(g.guiHeight(), rightHeight), 0);
         event.getLayer().render(g, event.getPartialTick());
         g.pose().popPose();
+    }
+
+    /** Whether ParCool's stamina row is drawn above the bars, rather than where ParCool puts it. */
+    public static boolean placesParCoolEnergy() {
+        return active() && ParCoolBridge.available();
     }
 
     private static int barsWidth(GuiGraphics g) {

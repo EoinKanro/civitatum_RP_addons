@@ -26,9 +26,19 @@ type="optional"
 versionRange="[26.6.0,)"
 ordering="NONE"
 side="CLIENT"
+[[dependencies.civitatum_hud]]
+modId="parcool"
+type="optional"
+versionRange="[4.0.1.2,)"
+ordering="NONE"
+side="CLIENT"
 [[mixins]]
 config="civitatum_hud.mixins.json"
 # the effects next to the minimap: applied only with Xaero's Minimap installed
 [[mixins]]
 config="civitatum_hud.xaero.mixins.json"
 requiredMods=["xaerominimap"]
+# the stamina icons in the HUD's colours: applied only with ParCool installed
+[[mixins]]
+config="civitatum_hud.parcool.mixins.json"
+requiredMods=["parcool"]

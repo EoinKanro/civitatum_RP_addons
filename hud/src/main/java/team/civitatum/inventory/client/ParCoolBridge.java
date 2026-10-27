@@ -40,6 +40,14 @@ public final class ParCoolBridge {
         return guiWidth / 2 + HOTBAR_HALF + offsetX.get() - WIDTH;
     }
 
+    /**
+     * The icon's x with the row mirrored. ParCool puts its first icon at the right end of the row, so the row empties
+     * from left to right; mirrored, it empties from right to left. The icons themselves are not flipped.
+     */
+    public static int mirror(int guiWidth, int x, int iconWidth) {
+        return 2 * left(guiWidth) + WIDTH - iconWidth - x;
+    }
+
     public static int top(int guiHeight, int rightHeight) {
         return guiHeight - rightHeight + offsetY.get();
     }
