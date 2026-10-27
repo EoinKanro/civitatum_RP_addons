@@ -43,7 +43,7 @@ public final class CivitatumMenu {
 
     private void initialized(ScreenEvent.Init.Post event) {
         if (event.getScreen() instanceof SeasonalTitleScreen) {
-            ModsMenu.removeForeignModsButtons(event);
+            ForeignButtons.remove(event);
         }
     }
 

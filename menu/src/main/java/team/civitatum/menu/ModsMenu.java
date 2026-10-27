@@ -3,12 +3,10 @@ package team.civitatum.menu;
 import com.terraformersmc.mod_menu.gui.ModsScreen;
 import com.terraformersmc.mod_menu.gui.widget.ModMenuButtonWidget;
 import com.terraformersmc.mod_menu.gui.widget.UpdateCheckerTexturedButtonWidget;
-import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.screens.Screen;
 import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.client.event.ScreenEvent;
 import net.neoforged.neoforge.client.gui.ModListScreen;
 
 /** Opens the Better ModList screen when that mod is present, otherwise the NeoForge mod list. */
@@ -27,16 +25,9 @@ public final class ModsMenu {
     /**
      * Better ModList adds its own mods button (a gear or a text button, by its config) to every {@code TitleScreen},
      * our subclass included, next to our button that already opens its screen.
-     * Must run after Better ModList's own {@code ScreenEvent.Init.Post} listener.
      */
-    public static void removeForeignModsButtons(ScreenEvent.Init.Post event) {
-        if (isBetterModListLoaded()) {
-            for (GuiEventListener widget : List.copyOf(event.getListenersList())) {
-                if (BetterModList.isModsButton(widget)) {
-                    event.removeListener(widget);
-                }
-            }
-        }
+    public static boolean isBetterModListButton(GuiEventListener widget) {
+        return isBetterModListLoaded() && BetterModList.isModsButton(widget);
     }
 
     private static boolean isBetterModListLoaded() {

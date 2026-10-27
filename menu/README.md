@@ -19,9 +19,20 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 
 Better ModList добавляет свою кнопку модов (по умолчанию шестерёнку) на любой `TitleScreen`, в том числе на наш экран, поэтому кнопок модов было две. Наша кнопка при этом открывала список модов NeoForge, а не экран Better ModList.
 
-Теперь, если Better ModList установлен, кнопка «Моды» открывает его экран, а его кнопки (`ModMenuButtonWidget` и `UpdateCheckerTexturedButtonWidget`) убираются с нашего экрана обработчиком `ScreenEvent.Init.Post` с приоритетом `LOWEST`, то есть после его собственного. Без Better ModList кнопка открывает список модов NeoForge, как раньше.
+Теперь, если Better ModList установлен, кнопка «Моды» открывает его экран, а его кнопки (`ModMenuButtonWidget` и `UpdateCheckerTexturedButtonWidget`) убираются с нашего экрана. Без Better ModList кнопка открывает список модов NeoForge, как раньше.
 
 Сверено с Better ModList 21.1.4.
+
+## Чужие кнопки на главном экране
+
+Другие моды тоже ставят свои кнопки на любой `TitleScreen`:
+
+- Supplementaries — шестерёнку `ConfigButton` (настройка `configs_button`), которая при `configs_button_opens_mod_list = true` открывает ещё один список модов;
+- Cumulus (входит в The Aether) — кнопку «Menu List» в правом верхнем углу (настройка `enable_menu_list_button`).
+
+Обе убираются с нашего экрана вместе с кнопками Better ModList — обработчиком `ScreenEvent.Init.Post` с приоритетом `LOWEST`, то есть после их собственных (у всех трёх приоритет по умолчанию). Кнопку Cumulus отличаем по ключу подписи `gui.cumulus_menus.button.menu_list`: это обычная ванильная `Button`. Ванильный экран и меню паузы не трогаем.
+
+Сверено с Supplementaries 1.21.1-3.9.9 и Cumulus 2.0.7 (из The Aether 1.21.1-1.5.10).
 
 ## Конфиг
 
