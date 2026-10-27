@@ -14,6 +14,7 @@ import net.neoforged.neoforge.client.gui.VanillaGuiLayers;
 public final class CivitatumHud {
     public static final ResourceLocation ID = ResourceLocation.fromNamespaceAndPath("civitatum_inventory", "status");
     private static final ResourceLocation ARS_MANA = ResourceLocation.fromNamespaceAndPath("ars_nouveau", "mana_hud");
+    private static final String APPLESKIN = "appleskin";
     /** Full food bar, as in vanilla. */
     private static final int MAX_FOOD = 20;
     private static final int BAR_HEIGHT = 9;
@@ -33,7 +34,13 @@ public final class CivitatumHud {
         if (!active()) return;
         var id = event.getName();
         if (id.equals(VanillaGuiLayers.HOTBAR) || id.equals(VanillaGuiLayers.PLAYER_HEALTH)
-                || id.equals(VanillaGuiLayers.FOOD_LEVEL)) {
+                || id.equals(VanillaGuiLayers.FOOD_LEVEL)
+                // Armour and experience are shown in the inventory's equipment window instead.
+                || id.equals(VanillaGuiLayers.ARMOR_LEVEL) || id.equals(VanillaGuiLayers.EXPERIENCE_BAR)
+                || id.equals(VanillaGuiLayers.EXPERIENCE_LEVEL)
+                // AppleSkin draws its own layers over the vanilla hearts and food bar; with those hidden they are
+                // left floating in empty space (the exhaustion underlay most visibly, while sprinting).
+                || id.getNamespace().equals(APPLESKIN)) {
             event.setCanceled(true);
         }
         if (id.equals(ARS_MANA) && ArsBridge.mana(Minecraft.getInstance().player) != null) event.setCanceled(true);

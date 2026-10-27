@@ -19,6 +19,8 @@
   "gui.civitatum_inventory.level": "Уровень: %s",
   "gui.civitatum_inventory.armor": "Броня: %s",
   "gui.civitatum_inventory.toughness": "Твёрдость брони: %s",
+  "gui.civitatum_inventory.experience": "Опыт: уровень %s, %s / %s до следующего",
+  "gui.civitatum_inventory.armor_status": "Броня: %s, твёрдость: %s",
   "gui.civitatum_inventory.damage": "Урон: %s",
   "gui.civitatum_inventory.attack_speed": "Скорость атак: %s",
   "gui.civitatum_inventory.movement": "Скорость: %s",

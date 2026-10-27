@@ -19,6 +19,8 @@
   "gui.civitatum_inventory.level": "Level: %s",
   "gui.civitatum_inventory.armor": "Armor: %s",
   "gui.civitatum_inventory.toughness": "Armor toughness: %s",
+  "gui.civitatum_inventory.experience": "Experience: level %s, %s / %s to the next",
+  "gui.civitatum_inventory.armor_status": "Armor: %s, toughness: %s",
   "gui.civitatum_inventory.damage": "Damage: %s",
   "gui.civitatum_inventory.attack_speed": "Attack speed: %s",
   "gui.civitatum_inventory.movement": "Movement: %s",

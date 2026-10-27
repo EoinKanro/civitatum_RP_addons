@@ -73,8 +73,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int HIDDEN_SHADE = 0x8818130E, HIDDEN_STRIKE = 0xFFB04A3A;
     private static final ResourceLocation COSMETIC_ICON =
         ResourceLocation.fromNamespaceAndPath("accessories", "textures/gui/slot/cosmetic.png");
-    /** The off-hand slot sits at the right of the equipment window, this far below its top. */
-    private static final int OFFHAND_Y = 100;
+    /** The model sits between the armour column and the off-hand slot, this far from each window edge. */
+    private static final int MODEL_LEFT = 32, MODEL_RIGHT = 32, MODEL_TOP = 25;
+    /** Under the model: the experience bar, then the armour value, the level and the backpack button. */
+    private static final int STATUS_HEIGHT = 30, XP_BAR_HEIGHT = 7, XP_COLOR = 0xFF80BF3A, LEVEL_COLOR = 0x80FF20;
+    private static final ResourceLocation ARMOR_ICON = ResourceLocation.withDefaultNamespace("hud/armor_full");
     /** Hidden slots are parked far outside the screen. */
     private static final int HIDDEN = -10000;
     private static final EquipmentSlot[] ARMOR = {
@@ -520,9 +523,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         attributeFilter.setWidth(information.width - 16);
         attributeFilter.visible = information.visible && page == 2;
         attributeFilter.setMessage(tr(modifiedAttributes ? "attributes.modified" : "attributes.all"));
-        // Under the off-hand (shield) slot.
-        gearButton.setPosition(equipment.x + equipment.width - 28 + (ITEM - MorrowindIconButton.WIDTH) / 2,
-            equipment.y + OFFHAND_Y + ITEM + 4);
+        // Bottom right of the status row, under the experience bar.
+        gearButton.setPosition(equipment.x + equipment.width - 9 - MorrowindIconButton.WIDTH, statusRowY());
         gearButton.visible = equipment.visible && CompatBridge.loaded("camping") && kind != CompatBridge.Kind.BLOCK
             && kind != CompatBridge.Kind.AETHER && (wearsBackpack || kind == CompatBridge.Kind.BACKPACK);
         gearButton.active = free;
@@ -596,7 +598,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if (kind == CompatBridge.Kind.ACCESSORIES && equipment.visible) {
             for (var slot : menu.slots) {
                 int armor = CompatBridge.accessoryArmor(slot);
-                if (armor >= 0) assign(slot, equipment, equipment.x + 10, equipment.y + 34 + armor * 22);
+                if (armor >= 0) assign(slot, equipment, equipment.x + 10, armorY(armor));
             }
         }
         if (kind == CompatBridge.Kind.BLOCK) {
@@ -639,9 +641,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             } else if (i >= 0 && i < HOTBAR) {
                 assign(slot, items, items.x + (items.width - HOTBAR * hotbarPitch) / 2 + i * hotbarPitch, hotbarTop());
             } else if (i >= MAIN_END && i <= ARMOR_END && equipment.visible) {
-                assign(slot, equipment, equipment.x + 10, equipment.y + 34 + (ARMOR_END - i) * 22);
+                assign(slot, equipment, equipment.x + 10, armorY(ARMOR_END - i));
             } else if (i == OFFHAND && equipment.visible) {
-                assign(slot, equipment, equipment.x + equipment.width - 28, equipment.y + OFFHAND_Y);
+                // At the right edge of the model, level with the boots.
+                assign(slot, equipment, equipment.x + equipment.width - 26, armorY(ARMOR.length - 1));
             }
         }
     }
@@ -782,6 +785,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         var top = topPane(mx, my);
         if (page == 2 && top == information) AttributeView.tooltip(g, font, information);
         if (top == powers) powersView.tooltip(g, font, powers);
+        var status = top == equipment ? statusTooltip(mx, my) : null;
+        if (status != null) g.renderTooltip(font, status, mx, my);
         if (top == accessories && !wornHover.isEmpty()) {
             var lines = new ArrayList<>(getTooltipFromItem(minecraft, wornHover));
             if (!wornHoverShown) lines.add(tr("hidden_on_body").copy().withStyle(ChatFormatting.GRAY));
@@ -919,11 +924,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     private void renderEquipment(GuiGraphics g) {
-        int px = equipment.x + 32, py = equipment.y + 25, pw = equipment.width - 41;
-        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 144 : 94);
+        int px = equipment.x + MODEL_LEFT, py = equipment.y + MODEL_TOP, ph = modelHeight();
+        int pw = equipment.width - MODEL_LEFT - MODEL_RIGHT;
         g.fill(px, py, px + pw, py + ph, 0x3018130E);
         InventoryScreen.renderEntityInInventoryFollowsMouse(g, px + 1, py + 1, px + pw - 1, py + ph - 1, modelScale(),
             0.0625F, px + pw / 2F + 8, py + ph / 2F + 6, player);
+        renderStatus(g);
         if (hasCraftGrid()) {
             g.drawString(font, tr("crafting"), equipment.x + 9, equipment.y + equipment.height - 67, MUTED, false);
             var out = menu.slots.getFirst();
@@ -938,7 +944,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if (kind == CompatBridge.Kind.BACKPACK || kind == CompatBridge.Kind.BLOCK) {
             // The armour slots are not part of this menu; their items are shown for reference only.
             for (int i = 0; i < ARMOR.length; i++) {
-                int x = equipment.x + 10, y = equipment.y + 34 + i * 22;
+                int x = equipment.x + 10, y = armorY(i);
                 renderSlotFrame(g, x - 1, y - 1, SLOT);
                 g.renderItem(player.getItemBySlot(ARMOR[i]), x, y);
             }
@@ -947,6 +953,52 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                     equipment.y + equipment.height - 61, equipment.width - 18, MUTED);
             }
         }
+    }
+
+    /** The experience bar and armour value, hidden from the HUD and shown here instead. */
+    private void renderStatus(GuiGraphics g) {
+        int x = equipment.x + 9, y = xpBarY(), w = equipment.width - 18;
+        g.fill(x, y, x + w, y + XP_BAR_HEIGHT, 0xCC17130E);
+        MorrowindSkin.frame(g, x, y, w, XP_BAR_HEIGHT, false);
+        g.fill(x + 2, y + 2, x + 2 + (int) ((w - 4) * Math.clamp(player.experienceProgress, 0, 1)), y + 5, XP_COLOR);
+        int row = statusRowY() + 5;
+        g.blitSprite(ARMOR_ICON, x, row - 1, 9, 9);
+        g.drawString(font, String.valueOf(player.getArmorValue()), x + 11, row, TEXT, true);
+        String level = String.valueOf(player.experienceLevel);
+        g.drawString(font, level, equipment.x + (equipment.width - font.width(level)) / 2, row, LEVEL_COLOR, true);
+    }
+
+    private int modelHeight() {
+        return equipment.height - (kind == CompatBridge.Kind.AETHER ? 144 : 94) - STATUS_HEIGHT;
+    }
+
+    private int xpBarY() {
+        return equipment.y + MODEL_TOP + modelHeight() + 4;
+    }
+
+    /** Item position of an armour slot, head (0) to feet (3): the column spans the model's height, frames included. */
+    private int armorY(int row) {
+        int top = equipment.y + MODEL_TOP + 1, bottom = equipment.y + MODEL_TOP + modelHeight() - SLOT + 1;
+        return top + (bottom - top) * row / (ARMOR.length - 1);
+    }
+
+    private int statusRowY() {
+        return xpBarY() + XP_BAR_HEIGHT + 2;
+    }
+
+    private Component statusTooltip(int mx, int my) {
+        if (!equipment.visible || mx < equipment.x + 9 || mx >= equipment.x + equipment.width - 9) return null;
+        int bar = xpBarY(), row = statusRowY();
+        if (my >= bar && my < bar + XP_BAR_HEIGHT || my >= row && my < row + 18 && Math.abs(mx - equipment.x
+                - equipment.width / 2) < 12) {
+            return tr("experience", player.experienceLevel,
+                (int) (player.experienceProgress * player.getXpNeededForNextLevel()), player.getXpNeededForNextLevel());
+        }
+        if (my >= row && my < row + 18 && mx < equipment.x + 40) {
+            return tr("armor_status", player.getArmorValue(),
+                number(player.getAttributeValue(Attributes.ARMOR_TOUGHNESS)));
+        }
+        return null;
     }
 
     private void renderAccessories(GuiGraphics g, int mx, int my) {
@@ -1124,8 +1176,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     public int modelScale() {
-        int pw = equipment.width - 43;
-        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 146 : 96);
+        int pw = equipment.width - MODEL_LEFT - MODEL_RIGHT - 2, ph = modelHeight() - 2;
         double byHeight = (ph - 16) / Math.max(2.15, player.getBbHeight() + 0.35), byWidth = (pw - 16) / 1.55;
         return Math.max(8, (int) Math.floor(Math.min(byHeight, byWidth)));
     }
