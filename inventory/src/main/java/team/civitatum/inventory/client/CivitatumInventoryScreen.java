@@ -184,8 +184,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         equipment = new InventoryPanel("equipment", start, y, ew, h, 112, gridMinHeight);
         items = new InventoryPanel("items", start + ew, y, compact ? Math.min(196, width - ew - 8 - aw) : 214, h, 186,
             gridMinHeight);
-        information = new InventoryPanel("information", compact ? start : items.x + items.width + 8, y,
-            compact ? ew : 208, Math.min(190, height - 54), 112, 128);
+        // In the compact layout the character window takes the place of equipment and accessories together.
+        information = new InventoryPanel("information", compact ? start - aw : items.x + items.width + 8, y,
+            compact ? ew + aw : 208, Math.min(190, height - 54), 112, 128);
         int minWorkWidth = 104, minWorkHeight = 104;
         Bounds work = workstation ? containerBounds() : null;
         if (work != null) {
@@ -345,14 +346,17 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return "v4." + (compact ? "compact." : "wide.") + layout + panel.id;
     }
 
-    /** The accessories window is always shown while Accessories is installed; it cannot be closed. */
+    /**
+     * The accessories window is shown while Accessories is installed and cannot be closed on its own; it belongs to the
+     * equipment window and is hidden with it (the compact layout's Character / Equipment switch).
+     */
     private static boolean accessoriesShown() {
         return CompatBridge.loaded("accessories");
     }
 
     private void updateVisibility() {
-        accessories.visible = accessoriesShown();
         equipment.visible = !compact || !compactInfo;
+        accessories.visible = accessoriesShown() && equipment.visible;
         information.visible = !compact || compactInfo;
         container.visible = kind == CompatBridge.Kind.BLOCK;
         powers.visible = InventoryPreferences.get().powersVisible && !compact && kind != CompatBridge.Kind.BLOCK;
