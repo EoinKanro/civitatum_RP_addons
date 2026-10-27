@@ -1,5 +1,6 @@
 package team.civitatum.inventory.client;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -63,11 +64,15 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int CLASSIC_ROWS = 8, CLASSIC_FIRST_Y = 8;
     /**
      * The accessories window keeps room for its title bar (above the rows) and the cosmetics button (below). It is
-     * two slot columns wide: 8 px margins, 2 px between the columns, 6 px for the scroll bar.
+     * as wide as its columns: 8 px margins, 2 px between the columns, 6 px for the scroll bar.
      */
-    private static final int ACCESSORIES_TOP = 24, ACCESSORIES_BOTTOM = 28, ACCESSORIES_MIN_WIDTH = 2 * SLOT + 26;
+    private static final int ACCESSORIES_TOP = 24, ACCESSORIES_BOTTOM = 28, ACCESSORIES_MARGIN = 8, COLUMN_GAP = 2;
+    private static final int SCROLL_BAR = 6, ACCESSORIES_MIN_WIDTH = 2 * ACCESSORIES_MARGIN + SLOT + SCROLL_BAR;
+    private static final ItemStack EQUIPMENT_ICON = new ItemStack(Items.IRON_CHESTPLATE);
     private static final ResourceLocation COSMETIC_ICON =
         ResourceLocation.fromNamespaceAndPath("accessories", "textures/gui/slot/cosmetic.png");
+    /** The off-hand slot sits at the right of the equipment window, this far below its top. */
+    private static final int OFFHAND_Y = 100;
     /** Hidden slots are parked far outside the screen. */
     private static final int HIDDEN = -10000;
     private static final EquipmentSlot[] ARMOR = {
@@ -88,6 +93,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private Button cosmetics, powersButton;
     /** Scrolled rows of the backpack grid, and of the accessories window when its menu does not scroll itself. */
     private int extraRow, accessoryRow, accessoryMaxRow, accessoryRowCount;
+    /** A worn accessory under the cursor where the window only shows them; its tooltip is drawn last. */
+    private ItemStack wornHover = ItemStack.EMPTY;
     private boolean preserveMenu;
     private EditBox search;
     private Button summaryTab, attributeTab, attributeFilter, ability, compactToggle, gearButton;
@@ -225,10 +232,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             categories.add(button(tr("category.short." + i), b -> category = c, 27));
         }
         boolean backpack = kind == CompatBridge.Kind.BACKPACK;
-        gearButton = button(tr(backpack ? "equipment" : "storage.backpack"), b -> {
-            if (backpack) InventoryClient.personalInventory(true);
-            else CompatBridge.openBackpack();
-        }, 90);
+        gearButton = backpack
+            ? new MorrowindIconButton(() -> EQUIPMENT_ICON, tr("equipment"),
+                b -> InventoryClient.personalInventory(true))
+            : new MorrowindIconButton(() -> CompatBridge.backpack(player), tr("storage.backpack"),
+                b -> CompatBridge.openBackpack());
+        addWidget(gearButton);
+        widgets.add(gearButton);
         summaryTab = button(tr("statistics"), b -> {
             page = 0;
             scroll = 0;
@@ -281,9 +291,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     private void toggleCosmetics() {
-        if (kind != CompatBridge.Kind.ACCESSORIES) {
+        if (kind == CompatBridge.Kind.CURIOS) {
             CompatBridge.cosmetics(menu);
-        } else if (CompatBridge.originalAccessories(menu)) {
+        } else if (classicAccessories()) {
             CompatBridge.accessoryCosmetics(menu);
         } else {
             var preferences = InventoryPreferences.get();
@@ -292,11 +302,21 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }
     }
 
-    /** Whether the cosmetic slots are shown; Curios keeps its own state, so its button never lights up. */
+    /** Whether the cosmetic column is shown; Curios keeps its own state, so its button never lights up. */
     private boolean cosmeticsShown() {
-        if (kind != CompatBridge.Kind.ACCESSORIES) return false;
-        return CompatBridge.originalAccessories(menu) ? CompatBridge.accessoriesCosmetics(menu)
+        if (kind == CompatBridge.Kind.CURIOS) return false;
+        return classicAccessories() ? CompatBridge.accessoriesCosmetics(menu)
             : InventoryPreferences.get().accessoryCosmetics;
+    }
+
+    /** Two columns with cosmetics, or for Curios, which lays its slots out in two columns. */
+    private boolean twoAccessoryColumns() {
+        return kind == CompatBridge.Kind.CURIOS || cosmeticsShown();
+    }
+
+    /** Left edge of the main accessory column; the cosmetic column, when shown, is on its left. */
+    private int mainAccessoryX() {
+        return accessories.x + ACCESSORIES_MARGIN + (twoAccessoryColumns() ? accessoryPitch() + COLUMN_GAP : 0);
     }
 
     private void togglePowers() {
@@ -338,8 +358,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     /** Equipment sticks to the left of the items window, and the accessories window to the left of equipment. */
     private void dockEquipment() {
-        int cell = accessoryPitch();
-        accessories.width = Math.max(ACCESSORIES_MIN_WIDTH, 2 * cell + 26);
+        int cell = accessoryPitch(), columns = twoAccessoryColumns() ? 2 : 1;
+        accessories.width = 2 * ACCESSORIES_MARGIN + columns * cell + (columns - 1) * COLUMN_GAP + SCROLL_BAR;
         int aw = accessories.visible ? accessories.width : 0;
         equipment.width = Math.max(equipment.minWidth, Math.min(equipment.width, width - items.width - 8 - aw));
         items.x = Math.max(4 + equipment.width + aw, Math.min(items.x, width - items.width - 4));
@@ -452,6 +472,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private void positionControls() {
         boolean free = menu.getCarried().isEmpty();
         boolean wearsBackpack = !CompatBridge.backpack(player).isEmpty();
+        // The accessories window follows its cosmetic column, so it is docked again on every frame.
+        dockEquipment();
         search.setPosition(items.x + 12, items.y + 25);
         search.setWidth(items.width - 24);
         int buttonWidth = (items.width - 20) / CATEGORIES;
@@ -459,10 +481,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             categories.get(i).setPosition(items.x + 10 + i * buttonWidth, items.y + 45);
             categories.get(i).setWidth(buttonWidth - 1);
         }
-        cosmetics.setPosition(accessories.x + (accessories.width - MorrowindIconButton.WIDTH) / 2,
+        // Centred under the main column, not the window.
+        cosmetics.setPosition(mainAccessoryX() + (accessoryPitch() - MorrowindIconButton.WIDTH) / 2,
             accessories.y + accessories.height - 24);
-        cosmetics.visible = accessories.visible && (kind == CompatBridge.Kind.ACCESSORIES
-            || kind == CompatBridge.Kind.CURIOS && CompatBridge.flag(menu, "hasCosmetics"));
+        cosmetics.visible = accessories.visible
+            && (kind != CompatBridge.Kind.CURIOS || CompatBridge.flag(menu, "hasCosmetics"));
         cosmetics.active = free;
         if (powersButton != null) powersButton.active = free;
         int half = (information.width - 20) / 2;
@@ -475,8 +498,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         attributeFilter.setWidth(information.width - 16);
         attributeFilter.visible = information.visible && page == 2;
         attributeFilter.setMessage(tr(modifiedAttributes ? "attributes.modified" : "attributes.all"));
-        gearButton.setPosition(equipment.x + 8, equipment.y + equipment.height - (hasCraftGrid() ? 92 : 27));
-        gearButton.setWidth(equipment.width - 16);
+        // Under the off-hand (shield) slot.
+        gearButton.setPosition(equipment.x + equipment.width - 28 + (ITEM - MorrowindIconButton.WIDTH) / 2,
+            equipment.y + OFFHAND_Y + ITEM + 4);
         gearButton.visible = equipment.visible && CompatBridge.loaded("camping") && kind != CompatBridge.Kind.BLOCK
             && kind != CompatBridge.Kind.AETHER && (wearsBackpack || kind == CompatBridge.Kind.BACKPACK);
         gearButton.active = free;
@@ -592,7 +616,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             } else if (i >= MAIN_END && i <= ARMOR_END && equipment.visible) {
                 assign(slot, equipment, equipment.x + 10, equipment.y + 34 + (ARMOR_END - i) * 22);
             } else if (i == OFFHAND && equipment.visible) {
-                assign(slot, equipment, equipment.x + equipment.width - 28, equipment.y + 100);
+                assign(slot, equipment, equipment.x + equipment.width - 28, equipment.y + OFFHAND_Y);
             }
         }
     }
@@ -632,12 +656,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** Accessories' own column: rows as the menu scrolled them, the cosmetic column on the left. */
     private void placeClassicAccessories() {
         int cell = accessoryPitch(), shown = CompatBridge.integer(menu, "scrolledIndex", 0);
-        int left = accessories.x + (accessories.width - 6 - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
         for (var slot : extraSlots) {
             Integer row = accessoryRows.get(slot);
             if (row == null || row - shown < 0 || row - shown >= CLASSIC_ROWS) continue;
-            int column = CompatBridge.cosmeticSlot(slot) ? 0 : 1;
-            assign(slot, accessories, left + column * (cell + 2), top + (row - shown) * cell);
+            assign(slot, accessories, CompatBridge.cosmeticSlot(slot) ? left : main, top + (row - shown) * cell);
         }
     }
 
@@ -647,7 +670,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
      */
     private void placeAccessoryColumn() {
         int cell = accessoryPitch();
-        int left = accessories.x + (accessories.width - 6 - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
         // The menu adds every accessory as a pair: its cosmetic slot, then the slot itself.
         var rows = new ArrayList<Slot[]>();
         Slot cosmetic = null;
@@ -667,21 +690,21 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             var row = rows.get(accessoryRow + r);
             int y = top + r * cell;
             if (cosmetics && row[0] != null) assign(row[0], accessories, left, y);
-            assign(row[1], accessories, left + cell + 2, y);
+            assign(row[1], accessories, main, y);
         }
     }
 
     /** Curios: its slots in two columns, scrolled by this screen. */
     private void placeAccessoryGrid() {
         int cell = accessoryPitch();
-        int left = accessories.x + (accessories.width - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        int left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
         int visible = Math.max(1, (accessories.height - ACCESSORIES_TOP - ACCESSORIES_BOTTOM) / cell);
         accessoryMaxRow = Math.max(0, (extraSlots.size() + 1) / 2 - visible);
         accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
         for (int i = 0; i < extraSlots.size(); i++) {
             int r = i / 2 - accessoryRow;
             if (r >= 0 && r < visible) {
-                assign(extraSlots.get(i), accessories, left + i % 2 * (cell + 2), top + r * cell);
+                assign(extraSlots.get(i), accessories, left + i % 2 * (cell + COLUMN_GAP), top + r * cell);
             }
         }
     }
@@ -722,6 +745,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         var top = topPane(mx, my);
         if (page == 2 && top == information) AttributeView.tooltip(g, font, information);
         if (top == powers) powersView.tooltip(g, font, powers);
+        if (top == accessories && !wornHover.isEmpty()) {
+            var lines = new ArrayList<>(getTooltipFromItem(minecraft, wornHover));
+            lines.add(tr("accessories_elsewhere").copy().withStyle(ChatFormatting.GRAY));
+            g.renderComponentTooltip(font, lines, mx, my);
+        }
         if (hoveredSlot != null && hoveredSlot.getItem().isEmpty()) {
             var label = CompatBridge.slotLabel(hoveredSlot);
             if (label != null) g.renderTooltip(font, label.copy().append(" · ").append(tr("render_toggle")), mx, my);
@@ -803,7 +831,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             Component label = panel == container ? nativeScreen.getTitle()
                 : panel == accessories ? Component.empty() : tr(panel.id);
             renderPanel(g, panel, label);
-            if (panel == accessories) renderAccessories(g);
+            if (panel == accessories) renderAccessories(g, mx, my);
             if (panel == equipment) renderEquipment(g);
             if (panel == items) renderItemsHeader(g);
             if (panel == information) {
@@ -835,8 +863,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     private void renderEquipment(GuiGraphics g) {
         int px = equipment.x + 32, py = equipment.y + 25, pw = equipment.width - 41;
-        boolean craftingBelow = gearButton.visible && hasCraftGrid();
-        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 144 : craftingBelow ? 128 : 94);
+        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 144 : 94);
         g.fill(px, py, px + pw, py + ph, 0x3018130E);
         InventoryScreen.renderEntityInInventoryFollowsMouse(g, px + 1, py + 1, px + pw - 1, py + ph - 1, modelScale(),
             0.0625F, px + pw / 2F + 8, py + ph / 2F + 6, player);
@@ -865,18 +892,17 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }
     }
 
-    private void renderAccessories(GuiGraphics g) {
-        boolean slots = kind == CompatBridge.Kind.ACCESSORIES || kind == CompatBridge.Kind.CURIOS;
-        if (!slots) {
-            // Other menus (a chest, a backpack) carry no accessory slots; the window says where to find them.
-            if (kind != CompatBridge.Kind.INVENTORY) {
-                g.drawWordWrap(font, tr("accessories_elsewhere"), accessories.x + 8, accessories.y + ACCESSORIES_TOP,
-                    accessories.width - 16, MUTED);
-            }
-            return;
-        }
+    private void renderAccessories(GuiGraphics g, int mx, int my) {
+        wornHover = ItemStack.EMPTY;
         int total, first, shown;
-        if (classicAccessories()) {
+        if (kind == CompatBridge.Kind.INVENTORY) {
+            return;
+        } else if (kind != CompatBridge.Kind.ACCESSORIES && kind != CompatBridge.Kind.CURIOS) {
+            renderWornAccessories(g, mx, my);
+            total = accessoryRowCount;
+            first = accessoryRow;
+            shown = CLASSIC_ROWS;
+        } else if (classicAccessories()) {
             total = CompatBridge.integer(menu, "totalSlots", 0);
             first = CompatBridge.integer(menu, "scrolledIndex", 0);
             shown = CLASSIC_ROWS;
@@ -896,6 +922,38 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int thumb = Math.max(8, track * shown / total), ty = top + (track - thumb) * first / Math.max(1, total - shown);
         g.fill(x, top, x + 2, top + track, 0xFF232829);
         g.fill(x, ty, x + 2, ty + thumb, 0xFFAF9462);
+    }
+
+    /**
+     * Menus without accessory slots (a backpack, a chest) show what is worn, like the armour beside them: to look at,
+     * not to change. The same column layout and the same cosmetic switch as the real slots.
+     */
+    private void renderWornAccessories(GuiGraphics g, int mx, int my) {
+        var worn = CompatBridge.wornAccessories(player);
+        accessoryRowCount = worn.size();
+        accessoryMaxRow = Math.max(0, worn.size() - CLASSIC_ROWS);
+        accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
+        int cell = accessoryPitch(), size = Math.round(ITEM * accessoryScale());
+        int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
+        boolean cosmetics = cosmeticsShown(), here = topPane(mx, my) == accessories;
+        for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < worn.size(); r++) {
+            var pair = worn.get(accessoryRow + r);
+            int y = top + r * cell;
+            if (cosmetics) renderWorn(g, pair[0], left, y, size, here, mx, my);
+            renderWorn(g, pair[1], main, y, size, here, mx, my);
+        }
+    }
+
+    private void renderWorn(GuiGraphics g, ItemStack stack, int x, int y, int size, boolean here, int mx, int my) {
+        renderSlotFrame(g, x - 1, y - 1, size + 2);
+        if (stack.isEmpty()) return;
+        float scale = size / (float) ITEM;
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1);
+        g.renderItem(stack, 0, 0);
+        g.pose().popPose();
+        if (here && mx >= x && mx < x + size && my >= y && my < y + size) wornHover = stack;
     }
 
     private void renderItemsHeader(GuiGraphics g) {
@@ -990,8 +1048,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     public int modelScale() {
         int pw = equipment.width - 43;
-        boolean craftingBelow = gearButton != null && gearButton.visible && hasCraftGrid();
-        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 146 : craftingBelow ? 130 : 96);
+        int ph = equipment.height - (kind == CompatBridge.Kind.AETHER ? 146 : 96);
         double byHeight = (ph - 16) / Math.max(2.15, player.getBbHeight() + 0.35), byWidth = (pw - 16) / 1.55;
         return Math.max(8, (int) Math.floor(Math.min(byHeight, byWidth)));
     }

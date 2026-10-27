@@ -1,7 +1,7 @@
 {
   "gui.civitatum_inventory.title": "Civitatum Inventory",
   "gui.civitatum_inventory.equipment": "Экипировка",
-  "gui.civitatum_inventory.accessories_elsewhere": "Аксессуары доступны в окне экипировки.",
+  "gui.civitatum_inventory.accessories_elsewhere": "Только просмотр: изменить можно в окне экипировки.",
   "gui.civitatum_inventory.items": "Инвентарь",
   "gui.civitatum_inventory.information": "Персонаж",
   "gui.civitatum_inventory.search": "Поиск предметов…",

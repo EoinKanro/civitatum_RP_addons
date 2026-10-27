@@ -2,8 +2,10 @@ package team.civitatum.inventory.client;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.WeakHashMap;
@@ -13,6 +15,8 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.world.Container;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.AbstractFurnaceMenu;
@@ -54,6 +58,8 @@ public final class CompatBridge {
     private static final Map<Class<?>, Map<String, Object>> METHODS = new HashMap<>();
     private static final Map<Class<?>, Map<String, Object>> FIELDS = new HashMap<>();
     private static long backpackRequestUntil;
+    private static Method capabilityOf;
+    private static boolean wornFailed;
 
     public static boolean loaded(String id) { return ModList.get().isLoaded(id); }
 
@@ -232,6 +238,38 @@ public final class CompatBridge {
             fail("Accessories armor", ex);
         }
         return -1;
+    }
+
+    /**
+     * What the entity wears in Accessories, as {cosmetic, regular} pairs with at least one of them filled. The
+     * containers are synced to the client; this is read where no Accessories menu is open (a backpack, a chest).
+     */
+    public static List<ItemStack[]> wornAccessories(LivingEntity entity) {
+        List<ItemStack[]> worn = new ArrayList<>();
+        if (wornFailed || !loaded("accessories")) return worn;
+        try {
+            Class<?> capabilityType = type("io.wispforest.accessories.api.AccessoriesCapability");
+            Class<?> containerType = type("io.wispforest.accessories.api.AccessoriesContainer");
+            if (capabilityOf == null) capabilityOf = capabilityType.getMethod("get", LivingEntity.class);
+            Object capability = capabilityOf.invoke(null, entity);
+            if (capability == null) return worn;
+            Method regular = method(containerType, "getAccessories");
+            Method cosmetic = method(containerType, "getCosmeticAccessories");
+            for (Object container : ((Map<?, ?>) method(capabilityType, "getContainers").invoke(capability)).values()) {
+                var items = (Container) regular.invoke(container);
+                var looks = (Container) cosmetic.invoke(container);
+                for (int i = 0; i < items.getContainerSize(); i++) {
+                    ItemStack item = items.getItem(i);
+                    ItemStack look = i < looks.getContainerSize() ? looks.getItem(i) : ItemStack.EMPTY;
+                    if (!item.isEmpty() || !look.isEmpty()) worn.add(new ItemStack[]{look, item});
+                }
+            }
+        } catch (ReflectiveOperationException | LinkageError | ClassCastException ex) {
+            // Drawn every frame: one warning, then the window stays empty.
+            wornFailed = true;
+            fail("Accessories worn items", ex);
+        }
+        return worn;
     }
 
     public static boolean originalAccessories(AbstractContainerMenu menu) {
