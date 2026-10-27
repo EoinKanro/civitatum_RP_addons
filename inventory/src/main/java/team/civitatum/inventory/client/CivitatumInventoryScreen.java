@@ -69,6 +69,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int ACCESSORIES_TOP = 24, ACCESSORIES_BOTTOM = 28, ACCESSORIES_MARGIN = 8, COLUMN_GAP = 2;
     private static final int SCROLL_BAR = 6, ACCESSORIES_MIN_WIDTH = 2 * ACCESSORIES_MARGIN + SLOT + SCROLL_BAR;
     private static final ItemStack EQUIPMENT_ICON = new ItemStack(Items.IRON_CHESTPLATE);
+    /** Marks an accessory hidden on the body: a dark veil and a diagonal strike in muted red. */
+    private static final int HIDDEN_SHADE = 0x8818130E, HIDDEN_STRIKE = 0xFFB04A3A;
     private static final ResourceLocation COSMETIC_ICON =
         ResourceLocation.fromNamespaceAndPath("accessories", "textures/gui/slot/cosmetic.png");
     /** The off-hand slot sits at the right of the equipment window, this far below its top. */
@@ -95,6 +97,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private int extraRow, accessoryRow, accessoryMaxRow, accessoryRowCount;
     /** A worn accessory under the cursor where the window only shows them; its tooltip is drawn last. */
     private ItemStack wornHover = ItemStack.EMPTY;
+    private boolean wornHoverShown;
     private boolean preserveMenu;
     private EditBox search;
     private Button summaryTab, attributeTab, attributeFilter, ability, compactToggle, gearButton;
@@ -747,6 +750,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if (top == powers) powersView.tooltip(g, font, powers);
         if (top == accessories && !wornHover.isEmpty()) {
             var lines = new ArrayList<>(getTooltipFromItem(minecraft, wornHover));
+            if (!wornHoverShown) lines.add(tr("hidden_on_body").copy().withStyle(ChatFormatting.GRAY));
             lines.add(tr("accessories_elsewhere").copy().withStyle(ChatFormatting.GRAY));
             g.renderComponentTooltip(font, lines, mx, my);
         }
@@ -765,6 +769,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if (hoveredSlot == null && dragging == null) {
             for (var panel : panels) if (panel.titleContains(mx, my)) g.renderTooltip(font, tr("move_hint"), mx, my);
         }
+    }
+
+    /** The item tooltip of an accessory slot says when the item is not drawn on the body. */
+    @Override
+    protected List<Component> getTooltipFromContainerItem(ItemStack stack) {
+        var lines = super.getTooltipFromContainerItem(stack);
+        if (hoveredSlot == null || CompatBridge.accessoryShown(hoveredSlot)) return lines;
+        lines = new ArrayList<>(lines);
+        lines.add(tr("hidden_on_body").copy().withStyle(ChatFormatting.GRAY));
+        return lines;
     }
 
     /** Drawn inside its owner window, with that window's depth. */
@@ -787,6 +801,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             && matches(slot.getItem());
     }
 
+    /** An accessory switched off on the body (Ctrl+RMB): the item dimmed and struck through, as in Accessories. */
+    private static void renderHidden(GuiGraphics g, int x, int y, int size) {
+        g.fill(x, y, x + size, y + size, HIDDEN_SHADE);
+        for (int i = 1; i < size - 1; i++) g.fill(x + i, y + i, x + i + 1, y + i + 1, HIDDEN_STRIKE);
+    }
+
     private void renderOwnedSlot(GuiGraphics g, Slot slot) {
         int size = slotPixels(slot);
         renderSlotFrame(g, slot.x - 1, slot.y - 1, size + 2);
@@ -807,6 +827,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 MorrowindSkin.frame(g, slot.x - 2, slot.y - 2, size + 4, size + 4, true);
                 g.fill(slot.x, slot.y + size - 2, slot.x + size, slot.y + size, 0xFFB5D78B);
             }
+        }
+        if (owners.get(slot) == accessories && !CompatBridge.accessoryShown(slot)) {
+            renderHidden(g, slot.x, slot.y, size);
         }
         g.flush();
         g.pose().popPose();
@@ -937,14 +960,15 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int main = mainAccessoryX(), left = accessories.x + ACCESSORIES_MARGIN, top = accessories.y + ACCESSORIES_TOP;
         boolean cosmetics = cosmeticsShown(), here = topPane(mx, my) == accessories;
         for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < worn.size(); r++) {
-            var pair = worn.get(accessoryRow + r);
+            var accessory = worn.get(accessoryRow + r);
             int y = top + r * cell;
-            if (cosmetics) renderWorn(g, pair[0], left, y, size, here, mx, my);
-            renderWorn(g, pair[1], main, y, size, here, mx, my);
+            if (cosmetics) renderWorn(g, accessory.look(), accessory.shown(), left, y, size, here, mx, my);
+            renderWorn(g, accessory.item(), accessory.shown(), main, y, size, here, mx, my);
         }
     }
 
-    private void renderWorn(GuiGraphics g, ItemStack stack, int x, int y, int size, boolean here, int mx, int my) {
+    private void renderWorn(GuiGraphics g, ItemStack stack, boolean shown, int x, int y, int size, boolean here, int mx,
+                            int my) {
         renderSlotFrame(g, x - 1, y - 1, size + 2);
         if (stack.isEmpty()) return;
         float scale = size / (float) ITEM;
@@ -953,7 +977,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         g.pose().scale(scale, scale, 1);
         g.renderItem(stack, 0, 0);
         g.pose().popPose();
-        if (here && mx >= x && mx < x + size && my >= y && my < y + size) wornHover = stack;
+        if (!shown) {
+            g.pose().pushPose();
+            g.pose().translate(0, 0, OVERLAY_Z);
+            renderHidden(g, x, y, size);
+            g.pose().popPose();
+        }
+        if (here && mx >= x && mx < x + size && my >= y && my < y + size) {
+            wornHover = stack;
+            wornHoverShown = shown;
+        }
     }
 
     private void renderItemsHeader(GuiGraphics g) {

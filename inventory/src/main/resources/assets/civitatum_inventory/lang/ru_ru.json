@@ -71,5 +71,6 @@
   "gui.civitatum_inventory.abilities": "Способности",
   "key.civitatum_inventory.activate_key": "Применить выбранный дар / заклинание",
   "key.civitatum_inventory.next_ability": "Выбрать следующий дар / заклинание",
-  "key.civitatum_inventory.previous_ability": "Выбрать предыдущий дар / заклинание"
+  "key.civitatum_inventory.previous_ability": "Выбрать предыдущий дар / заклинание",
+  "gui.civitatum_inventory.hidden_on_body": "Не отображается на персонаже (Ctrl+ПКМ)"
 }

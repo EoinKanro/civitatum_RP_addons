@@ -71,5 +71,6 @@
   "gui.civitatum_inventory.abilities": "Abilities",
   "key.civitatum_inventory.activate_key": "Activate selected ability / spell",
   "key.civitatum_inventory.next_ability": "Select next ability / spell",
-  "key.civitatum_inventory.previous_ability": "Select previous ability / spell"
+  "key.civitatum_inventory.previous_ability": "Select previous ability / spell",
+  "gui.civitatum_inventory.hidden_on_body": "Not shown on the character (Ctrl+RMB)"
 }

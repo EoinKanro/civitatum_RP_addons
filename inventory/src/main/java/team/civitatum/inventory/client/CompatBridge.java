@@ -58,7 +58,7 @@ public final class CompatBridge {
     private static final Map<Class<?>, Map<String, Object>> METHODS = new HashMap<>();
     private static final Map<Class<?>, Map<String, Object>> FIELDS = new HashMap<>();
     private static long backpackRequestUntil;
-    private static Method capabilityOf;
+    private static Method capabilityOf, shouldRender;
     private static boolean wornFailed;
 
     public static boolean loaded(String id) { return ModList.get().isLoaded(id); }
@@ -241,11 +241,14 @@ public final class CompatBridge {
     }
 
     /**
-     * What the entity wears in Accessories, as {cosmetic, regular} pairs with at least one of them filled. The
+     * What the entity wears in Accessories, the slots with an item or a cosmetic look. The
      * containers are synced to the client; this is read where no Accessories menu is open (a backpack, a chest).
      */
-    public static List<ItemStack[]> wornAccessories(LivingEntity entity) {
-        List<ItemStack[]> worn = new ArrayList<>();
+    /** A worn accessory: its cosmetic look, the item, and whether Accessories draws that slot on the entity. */
+    public record Worn(ItemStack look, ItemStack item, boolean shown) {}
+
+    public static List<Worn> wornAccessories(LivingEntity entity) {
+        List<Worn> worn = new ArrayList<>();
         if (wornFailed || !loaded("accessories")) return worn;
         try {
             Class<?> capabilityType = type("io.wispforest.accessories.api.AccessoriesCapability");
@@ -261,7 +264,7 @@ public final class CompatBridge {
                 for (int i = 0; i < items.getContainerSize(); i++) {
                     ItemStack item = items.getItem(i);
                     ItemStack look = i < looks.getContainerSize() ? looks.getItem(i) : ItemStack.EMPTY;
-                    if (!item.isEmpty() || !look.isEmpty()) worn.add(new ItemStack[]{look, item});
+                    if (!item.isEmpty() || !look.isEmpty()) worn.add(new Worn(look, item, shouldRender(container, i)));
                 }
             }
         } catch (ReflectiveOperationException | LinkageError | ClassCastException ex) {
@@ -270,6 +273,27 @@ public final class CompatBridge {
             fail("Accessories worn items", ex);
         }
         return worn;
+    }
+
+    /**
+     * Whether Accessories draws the item of this accessory slot on the entity; Ctrl+RMB switches it. Regular and
+     * cosmetic slots of one index share the switch. True for any other slot and when the lookup fails.
+     */
+    public static boolean accessoryShown(Slot slot) {
+        if (!accessorySlot(slot)) return true;
+        try {
+            return shouldRender(field(slot.getClass(), "accessoriesContainer").get(slot), slot.getContainerSlot());
+        } catch (ReflectiveOperationException | LinkageError ex) {
+            return true;
+        }
+    }
+
+    private static boolean shouldRender(Object container, int index) throws ReflectiveOperationException {
+        if (shouldRender == null) {
+            shouldRender = type("io.wispforest.accessories.api.AccessoriesContainer")
+                .getMethod("shouldRender", int.class);
+        }
+        return (boolean) shouldRender.invoke(container, index);
     }
 
     public static boolean originalAccessories(AbstractContainerMenu menu) {
