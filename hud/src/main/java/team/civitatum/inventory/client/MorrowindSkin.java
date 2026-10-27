@@ -38,4 +38,28 @@ public final class MorrowindSkin {
         g.fill(x + 2, y + h - 2, x + w - 1, y + h - 1, SHADOW);
         g.fill(x + w - 2, y + 2, x + w - 1, y + h - 1, SHADOW);
     }
+
+    /**
+     * {@link #frame} as a ring ({@link FrameRing}) inscribed in the square {@code size} wide.
+     * Pixels of one colour in a row are drawn as one fill.
+     */
+    public static void circleFrame(GuiGraphics g, int x, int y, int size, boolean lit) {
+        int[] colors = {0, OUTLINE, lit ? LIT_GOLD : GOLD, SHADOW};
+        double radius = size / 2.0;
+        for (int row = 0; row < size; row++) {
+            int runStart = 0;
+            int runPart = FrameRing.NONE;
+            for (int column = 0; column <= size; column++) {
+                int part = column < size
+                    ? FrameRing.at(column + 0.5 - radius, row + 0.5 - radius, radius) : FrameRing.NONE;
+                if (part != runPart) {
+                    if (runPart != FrameRing.NONE) {
+                        g.fill(x + runStart, y + row, x + column, y + row + 1, colors[runPart]);
+                    }
+                    runStart = column;
+                    runPart = part;
+                }
+            }
+        }
+    }
 }

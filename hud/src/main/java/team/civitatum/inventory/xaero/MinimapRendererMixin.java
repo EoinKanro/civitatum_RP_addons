@@ -11,7 +11,7 @@ import xaero.hud.minimap.module.MinimapSession;
 import xaero.hud.render.module.ModuleRenderContext;
 
 /**
- * Frames the minimap right after Xaero draws it and records where it is. The only call to
+ * Frames the minimap right after Xaero draws it, where {@code MinimapFrameMixin} recorded the map. The only call to
  * {@code MinimapProcessor.onRender} is past every early return (hidden under F3 or a screen, the "No Minimap" effect,
  * a server ban), so it fires only for a minimap on screen.
  */
@@ -26,6 +26,6 @@ public abstract class MinimapRendererMixin {
     )
     private void civitatumHud$frame(MinimapSession session, ModuleRenderContext context, GuiGraphics graphics,
                                     float partialTick, CallbackInfo ci) {
-        MinimapFrame.draw(graphics, context.x, context.y, context.w, session.getConfiguredWidth());
+        MinimapFrame.draw(graphics);
     }
 }
