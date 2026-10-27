@@ -28,6 +28,11 @@ public final class CivitatumHud {
     private static final int BARS_HEIGHT = 3 * BAR_HEIGHT + 2;
     /** The bars start 2 px above the {@link #SLOT} high slots, so they end this far below them. */
     private static final int BARS_BELOW_SLOTS = BARS_HEIGHT - 2 - SLOT;
+    /**
+     * Between ParCool's stamina row and the health bar. More than the 1 px between the bars: the icons shake by 1 px
+     * while stamina is spent and would touch the bar's frame.
+     */
+    private static final int ENERGY_GAP = 3;
     private static final int GAP = 4;
     /** Nine hotbar slots, a gap, the ability slot. */
     private static final int CLASSIC_WIDTH = 9 * SLOT + GAP + SLOT;
@@ -76,9 +81,9 @@ public final class CivitatumHud {
         var player = mc.player;
         var preferences = InventoryPreferences.get();
         float barsScale = (float) preferences.barsScale, hotbarScale = (float) preferences.hotbarScale;
-        int bottom = g.guiHeight() - MARGIN, w = Math.clamp(g.guiWidth() / 4, 76, 116);
+        int bottom = g.guiHeight() - MARGIN, w = barsWidth(g);
         // Each block is drawn at its own origin and scaled about the corner that holds it to the screen edge.
-        scaled(g, MARGIN, bottom + BARS_BELOW_SLOTS, barsScale);
+        barsPose(g);
         bars(g, player, 0, -BARS_HEIGHT, w);
         g.pose().popPose();
         if (preferences.hotbarStyle == HotbarStyle.CLASSIC) {
@@ -94,6 +99,34 @@ public final class CivitatumHud {
             if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), 56, -SLOT);
         }
         g.pose().popPose();
+    }
+
+    /**
+     * Draws ParCool's stamina row right above the bars, scaled with them and no wider than them. ParCool's own layer
+     * is run here inside the moved pose instead of being split across its Pre and Post events, so the pose is popped
+     * even if a later listener cancels the event.
+     */
+    public static void moveParCoolEnergy(RenderGuiLayerEvent.Pre event) {
+        if (!event.getName().equals(ParCoolBridge.LAYER) || !active() || !ParCoolBridge.available()) return;
+        event.setCanceled(true);
+        var g = event.getGuiGraphics();
+        float fit = Math.min(1, (float) barsWidth(g) / ParCoolBridge.WIDTH);
+        barsPose(g);
+        g.pose().translate(0, -BARS_HEIGHT - ENERGY_GAP - ParCoolBridge.HEIGHT * fit, 0);
+        g.pose().scale(fit, fit, 1);
+        int rightHeight = Minecraft.getInstance().gui.rightHeight;
+        g.pose().translate(-ParCoolBridge.left(g.guiWidth()), -ParCoolBridge.top(g.guiHeight(), rightHeight), 0);
+        event.getLayer().render(g, event.getPartialTick());
+        g.pose().popPose();
+    }
+
+    private static int barsWidth(GuiGraphics g) {
+        return Math.clamp(g.guiWidth() / 4, 76, 116);
+    }
+
+    /** The bars' origin is their bottom left corner. */
+    private static void barsPose(GuiGraphics g) {
+        scaled(g, MARGIN, g.guiHeight() - MARGIN + BARS_BELOW_SLOTS, (float) InventoryPreferences.get().barsScale);
     }
 
     /** Pushes a pose that draws at {@code (x, y)} at {@code scale}; the caller pops it. */

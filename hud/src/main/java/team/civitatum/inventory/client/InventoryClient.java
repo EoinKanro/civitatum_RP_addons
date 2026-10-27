@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
@@ -37,6 +38,8 @@ public final class InventoryClient {
         });
         mod.addListener(CivitatumHud::register);
         game.addListener(CivitatumHud::hideReplaced);
+        // Last, so the layer is not run here when another listener cancels it.
+        game.addListener(EventPriority.LOWEST, CivitatumHud::moveParCoolEnergy);
         game.addListener((RenderGuiEvent.Pre event) -> MinimapBounds.clear());
         game.addListener(InventoryClient::opening);
         game.addListener(InventoryClient::tick);

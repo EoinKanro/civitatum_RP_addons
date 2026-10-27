@@ -33,7 +33,8 @@ public final class HudSettingsScreen extends Screen {
         style.setPosition(x, y);
         var preferences = InventoryPreferences.get();
         slider("bars_scale", preferences.barsScale, v -> InventoryPreferences.get().barsScale = v, x, y + ROW);
-        slider("hotbar_scale", preferences.hotbarScale, v -> InventoryPreferences.get().hotbarScale = v, x, y + 2 * ROW);
+        slider("hotbar_scale", preferences.hotbarScale, v -> InventoryPreferences.get().hotbarScale = v,
+            x, y + 2 * ROW);
         slider("effects_scale", preferences.effectsScale, v -> InventoryPreferences.get().effectsScale = v,
             x, y + 3 * ROW);
         var done = addRenderableWidget(new MorrowindButton(CommonComponents.GUI_DONE, b -> onClose(), BUTTON_WIDTH));
