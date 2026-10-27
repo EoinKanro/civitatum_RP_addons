@@ -1,0 +1,29 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+repositories {
+    maven { url = 'https://api.modrinth.com/maven' }
+}
+
+dependencies {
+    // Optional at runtime: RacesBridge touches it only when the civitatum mod is loaded.
+    compileOnly project(':character-creation')
+    // Xaero's Minimap neoforge-1.21.1-26.6.0 (Modrinth version id): optional at runtime, only the mixins in
+    // team.civitatum.inventory.xaero touch it, and they are applied only when it is installed
+    compileOnly 'maven.modrinth:xaeros-minimap:irjR7dHk'
+}
+
+// Generators for the mod's textures; not part of the mod jar.
+sourceSets {
+    tools
+}
+
+tasks.register('generateStoneTexture', JavaExec) {
+    group = 'tools'
+    description = 'Regenerates the stone background of the windows, textures/gui/stone.png.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.inventory.tools.StoneTexture'
+    workingDir = projectDir
+}

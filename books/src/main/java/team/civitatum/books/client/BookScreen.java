@@ -1,11 +1,13 @@
 package team.civitatum.books.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.UUID;
@@ -40,7 +42,10 @@ public final class BookScreen extends Screen {
     private final BookImages images = new BookImages();
     private final DraftStore drafts;
     private final Set<String> requestedImages = new HashSet<>();
-    private final Map<Integer, Integer> glyphWidths = new HashMap<>();
+    /** Width in font pixels by code point and bold/italic bits; the font does not change while the book is open. */
+    private final Int2IntOpenHashMap glyphWidths = new Int2IntOpenHashMap();
+    /** Wrapped lines of each page, kept until its text, styles or font size change. */
+    private final Map<BookPage, Layout> layouts = new WeakHashMap<>();
     private final List<Control> controls = new ArrayList<>();
     private final BookEditor editor;
     private boolean editable;
@@ -274,6 +279,8 @@ public final class BookScreen extends Screen {
         }
     }
 
+    private record Layout(int changes, int fontSize, List<TextLayout.Line> lines) {}
+
     private record ImageBox(int x, int y, int width, int height) {
         boolean contains(float mouseX, float mouseY) {
             return mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height;
@@ -313,7 +320,13 @@ public final class BookScreen extends Screen {
 
     private float glyphWidth(int codePoint, int encodedStyle) {
         int key = codePoint << 2 | encodedStyle & 3;
-        return glyphWidths.computeIfAbsent(key, ignored -> font.width(Component.literal(new String(Character.toChars(codePoint))).withStyle(style(encodedStyle))));
+        int width = glyphWidths.getOrDefault(key, -1);
+        if (width < 0) {
+            var glyph = Component.literal(new String(Character.toChars(codePoint))).withStyle(style(encodedStyle));
+            width = font.width(glyph);
+            glyphWidths.put(key, width);
+        }
+        return width;
     }
 
     private float advance(BookPage page, int codePoint, int encodedStyle) {
@@ -321,7 +334,14 @@ public final class BookScreen extends Screen {
     }
 
     private List<TextLayout.Line> lines(BookPage page) {
-        return TextLayout.wrap(page, BookEditor.PAGE_WIDTH, (codePoint, encoded) -> advance(page, codePoint, encoded));
+        Layout layout = layouts.get(page);
+        if (layout == null || layout.changes() != page.changeCount() || layout.fontSize() != page.fontSize) {
+            var lines = TextLayout.wrap(page, BookEditor.PAGE_WIDTH,
+                (codePoint, encoded) -> advance(page, codePoint, encoded));
+            layout = new Layout(page.changeCount(), page.fontSize, List.copyOf(lines));
+            layouts.put(page, layout);
+        }
+        return layout.lines();
     }
 
     private int textY(BookPage page) {
@@ -557,7 +577,7 @@ public final class BookScreen extends Screen {
         String before = editor.document.json();
         int previousPage = editor.page;
         int previousCursor = editor.cursor;
-        editor.remember();
+        editor.remember(before);
         try {
             action.run();
             if (paginate) editor.paginate(this::glyphWidth);
@@ -760,13 +780,14 @@ public final class BookScreen extends Screen {
     private void save(boolean sign, boolean closeAfter) {
         if (!editable || busy) return;
         try {
-            byte[] bytes = editor.document.bytes();
+            String json = editor.document.json();
+            byte[] bytes = json.getBytes(StandardCharsets.UTF_8);
             BookDocument.parse(bytes);
             backup();
             busy = true;
             requestAt = System.currentTimeMillis();
             closeAfterSave = closeAfter;
-            sentDocument = editor.document.json();
+            sentDocument = json;
             status = text("saving");
             BookNetwork.upload(session, sign ? UploadKind.SIGN : UploadKind.SAVE, bytes);
         } catch (RuntimeException exception) {

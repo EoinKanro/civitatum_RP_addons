@@ -15,6 +15,25 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 
 Кнопка «Гардероб» открывает галерею NCL Skins, если этот мод установлен, иначе — настройки скина.
 
+## Better ModList
+
+Better ModList добавляет свою кнопку модов (по умолчанию шестерёнку) на любой `TitleScreen`, в том числе на наш экран, поэтому кнопок модов было две. Наша кнопка при этом открывала список модов NeoForge, а не экран Better ModList.
+
+Теперь, если Better ModList установлен, кнопка «Моды» открывает его экран, а его кнопки (`ModMenuButtonWidget` и `UpdateCheckerTexturedButtonWidget`) убираются с нашего экрана. Без Better ModList кнопка открывает список модов NeoForge, как раньше.
+
+Сверено с Better ModList 21.1.4.
+
+## Чужие кнопки на главном экране
+
+Другие моды тоже ставят свои кнопки на любой `TitleScreen`:
+
+- Supplementaries — шестерёнку `ConfigButton` (настройка `configs_button`), которая при `configs_button_opens_mod_list = true` открывает ещё один список модов;
+- Cumulus (входит в The Aether) — кнопку «Menu List» в правом верхнем углу (настройка `enable_menu_list_button`).
+
+Обе убираются с нашего экрана вместе с кнопками Better ModList — обработчиком `ScreenEvent.Init.Post` с приоритетом `LOWEST`, то есть после их собственных (у всех трёх приоритет по умолчанию). Кнопку Cumulus отличаем по ключу подписи `gui.cumulus_menus.button.menu_list`: это обычная ванильная `Button`. Ванильный экран и меню паузы не трогаем.
+
+Сверено с Supplementaries 1.21.1-3.9.9 и Cumulus 2.0.7 (из The Aether 1.21.1-1.5.10).
+
 ## Конфиг
 
 `config/civitatum-menu.json` создаётся при первом запуске. Значения вне допустимых границ поправляются при чтении.
@@ -26,7 +45,7 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 | `southernHemisphere` | `false` | сдвинуть сезоны на полгода |
 | `parallax`, `parallaxIntensity`, `parallaxResponse` | `true`, `0.02`, `8.0` | параллакс фона: включение, амплитуда (0–0.1), скорость отклика (0.1–40) |
 | `music`, `musicVolume` | `true`, `1.0` | свой плейлист и его громкость (0–1) |
-| `footer` | `Civitatum Team – Право на Возвращение` | подпись внизу слева |
+| `footer` | `menu.civitatum_menu.footer` | подпись внизу слева: ключ перевода или свой текст как есть; прежний русский текст по умолчанию заменяется ключом при чтении |
 | `menuLeft`, `menuVerticalOffset` | `51`, `-39` | положение кнопок на виртуальном холсте 960×540 |
 | `logoWidth`, `logoHeight`, `logoTop` | `351`, `70`, `12` | размер и отступ логотипа |
 | `showLanguageAndAccessibility` | `true` | кнопки «Яз» и «A» в правом верхнем углу |
@@ -35,4 +54,5 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 
 - `textures/<сезон>_background.png` — фоны 1672×941, `textures/label.png` — логотип 1064×261;
 - `sounds/maintheme01–04.ogg` и `sounds.json` — треки (потоковое воспроизведение);
-- `tracks.json` — названия и длительность треков для подписи «Сейчас играет».
+- `tracks.json` — названия и длительность треков для подписи «Сейчас играет»; переведённые названия — `menu.civitatum_menu.track.<id>` в `lang`;
+- `lang/ru_ru.json`, `lang/en_us.json` — тексты меню на русском и английском.

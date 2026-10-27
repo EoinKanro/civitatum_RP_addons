@@ -2,17 +2,23 @@ package team.civitatum.books.client;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+
 import team.civitatum.books.document.BookDocument;
 import team.civitatum.books.document.BookPage;
 import team.civitatum.books.document.TextLayout;
 
-/** Editing and history are independent of Minecraft screens and network acknowledgements. */
+/**
+ * Editing and history are independent of Minecraft screens and network acknowledgements.
+ */
 public final class BookEditor {
+
     public static final int PAGE_WIDTH = 350;
     public static final int PAGE_HEIGHT = 372;
     private static final int HISTORY_CHARACTERS = 4 * 1024 * 1024;
+
     private final Deque<String> undo = new ArrayDeque<>();
     private final Deque<String> redo = new ArrayDeque<>();
+
     public BookDocument document;
     public int page;
     public int cursor;
@@ -32,15 +38,26 @@ public final class BookEditor {
         anchor = 0;
     }
 
-    public int selectionStart() { return Math.min(cursor, anchor); }
-    public int selectionEnd() { return Math.max(cursor, anchor); }
+    public int selectionStart() {
+        return Math.min(cursor, anchor);
+    }
+
+    public int selectionEnd() {
+        return Math.max(cursor, anchor);
+    }
 
     public String selection() {
         return currentPage().text().substring(selectionStart(), selectionEnd());
     }
 
     public void remember() {
-        String json = document.json();
+        remember(document.json());
+    }
+
+    /**
+     * Records {@code json}, the serialized current document, so a caller that already has it saves a pass.
+     */
+    public void remember(String json) {
         if (undo.isEmpty() || !undo.peekLast().equals(json)) undo.addLast(json);
         trim(undo);
         redo.clear();
@@ -53,8 +70,13 @@ public final class BookEditor {
         }
     }
 
-    public boolean undo() { return restore(undo, redo); }
-    public boolean redo() { return restore(redo, undo); }
+    public boolean undo() {
+        return restore(undo, redo);
+    }
+
+    public boolean redo() {
+        return restore(redo, undo);
+    }
 
     private boolean restore(Deque<String> from, Deque<String> to) {
         if (from.isEmpty()) return false;
@@ -77,16 +99,17 @@ public final class BookEditor {
     public void insert(String value, TextLayout.GlyphWidth measure) {
         String insertion = value.replace("\r\n", "\n").replace('\r', '\n').replace("\t", "    ")
                 .replace("\0", "").replace("§", "");
-        int length = currentPage().text().length() - selection().length() + insertion.length();
+        int removed = selectionEnd() - selectionStart();
+        int length = currentPage().text().length() - removed + insertion.length();
         if (length > BookDocument.MAX_PAGE_CHARACTERS
-                || document.characterCount() - selection().length() + insertion.length() > BookDocument.MAX_CHARACTERS) {
+                || document.characterCount() - removed + insertion.length() > BookDocument.MAX_CHARACTERS) {
             throw new IllegalArgumentException("text");
         }
         String before = document.json();
         int oldPage = page;
         int oldCursor = cursor;
         int oldAnchor = anchor;
-        remember();
+        remember(before);
         try {
             int start = selectionStart();
             currentPage().replace(start, selectionEnd(), insertion);
@@ -103,7 +126,9 @@ public final class BookEditor {
         }
     }
 
-    /** Overflow moves forward without deleting page boundaries deliberately added by the author. */
+    /**
+     * Overflow moves forward without deleting page boundaries deliberately added by the author.
+     */
     public void paginate(TextLayout.GlyphWidth measure) {
         for (int index = 0; index < document.pages.size(); index++) {
             BookPage current = document.pages.get(index);
