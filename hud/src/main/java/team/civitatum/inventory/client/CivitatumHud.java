@@ -6,6 +6,8 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.neoforge.client.event.RegisterGuiLayersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiLayerEvent;
@@ -20,6 +22,14 @@ public final class CivitatumHud {
     private static final int FOOD_COLOR = 0xFF718D48, FOOD_PREVIEW = 0xFFB9D98A;
     private static final int BAR_HEIGHT = 9;
     private static final int SLOT = 24;
+    /** Distance from the left edge to the bars and from the bottom edge to the slots. */
+    private static final int MARGIN = 8;
+    private static final int GAP = 4;
+    /** Nine hotbar slots, a gap, the ability slot. */
+    private static final int CLASSIC_WIDTH = 9 * SLOT + GAP + SLOT;
+    private static final int SLOT_BACKGROUND = 0x9917130E;
+    /** {@link MorrowindButton}'s hover tint at the alpha of {@link #SLOT_BACKGROUND}. */
+    private static final int SELECTED_BACKGROUND = 0x995F4824;
 
     public static boolean active() {
         var mc = Minecraft.getInstance();
@@ -52,7 +62,32 @@ public final class CivitatumHud {
         var mc = Minecraft.getInstance();
         if (!active() || mc.options.hideGui || mc.screen instanceof AbstractContainerScreen<?>) return;
         var player = mc.player;
-        int x = 8, y = g.guiHeight() - 34, w = Math.clamp(g.guiWidth() / 4, 76, 116);
+        int slotY = g.guiHeight() - MARGIN - SLOT;
+        // The slots sit 2 px below the top of the bars.
+        int x = MARGIN, w = Math.clamp(g.guiWidth() / 4, 76, 116);
+        bars(g, player, x, slotY - 2, w);
+        if (InventoryPreferences.get().hotbarStyle == HotbarStyle.CLASSIC) {
+            classicHotbar(g, player, (g.guiWidth() - CLASSIC_WIDTH) / 2, slotY);
+        } else {
+            slot(g, player.getMainHandItem(), x + w + 8, slotY);
+            ability(g, player, x + w + 36, slotY);
+            // Shield / off-hand use must still be visible after hiding the vanilla hotbar.
+            if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x + w + 64, slotY);
+        }
+    }
+
+    /** The nine hotbar slots with the selected one lit, then the ability; the off hand stands left, as in vanilla. */
+    private static void classicHotbar(GuiGraphics g, Player player, int x, int y) {
+        var inventory = player.getInventory();
+        for (int i = 0; i < Inventory.getSelectionSize(); i++) {
+            boolean selected = i == inventory.selected;
+            slot(g, inventory.getItem(i), x + i * SLOT, y, selected ? SELECTED_BACKGROUND : SLOT_BACKGROUND, selected);
+        }
+        ability(g, player, x + CLASSIC_WIDTH - SLOT, y);
+        if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x - GAP - SLOT, y);
+    }
+
+    private static void bars(GuiGraphics g, Player player, int x, int y, int w) {
         int healthColor = player.hasEffect(MobEffects.POISON) ? 0xFF80A33F
             : player.hasEffect(MobEffects.WITHER) ? 0xFF766B60 : 0xFFAE4236;
         bar(g, x, y, w, player.getHealth(), player.getMaxHealth(), healthColor);
@@ -73,16 +108,17 @@ public final class CivitatumHud {
         int restored = AppleSkinBridge.heldHunger(player);
         if (restored > 0) {
             int from = fill(w, level, MAX_FOOD), to = fill(w, level + restored, MAX_FOOD);
-            g.fill(x + 2 + from, y + 22, x + 2 + to, y + 27, alpha(FOOD_PREVIEW, flash(mc)));
+            g.fill(x + 2 + from, y + 22, x + 2 + to, y + 27, alpha(FOOD_PREVIEW, flash(Minecraft.getInstance())));
         }
-        slot(g, player.getMainHandItem(), x + w + 8, y + 2);
+    }
+
+    /** The selected ability, dimmed while it is not ready. */
+    private static void ability(GuiGraphics g, Player player, int x, int y) {
         var selected = AbilitySelection.selected(player);
-        slot(g, selected == null ? ItemStack.EMPTY : selected.icon(), x + w + 36, y + 2);
+        slot(g, selected == null ? ItemStack.EMPTY : selected.icon(), x, y);
         if (selected != null && !selected.ready().getAsBoolean()) {
-            g.fill(x + w + 39, y + 5, x + w + 55, y + 21, 0x8818130E);
+            g.fill(x + 3, y + 3, x + SLOT - 5, y + SLOT - 5, 0x8818130E);
         }
-        // Shield / off-hand use must still be visible after hiding the vanilla hotbar.
-        if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x + w + 64, y + 2);
     }
 
     /** Pulses between nothing and AppleSkin's flash alpha. */
@@ -107,8 +143,12 @@ public final class CivitatumHud {
     }
 
     private static void slot(GuiGraphics g, ItemStack item, int x, int y) {
-        g.fill(x, y, x + SLOT, y + SLOT, 0x9917130E);
-        MorrowindSkin.frame(g, x, y, SLOT, SLOT, true);
+        slot(g, item, x, y, SLOT_BACKGROUND, true);
+    }
+
+    private static void slot(GuiGraphics g, ItemStack item, int x, int y, int background, boolean lit) {
+        g.fill(x, y, x + SLOT, y + SLOT, background);
+        MorrowindSkin.frame(g, x, y, SLOT, SLOT, lit);
         g.renderItem(item, x + 4, y + 4);
         g.renderItemDecorations(Minecraft.getInstance().font, item, x + 4, y + 4);
     }

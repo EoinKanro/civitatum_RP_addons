@@ -18,10 +18,12 @@ public final class InventoryPreferences {
     private static final String LEGACY_FILE = "civitatum-inventory.json";
     private static final double DEFAULT_TRANSPARENCY = 0.60;
     private static final double DEFAULT_SLOT_SCALE = 1.0;
+    private static final HotbarStyle DEFAULT_HOTBAR_STYLE = HotbarStyle.MORROWIND;
     private static InventoryPreferences instance;
     public boolean enabled = true;
     public double transparency = DEFAULT_TRANSPARENCY;
     public double slotScale = DEFAULT_SLOT_SCALE;
+    public HotbarStyle hotbarStyle = DEFAULT_HOTBAR_STYLE;
     public String selectedAbility = "civitatum:racial_gift";
     public boolean powersVisible = true;
     /** The cosmetic column of the accessories window, for menus that leave it to this screen. */
@@ -53,6 +55,8 @@ public final class InventoryPreferences {
         }
         result.transparency = bounded(result.transparency, 0, 0.9, DEFAULT_TRANSPARENCY);
         result.slotScale = bounded(result.slotScale, 1, 2, DEFAULT_SLOT_SCALE);
+        // Gson reads an unknown style name as null.
+        if (result.hotbarStyle == null) result.hotbarStyle = DEFAULT_HOTBAR_STYLE;
         return result;
     }
 
