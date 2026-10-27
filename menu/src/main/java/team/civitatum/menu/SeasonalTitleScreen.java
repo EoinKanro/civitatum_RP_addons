@@ -17,7 +17,6 @@ import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
 import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.client.gui.ModListScreen;
 import org.lwjgl.glfw.GLFW;
 
 /**
@@ -75,7 +74,7 @@ public final class SeasonalTitleScreen extends TitleScreen {
         }
 
         this.add(left - 1, y + 46, 200, "wardrobe", () -> Wardrobe.open(this));
-        this.add(left, y + 68, 200, "mods", () -> this.minecraft.setScreen(new ModListScreen(this)));
+        this.add(left, y + 68, 200, "mods", () -> ModsMenu.open(this));
         this.add(left, y + 94, 98, "options",
             () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
         this.add(left + 101, y + 94, 98, "quit", this.minecraft::stop);
