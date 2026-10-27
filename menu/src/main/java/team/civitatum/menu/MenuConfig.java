@@ -14,7 +14,10 @@ public final class MenuConfig {
     private static final double DEFAULT_PARALLAX_INTENSITY = 0.02;
     private static final double DEFAULT_PARALLAX_RESPONSE = 8.0;
     private static final double DEFAULT_MUSIC_VOLUME = 1.0;
-    private static final String DEFAULT_FOOTER = "Civitatum Team – Право на Возвращение";
+    /** A translation key; any other text in the config is shown as written. */
+    private static final String DEFAULT_FOOTER = "menu.civitatum_menu.footer";
+    /** The footer written by 0.1.0, before translations; it is replaced by the translated default. */
+    private static final String OLD_DEFAULT_FOOTER = "Civitatum Team – Право на Возвращение";
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     public static MenuConfig current = new MenuConfig();
 
@@ -60,7 +63,7 @@ public final class MenuConfig {
         current.logoTop = Math.clamp(current.logoTop, 0, 150);
         current.menuLeft = Math.clamp(current.menuLeft, 4, 500);
         current.menuVerticalOffset = Math.clamp(current.menuVerticalOffset, -150, 100);
-        if (current.footer == null) {
+        if (current.footer == null || current.footer.equals(OLD_DEFAULT_FOOTER)) {
             current.footer = DEFAULT_FOOTER;
         }
     }

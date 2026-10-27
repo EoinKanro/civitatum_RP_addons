@@ -59,8 +59,8 @@ public final class RaceCatalog {
         Objects.requireNonNull(input, "character");
         var c = input.copy();
         var r = Objects.requireNonNull(get(c.race), "unknown race");
-        if (r.family()) throw new IllegalArgumentException("Нужно выбрать подрасу");
-        if (!List.of("male", "female").contains(c.sex)) throw new IllegalArgumentException("Неизвестный пол");
+        if (r.family()) throw new IllegalArgumentException(Civitatum.ERROR + "subrace");
+        if (!List.of("male", "female").contains(c.sex)) throw new IllegalArgumentException(Civitatum.ERROR + "sex");
         c.name = c.name == null ? "" : c.name.strip().replaceAll("[\\p{Cntrl}§]", "");
         if (c.name.length() > 32) c.name = c.name.substring(0, 32);
         c.height = finite(c.height, r.minHeight, r.maxHeight, (r.minHeight + r.maxHeight) / 2);
@@ -99,7 +99,7 @@ public final class RaceCatalog {
         return c;
     }
     static int paletteIndex(int index, String[] palette) {
-        if (index < 0 || index >= palette.length) throw new IllegalArgumentException("Цвет не входит в палитру");
+        if (index < 0 || index >= palette.length) throw new IllegalArgumentException(Civitatum.ERROR + "palette");
         return index;
     }
     public static boolean beardAllowed(CharacterData c){var r=get(c.race);return r!=null && r.beardAllowed && (!c.female() || r.id.equals("dwarf"));}

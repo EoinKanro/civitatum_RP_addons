@@ -14,7 +14,9 @@ import net.minecraft.client.gui.screens.GenericMessageScreen;
 import net.minecraft.client.gui.screens.LevelLoadingScreen;
 import net.minecraft.client.gui.screens.ProgressScreen;
 import net.minecraft.client.gui.screens.ReceivingLevelScreen;
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.client.resources.sounds.AbstractTickableSoundInstance;
+import net.minecraft.locale.Language;
 import net.minecraft.client.resources.sounds.SoundInstance;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundSource;
@@ -82,7 +84,7 @@ public final class MenuMusic {
             SeasonalTitleScreen.releaseBackground(minecraft);
         } else if (!audible(minecraft)) {
             stop();
-            label = "Музыка выключена";
+            label = I18n.get("menu.civitatum_menu.music_off");
         } else if (retryDelay > 0) {
             retryDelay--;
         } else {
@@ -124,7 +126,10 @@ public final class MenuMusic {
         int second = Math.min(duration, (int)(elapsed / 1000L));
         if (second != lastSecond) {
             lastSecond = second;
-            label = "Сейчас играет: " + selected.title() + "  " + time(second) + " / " + time(duration);
+            // tracks.json keeps the original title, shown when the language has no translation of it.
+            String title = Language.getInstance()
+                .getOrDefault("menu.civitatum_menu.track." + selected.id(), selected.title());
+            label = I18n.get("menu.civitatum_menu.now_playing", title, time(second), time(duration));
         }
     }
 

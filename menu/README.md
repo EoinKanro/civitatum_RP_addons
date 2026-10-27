@@ -26,7 +26,7 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 | `southernHemisphere` | `false` | сдвинуть сезоны на полгода |
 | `parallax`, `parallaxIntensity`, `parallaxResponse` | `true`, `0.02`, `8.0` | параллакс фона: включение, амплитуда (0–0.1), скорость отклика (0.1–40) |
 | `music`, `musicVolume` | `true`, `1.0` | свой плейлист и его громкость (0–1) |
-| `footer` | `Civitatum Team – Право на Возвращение` | подпись внизу слева |
+| `footer` | `menu.civitatum_menu.footer` | подпись внизу слева: ключ перевода или свой текст как есть; прежний русский текст по умолчанию заменяется ключом при чтении |
 | `menuLeft`, `menuVerticalOffset` | `51`, `-39` | положение кнопок на виртуальном холсте 960×540 |
 | `logoWidth`, `logoHeight`, `logoTop` | `351`, `70`, `12` | размер и отступ логотипа |
 | `showLanguageAndAccessibility` | `true` | кнопки «Яз» и «A» в правом верхнем углу |
@@ -35,4 +35,5 @@ Minecraft **1.21.1** · NeoForge **21.1.256+** · Java **21** · только к
 
 - `textures/<сезон>_background.png` — фоны 1672×941, `textures/label.png` — логотип 1064×261;
 - `sounds/maintheme01–04.ogg` и `sounds.json` — треки (потоковое воспроизведение);
-- `tracks.json` — названия и длительность треков для подписи «Сейчас играет».
+- `tracks.json` — названия и длительность треков для подписи «Сейчас играет»; переведённые названия — `menu.civitatum_menu.track.<id>` в `lang`;
+- `lang/ru_ru.json`, `lang/en_us.json` — тексты меню на русском и английском.

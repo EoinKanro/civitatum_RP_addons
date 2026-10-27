@@ -60,7 +60,7 @@ public final class MetalEating {
         boolean ore=ORES.contains(id) || stack.is(ORE_ITEMS);
         int ticks=nugget ? Math.max(8,ModConfig.INSTANCE.metalUseTicks/2) : ModConfig.INSTANCE.metalUseTicks;
         MEALS.put(p.getUUID(),new Meal(hand,stack.copy(),RaceService.time(p)+ticks,food,ore,stack.is(Items.NETHERITE_INGOT)));
-        p.displayClientMessage(Component.literal("Питание металлом… удерживайте предмет в руке"),true);
+        p.displayClientMessage(Civitatum.message("eating_metal"),true);
         return true;
     }
     public static void tick(ServerPlayer p) {

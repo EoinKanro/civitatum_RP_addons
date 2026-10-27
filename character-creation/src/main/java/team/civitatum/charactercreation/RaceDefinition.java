@@ -1,7 +1,8 @@
 package team.civitatum.charactercreation;
 
 public final class RaceDefinition {
-    public String id, name, parent, description, positive, negative, active;
+    /** Texts live in the lang files under {@link #key}: name, description, positive, negative, ability, ability_name. */
+    public String id, parent;
     public float minHeight, maxHeight;
     public int food, cooldown;
     public boolean magic, pointedEars, hornsAllowed, hornsRequired, tailAllowed, beardAllowed, hairAllowed = true;
@@ -12,6 +13,9 @@ public final class RaceDefinition {
     /** Palettes as RGB, parsed from the hex strings once: skins, horns and hair are coloured every frame. */
     private transient int[] skinRgb, hairRgb, eyeRgb, hornRgb, tattooRgb;
     public boolean family() { return RaceCatalog.children(id).size() > 0; }
+    /** A family is chosen through its subraces, which carry the abilities. */
+    public boolean hasAbility() { return !family(); }
+    public String key(String field) { return "race.civitatum." + id + "." + field; }
     public boolean elf() { return "elf".equals(parent); }
     public boolean dragon() { return "dragonborn".equals(parent); }
     public boolean algnor() { return "algnor".equals(parent); }

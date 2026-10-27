@@ -49,7 +49,7 @@ public final class ClientCharacters {
             }
             case 3 -> {
                 game.setScreen(null);
-                if (game.player != null) game.player.displayClientMessage(Component.literal(packet.data()), true);
+                if (game.player != null) game.player.displayClientMessage(Component.translatable(packet.data()), true);
             }
             case 4 -> {
                 if (game.screen instanceof CharacterScreen screen) screen.error(packet.data());

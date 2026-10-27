@@ -1,5 +1,6 @@
 package team.civitatum.inventory.client;
 
+import net.minecraft.client.resources.language.I18n;
 import net.minecraft.world.entity.player.Player;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -28,8 +29,11 @@ public final class RacesBridge {
             var race = RaceCatalog.get(character.race);
             if (race == null) return null;
             var sign = BirthsignCatalog.get(character.birthsign);
-            return new Details(character.name, race.name, sign == null || sign.id().equals("none") ? "" : sign.name(),
-                race.positive, race.negative, race.active, race.food, race.cooldown,
+            // Texts come from the lang files of the civitatum mod, in the client's language.
+            return new Details(character.name, I18n.get(race.key("name")),
+                sign == null || sign.id().equals("none") ? "" : I18n.get(sign.key("name")),
+                I18n.get(race.key("positive")), I18n.get(race.key("negative")),
+                race.hasAbility() ? I18n.get(race.key("ability")) : "", race.food, race.cooldown,
                 Math.max(0, state.cooldownUntil() - player.level().getGameTime()), state.curseDeaths());
         }
         static void activate() { PacketDistributor.sendToServer(new RaceNetwork.Serverbound(1, 0, "")); }

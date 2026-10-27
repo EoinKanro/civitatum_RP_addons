@@ -14,6 +14,7 @@ import net.minecraft.client.gui.screens.options.AccessibilityOptionsScreen;
 import net.minecraft.client.gui.screens.options.LanguageSelectScreen;
 import net.minecraft.client.gui.screens.options.OptionsScreen;
 import net.minecraft.client.gui.screens.worldselection.SelectWorldScreen;
+import net.minecraft.locale.Language;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.neoforge.client.gui.ModListScreen;
@@ -35,7 +36,8 @@ public final class SeasonalTitleScreen extends TitleScreen {
     private static final int LOGO_HEIGHT = 261;
     /** The season is rechecked once a minute (1200 ticks), so a menu left open over midnight follows the calendar. */
     private static final int CALENDAR_CHECK_TICKS = 1200;
-    private static final String COPYRIGHT = "© Mojang AB. Не распространять!";
+    /** Vanilla's own copyright line, already translated by the game. */
+    private static final Component COPYRIGHT = Component.translatable("title.credits");
     private static ResourceLocation loadedBackground;
     private static Season loadedSeason;
     private float scale;
@@ -60,8 +62,8 @@ public final class SeasonalTitleScreen extends TitleScreen {
         MenuConfig c = MenuConfig.current;
         int left = Math.min(c.menuLeft, (int)this.virtualWidth - 220);
         int y = (int)this.virtualHeight / 2 + c.menuVerticalOffset;
-        this.add(left, y, 200, "Одиночное приключение", () -> this.minecraft.setScreen(new SelectWorldScreen(this)));
-        TextMenuButton multiplayer = this.add(left, y + 24, 200, "Отправиться с группой", () -> {
+        this.add(left, y, 200, "singleplayer", () -> this.minecraft.setScreen(new SelectWorldScreen(this)));
+        TextMenuButton multiplayer = this.add(left, y + 24, 200, "multiplayer", () -> {
             if (this.minecraft.allowsMultiplayer()) {
                 this.minecraft.setScreen(this.minecraft.options.skipMultiplayerWarning
                     ? new JoinMultiplayerScreen(this) : new SafetyScreen(this));
@@ -72,21 +74,21 @@ public final class SeasonalTitleScreen extends TitleScreen {
             multiplayer.setTooltip(Tooltip.create(this.multiplayerDisabledReason()));
         }
 
-        this.add(left - 1, y + 46, 200, "Гардероб", () -> Wardrobe.open(this));
-        this.add(left, y + 68, 200, "Моды", () -> this.minecraft.setScreen(new ModListScreen(this)));
-        this.add(left, y + 94, 98, "Настройки…",
+        this.add(left - 1, y + 46, 200, "wardrobe", () -> Wardrobe.open(this));
+        this.add(left, y + 68, 200, "mods", () -> this.minecraft.setScreen(new ModListScreen(this)));
+        this.add(left, y + 94, 98, "options",
             () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
-        this.add(left + 101, y + 94, 98, "Выйти из игры", this.minecraft::stop);
+        this.add(left + 101, y + 94, 98, "quit", this.minecraft::stop);
         if (c.showLanguageAndAccessibility) {
             this.add(
                 (int)this.virtualWidth - 46,
                 3,
                 20,
-                "Яз",
+                "language",
                 () -> this.minecraft.setScreen(
                     new LanguageSelectScreen(this, this.minecraft.options, this.minecraft.getLanguageManager()))
             );
-            this.add((int)this.virtualWidth - 23, 3, 20, "A",
+            this.add((int)this.virtualWidth - 23, 3, 20, "accessibility",
                 () -> this.minecraft.setScreen(new AccessibilityOptionsScreen(this, this.minecraft.options)));
         }
 
@@ -96,14 +98,15 @@ public final class SeasonalTitleScreen extends TitleScreen {
         this.lastFrame = Util.getMillis();
     }
 
-    private TextMenuButton add(int x, int y, int w, String text, Runnable action) {
+    /** {@code key}: the label under {@code menu.civitatum_menu.<key>} in the lang files. */
+    private TextMenuButton add(int x, int y, int w, String key, Runnable action) {
         return this.addRenderableWidget(
             new TextMenuButton(
                 Math.round((float)x * this.scale),
                 Math.round((float)y * this.scale),
                 Math.round((float)w * this.scale),
                 Math.max(1, Math.round(20.0F * this.scale)),
-                Component.literal(text),
+                Component.translatable("menu.civitatum_menu." + key),
                 this.scale,
                 action
             )
@@ -182,7 +185,8 @@ public final class SeasonalTitleScreen extends TitleScreen {
         RenderSystem.disableBlend();
         String music = this.font.plainSubstrByWidth(MenuMusic.label(), Math.max(100, (int)this.virtualWidth - 105));
         graphics.drawString(this.font, music, 4, 6, -1, true);
-        String footer = this.font.plainSubstrByWidth(c.footer, (int)this.virtualWidth / 2 - 12);
+        String footer = this.font.plainSubstrByWidth(Language.getInstance().getOrDefault(c.footer),
+            (int)this.virtualWidth / 2 - 12);
         graphics.drawString(this.font, footer, 4, (int)this.virtualHeight - 14, -1, true);
         graphics.drawString(this.font, COPYRIGHT, (int)this.virtualWidth - this.font.width(COPYRIGHT) - 4,
             (int)this.virtualHeight - 9, -1, true);
