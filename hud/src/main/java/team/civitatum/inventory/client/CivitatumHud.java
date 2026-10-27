@@ -30,6 +30,14 @@ public final class CivitatumHud {
     private static final int SLOT_BACKGROUND = 0x9917130E;
     /** {@link MorrowindButton}'s hover tint at the alpha of {@link #SLOT_BACKGROUND}. */
     private static final int SELECTED_BACKGROUND = 0x995F4824;
+    /** {@link MorrowindButton}'s text colour at 60% opacity, so the item under the number stays readable. */
+    private static final int NUMBER_COLOR = 0x99E8D9B7;
+    /** The depth of vanilla's stack count: above the item. */
+    private static final float NUMBER_Z = 200;
+    /** Inside the 2 px frame, 1 px from it. */
+    private static final int NUMBER_INSET = 4;
+    /** A full-size digit (5 x 7 px) covers too much of a 16 px item. */
+    private static final float NUMBER_SCALE = 0.65F;
 
     public static boolean active() {
         var mc = Minecraft.getInstance();
@@ -70,6 +78,7 @@ public final class CivitatumHud {
             classicHotbar(g, player, (g.guiWidth() - CLASSIC_WIDTH) / 2, slotY);
         } else {
             slot(g, player.getMainHandItem(), x + w + 8, slotY);
+            number(g, player.getInventory().selected, x + w + 8, slotY);
             ability(g, player, x + w + 36, slotY);
             // Shield / off-hand use must still be visible after hiding the vanilla hotbar.
             if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x + w + 64, slotY);
@@ -82,6 +91,7 @@ public final class CivitatumHud {
         for (int i = 0; i < Inventory.getSelectionSize(); i++) {
             boolean selected = i == inventory.selected;
             slot(g, inventory.getItem(i), x + i * SLOT, y, selected ? SELECTED_BACKGROUND : SLOT_BACKGROUND, selected);
+            number(g, i, x + i * SLOT, y);
         }
         ability(g, player, x + CLASSIC_WIDTH - SLOT, y);
         if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x - GAP - SLOT, y);
@@ -144,6 +154,16 @@ public final class CivitatumHud {
 
     private static void slot(GuiGraphics g, ItemStack item, int x, int y) {
         slot(g, item, x, y, SLOT_BACKGROUND, true);
+    }
+
+    /** The hotbar slot's number, counted from 1 like the keys that select it, in the slot's top left corner. */
+    private static void number(GuiGraphics g, int hotbarSlot, int x, int y) {
+        g.pose().pushPose();
+        // Scaled about the corner, so the digit stays at the inset.
+        g.pose().translate(x + NUMBER_INSET, y + NUMBER_INSET, NUMBER_Z);
+        g.pose().scale(NUMBER_SCALE, NUMBER_SCALE, 1);
+        g.drawString(Minecraft.getInstance().font, String.valueOf(hotbarSlot + 1), 0, 0, NUMBER_COLOR, false);
+        g.pose().popPose();
     }
 
     private static void slot(GuiGraphics g, ItemStack item, int x, int y, int background, boolean lit) {
