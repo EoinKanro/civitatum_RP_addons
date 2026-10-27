@@ -19,11 +19,18 @@ public final class InventoryPreferences {
     private static final double DEFAULT_TRANSPARENCY = 0.60;
     private static final double DEFAULT_SLOT_SCALE = 1.0;
     private static final HotbarStyle DEFAULT_HOTBAR_STYLE = HotbarStyle.MORROWIND;
+    /** The HUD blocks' sizes before the setting existed; the range lets each shrink or grow from it. */
+    private static final double DEFAULT_HUD_SCALE = 1.0;
+    public static final double MIN_HUD_SCALE = 0.5, MAX_HUD_SCALE = 2.0;
     private static InventoryPreferences instance;
     public boolean enabled = true;
     public double transparency = DEFAULT_TRANSPARENCY;
     public double slotScale = DEFAULT_SLOT_SCALE;
     public HotbarStyle hotbarStyle = DEFAULT_HOTBAR_STYLE;
+    /** Health, mana and food bars. */
+    public double barsScale = DEFAULT_HUD_SCALE;
+    public double hotbarScale = DEFAULT_HUD_SCALE;
+    public double effectsScale = DEFAULT_HUD_SCALE;
     public String selectedAbility = "civitatum:racial_gift";
     public boolean powersVisible = true;
     /** The cosmetic column of the accessories window, for menus that leave it to this screen. */
@@ -55,6 +62,9 @@ public final class InventoryPreferences {
         }
         result.transparency = bounded(result.transparency, 0, 0.9, DEFAULT_TRANSPARENCY);
         result.slotScale = bounded(result.slotScale, 1, 2, DEFAULT_SLOT_SCALE);
+        result.barsScale = bounded(result.barsScale, MIN_HUD_SCALE, MAX_HUD_SCALE, DEFAULT_HUD_SCALE);
+        result.hotbarScale = bounded(result.hotbarScale, MIN_HUD_SCALE, MAX_HUD_SCALE, DEFAULT_HUD_SCALE);
+        result.effectsScale = bounded(result.effectsScale, MIN_HUD_SCALE, MAX_HUD_SCALE, DEFAULT_HUD_SCALE);
         // Gson reads an unknown style name as null.
         if (result.hotbarStyle == null) result.hotbarStyle = DEFAULT_HOTBAR_STYLE;
         return result;

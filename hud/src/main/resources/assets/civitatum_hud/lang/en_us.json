@@ -78,5 +78,8 @@
   "gui.civitatum_hud.settings": "Civitatum HUD Settings",
   "gui.civitatum_hud.hotbar": "Hotbar: %s",
   "gui.civitatum_hud.hotbar.morrowind": "Morrowind",
-  "gui.civitatum_hud.hotbar.classic": "Classic"
+  "gui.civitatum_hud.hotbar.classic": "Classic",
+  "gui.civitatum_hud.bars_scale": "Health, mana, food: %s%%",
+  "gui.civitatum_hud.hotbar_scale": "Hotbar: %s%%",
+  "gui.civitatum_hud.effects_scale": "Effects: %s%%"
 }

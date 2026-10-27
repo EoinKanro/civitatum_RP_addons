@@ -18,6 +18,7 @@ import net.neoforged.neoforge.client.extensions.common.IClientMobEffectExtension
  * Replaces the vanilla effects layer: the icons are drawn as in {@code Gui.renderEffects} (frame, blinking before the
  * end, NeoForge's custom icon renderers) but at 75%, in rows of up to 7 next to Xaero's minimap, or in the top right
  * corner of the screen without one. Beneficial effects come first; harmful ones start on the row below them.
+ * The effects size setting scales the whole block about its corner at the minimap or the screen corner.
  */
 final class StatusEffectsLayer implements LayeredDraw.Layer {
     private static final ResourceLocation BACKGROUND = ResourceLocation.withDefaultNamespace("hud/effect_background");
@@ -45,11 +46,12 @@ final class StatusEffectsLayer implements LayeredDraw.Layer {
             .sorted(Comparator.reverseOrder())
             .forEach(effect -> (effect.getEffect().value().isBeneficial() ? beneficial : harmful).add(effect));
         int widest = Math.max(beneficial.size(), harmful.size());
+        float scale = (float) InventoryPreferences.get().effectsScale;
         boolean leftward;
         int edge;
         int top;
         if (MinimapBounds.isDrawn()) {
-            leftward = EffectsPlacement.fitsLeftOf(MinimapBounds.x(), widest);
+            leftward = EffectsPlacement.fitsLeftOf(MinimapBounds.x(), widest, scale);
             edge = leftward ? MinimapBounds.x() - EffectsPlacement.GAP
                 : MinimapBounds.x() + MinimapBounds.size() + EffectsPlacement.GAP;
             top = MinimapBounds.y();
@@ -59,10 +61,15 @@ final class StatusEffectsLayer implements LayeredDraw.Layer {
             top = EffectsPlacement.SCREEN_MARGIN + (minecraft.isDemo() ? EffectsPlacement.DEMO_SHIFT : 0);
         }
 
+        // The block is laid out from its corner at the origin and scaled about that corner, next to the minimap.
+        graphics.pose().pushPose();
+        graphics.pose().translate(edge, top, 0);
+        graphics.pose().scale(scale, scale, 1.0F);
         RenderSystem.enableBlend();
-        this.renderKind(graphics, minecraft, beneficial, leftward, edge, top, 0);
-        this.renderKind(graphics, minecraft, harmful, leftward, edge, top, EffectsPlacement.rows(beneficial.size()));
+        this.renderKind(graphics, minecraft, beneficial, leftward, 0, 0, 0);
+        this.renderKind(graphics, minecraft, harmful, leftward, 0, 0, EffectsPlacement.rows(beneficial.size()));
         RenderSystem.disableBlend();
+        graphics.pose().popPose();
     }
 
     private void renderKind(GuiGraphics graphics, Minecraft minecraft, List<MobEffectInstance> effects,

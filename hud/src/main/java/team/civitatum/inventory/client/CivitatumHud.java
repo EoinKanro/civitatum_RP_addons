@@ -24,6 +24,10 @@ public final class CivitatumHud {
     private static final int SLOT = 24;
     /** Distance from the left edge to the bars and from the bottom edge to the slots. */
     private static final int MARGIN = 8;
+    /** Three bars with 1 px between them. */
+    private static final int BARS_HEIGHT = 3 * BAR_HEIGHT + 2;
+    /** The bars start 2 px above the {@link #SLOT} high slots, so they end this far below them. */
+    private static final int BARS_BELOW_SLOTS = BARS_HEIGHT - 2 - SLOT;
     private static final int GAP = 4;
     /** Nine hotbar slots, a gap, the ability slot. */
     private static final int CLASSIC_WIDTH = 9 * SLOT + GAP + SLOT;
@@ -70,19 +74,33 @@ public final class CivitatumHud {
         var mc = Minecraft.getInstance();
         if (!active() || mc.options.hideGui || mc.screen instanceof AbstractContainerScreen<?>) return;
         var player = mc.player;
-        int slotY = g.guiHeight() - MARGIN - SLOT;
-        // The slots sit 2 px below the top of the bars.
-        int x = MARGIN, w = Math.clamp(g.guiWidth() / 4, 76, 116);
-        bars(g, player, x, slotY - 2, w);
-        if (InventoryPreferences.get().hotbarStyle == HotbarStyle.CLASSIC) {
-            classicHotbar(g, player, (g.guiWidth() - CLASSIC_WIDTH) / 2, slotY);
+        var preferences = InventoryPreferences.get();
+        float barsScale = (float) preferences.barsScale, hotbarScale = (float) preferences.hotbarScale;
+        int bottom = g.guiHeight() - MARGIN, w = Math.clamp(g.guiWidth() / 4, 76, 116);
+        // Each block is drawn at its own origin and scaled about the corner that holds it to the screen edge.
+        scaled(g, MARGIN, bottom + BARS_BELOW_SLOTS, barsScale);
+        bars(g, player, 0, -BARS_HEIGHT, w);
+        g.pose().popPose();
+        if (preferences.hotbarStyle == HotbarStyle.CLASSIC) {
+            scaled(g, (g.guiWidth() - CLASSIC_WIDTH) / 2 + CLASSIC_WIDTH / 2, bottom, hotbarScale);
+            classicHotbar(g, player, -CLASSIC_WIDTH / 2, -SLOT);
         } else {
-            slot(g, player.getMainHandItem(), x + w + 8, slotY);
-            number(g, player.getInventory().selected, x + w + 8, slotY);
-            ability(g, player, x + w + 36, slotY);
+            // The slots follow the right end of the bars, 8 px after it at any bar size.
+            scaled(g, MARGIN + w * barsScale + 8, bottom, hotbarScale);
+            slot(g, player.getMainHandItem(), 0, -SLOT);
+            number(g, player.getInventory().selected, 0, -SLOT);
+            ability(g, player, 28, -SLOT);
             // Shield / off-hand use must still be visible after hiding the vanilla hotbar.
-            if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), x + w + 64, slotY);
+            if (!player.getOffhandItem().isEmpty()) slot(g, player.getOffhandItem(), 56, -SLOT);
         }
+        g.pose().popPose();
+    }
+
+    /** Pushes a pose that draws at {@code (x, y)} at {@code scale}; the caller pops it. */
+    private static void scaled(GuiGraphics g, float x, float y, float scale) {
+        g.pose().pushPose();
+        g.pose().translate(x, y, 0);
+        g.pose().scale(scale, scale, 1);
     }
 
     /** The nine hotbar slots with the selected one lit, then the ability; the off hand stands left, as in vanilla. */
