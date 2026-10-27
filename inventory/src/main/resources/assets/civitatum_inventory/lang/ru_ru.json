@@ -1,6 +1,7 @@
 {
   "gui.civitatum_inventory.title": "Civitatum Inventory",
   "gui.civitatum_inventory.equipment": "Экипировка",
+  "gui.civitatum_inventory.accessories_elsewhere": "Аксессуары доступны в окне экипировки.",
   "gui.civitatum_inventory.items": "Инвентарь",
   "gui.civitatum_inventory.information": "Персонаж",
   "gui.civitatum_inventory.search": "Поиск предметов…",
@@ -52,9 +53,8 @@
   "key.categories.civitatum_inventory": "Civitatum Inventory",
   "gui.civitatum_inventory.footer_short": "F8 — сменить интерфейс",
   "gui.civitatum_inventory.remaining_short": "Откат: %s сек.",
-  "gui.civitatum_inventory.storage.inventory": "Вещи",
   "gui.civitatum_inventory.storage.backpack": "Рюкзак",
-  "gui.civitatum_inventory.cosmetics": "Косметика",
+  "gui.civitatum_inventory.cosmetics": "Косметические слоты",
   "gui.civitatum_inventory.backpack_equipment_hint": "Для смены экипировки открой вкладку «Вещи».",
   "gui.civitatum_inventory.render_toggle": "Ctrl + ПКМ — видимость модели аксессуара",
   "gui.civitatum_inventory.container": "Контейнер",

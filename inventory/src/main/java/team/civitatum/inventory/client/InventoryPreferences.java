@@ -22,6 +22,8 @@ public final class InventoryPreferences {
     public double slotScale = DEFAULT_SLOT_SCALE;
     public String selectedAbility = "civitatum:racial_gift";
     public boolean powersVisible = true;
+    /** The cosmetic column of the accessories window, for menus that leave it to this screen. */
+    public boolean accessoryCosmetics = false;
     public Map<String, SavedPanel> panels = new LinkedHashMap<>();
     public record SavedPanel(float x, float y, int width, int height) {}
 

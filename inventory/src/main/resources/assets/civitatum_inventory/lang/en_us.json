@@ -1,6 +1,7 @@
 {
   "gui.civitatum_inventory.title": "Civitatum Inventory",
   "gui.civitatum_inventory.equipment": "Equipment",
+  "gui.civitatum_inventory.accessories_elsewhere": "Accessories are available in the equipment view.",
   "gui.civitatum_inventory.items": "Inventory",
   "gui.civitatum_inventory.information": "Character",
   "gui.civitatum_inventory.search": "Search items…",
@@ -52,9 +53,8 @@
   "key.categories.civitatum_inventory": "Civitatum Inventory",
   "gui.civitatum_inventory.footer_short": "F8 — switch interface",
   "gui.civitatum_inventory.remaining_short": "Cooldown: %ss",
-  "gui.civitatum_inventory.storage.inventory": "Items",
   "gui.civitatum_inventory.storage.backpack": "Pack",
-  "gui.civitatum_inventory.cosmetics": "Cosmetic",
+  "gui.civitatum_inventory.cosmetics": "Cosmetic slots",
   "gui.civitatum_inventory.backpack_equipment_hint": "Open Items to change equipment.",
   "gui.civitatum_inventory.render_toggle": "Ctrl + right click toggles accessory visibility",
   "gui.civitatum_inventory.container": "Container",

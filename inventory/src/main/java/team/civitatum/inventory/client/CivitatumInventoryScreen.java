@@ -10,6 +10,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.effect.MobEffectUtil;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -55,6 +56,18 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int CATEGORY_ROW_HEIGHT = 220;
     /** Z step between stacked windows; items are drawn up to 210 above their window. */
     private static final int WINDOW_Z = 40, OVERLAY_Z = 210, TOP_Z = 400;
+    /**
+     * Accessories' classic menu: a column of accessory slots with a cosmetic column on its left, eight rows in view.
+     * The menu creates them at x = -46 (cosmetic) and -26, y = 8 + 18 * row, rows shifted by the scrolled index.
+     */
+    private static final int CLASSIC_ROWS = 8, CLASSIC_FIRST_Y = 8;
+    /**
+     * The accessories window keeps room for its title bar (above the rows) and the cosmetics button (below). It is
+     * two slot columns wide: 8 px margins, 2 px between the columns, 6 px for the scroll bar.
+     */
+    private static final int ACCESSORIES_TOP = 24, ACCESSORIES_BOTTOM = 28, ACCESSORIES_MIN_WIDTH = 2 * SLOT + 26;
+    private static final ResourceLocation COSMETIC_ICON =
+        ResourceLocation.fromNamespaceAndPath("accessories", "textures/gui/slot/cosmetic.png");
     /** Hidden slots are parked far outside the screen. */
     private static final int HIDDEN = -10000;
     private static final EquipmentSlot[] ARMOR = {
@@ -64,20 +77,22 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private final IdentityHashMap<Slot, int[]> original = new IdentityHashMap<>();
     private final Screen nativeScreen;
     private final CompatBridge.Kind kind;
-    private InventoryPanel equipment, items, information, container, powers, dragging;
+    private InventoryPanel accessories, equipment, items, information, container, powers, dragging;
     private final List<InventoryPanel> panels = new ArrayList<>();
     private final IdentityHashMap<Slot, InventoryPanel> owners = new IdentityHashMap<>();
     private final List<AbstractWidget> widgets = new ArrayList<>();
     private final List<Button> categories = new ArrayList<>();
-    private final List<Button> storageTabs = new ArrayList<>();
+    /** Row of each accessory slot of the classic Accessories menu, counted from the top of its list. */
+    private final IdentityHashMap<Slot, Integer> accessoryRows = new IdentityHashMap<>();
     private List<Slot> extraSlots = List.of();
-    private Button previousPage, nextPage, cosmetics, powersButton;
-    private int extraRow;
-    private boolean extras, preserveMenu, accessoryCosmetic;
+    private Button cosmetics, powersButton;
+    /** Scrolled rows of the backpack grid, and of the accessories window when its menu does not scroll itself. */
+    private int extraRow, accessoryRow, accessoryMaxRow, accessoryRowCount;
+    private boolean preserveMenu;
     private EditBox search;
     private Button summaryTab, attributeTab, attributeFilter, ability, compactToggle, gearButton;
     private final PowersView powersView = new PowersView();
-    private boolean autoBackpack = true, backpackRequested;
+    private boolean autoBackpack = true, menuRequested;
     private int playerRow, blockRow, resizeMask, anchorX, anchorY, anchorW, anchorH;
     private boolean modifiedAttributes;
     private int category, page, scroll, dragOffsetX, dragOffsetY;
@@ -102,15 +117,24 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         this.player = player;
         this.nativeScreen = nativeScreen;
         this.kind = CompatBridge.kind(menu);
-        extras = kind == CompatBridge.Kind.CURIOS || kind == CompatBridge.Kind.ACCESSORIES;
         // Reopening over our own screen keeps the true menu coordinates, not the ones we moved the slots to.
-        var previous = Minecraft.getInstance().screen;
+        var previous = Minecraft.getInstance().screen instanceof CivitatumInventoryScreen other && other.menu == menu
+            ? other : null;
+        boolean classic = classicAccessories();
+        int scrolled = classic ? CompatBridge.integer(menu, "scrolledIndex", 0) : 0;
         for (var slot : menu.slots) {
-            boolean known = previous instanceof CivitatumInventoryScreen other && other.menu == menu
-                && other.original.containsKey(slot);
-            original.put(slot, known ? ((CivitatumInventoryScreen) previous).original.get(slot).clone()
-                : new int[]{slot.x, slot.y});
+            boolean known = previous != null && previous.original.containsKey(slot);
+            original.put(slot, known ? previous.original.get(slot).clone() : new int[]{slot.x, slot.y});
+            if (classic && CompatBridge.accessoryItemSlot(slot)) {
+                accessoryRows.put(slot, previous != null && previous.accessoryRows.containsKey(slot)
+                    ? previous.accessoryRows.get(slot) : (slot.y - CLASSIC_FIRST_Y) / SLOT + scrolled);
+            }
         }
+    }
+
+    /** Accessories' original menu, the classic column; it scrolls its own slots in and out of view. */
+    private boolean classicAccessories() {
+        return kind == CompatBridge.Kind.ACCESSORIES && CompatBridge.originalAccessories(menu);
     }
 
     public static Component tr(String key, Object... args) {
@@ -128,7 +152,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         preserveMenu = false;
         panels.clear();
         categories.clear();
-        storageTabs.clear();
         widgets.clear();
         createPanels();
         updateVisibility();
@@ -140,12 +163,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private void createPanels() {
         boolean backpack = kind == CompatBridge.Kind.BACKPACK;
         boolean workstation = kind == CompatBridge.Kind.BLOCK && !CompatBridge.storageGrid(menu);
-        int start = compact ? 4 : Math.max(6, (width - 584) / 2), y = compact ? 28 : 32;
+        // The accessories window docks on the left of the equipment window and shifts the whole group right.
+        int aw = accessoriesShown() ? ACCESSORIES_MIN_WIDTH : 0;
+        int start = compact ? 4 + aw : Math.max(6 + aw, (width - 584 - aw) / 2 + aw), y = compact ? 28 : 32;
         int h = Math.min(backpack || kind == CompatBridge.Kind.AETHER ? 302 : 236, height - 54);
-        int ew = compact ? Math.clamp(width - 212, 112, 142) : 146;
+        int ew = compact ? Math.clamp(width - 212 - aw, 112, 142) : 146;
         int gridMinHeight = backpack ? 171 : 164;
+        accessories = new InventoryPanel("accessories", start - aw, y, ACCESSORIES_MIN_WIDTH, h, ACCESSORIES_MIN_WIDTH,
+            gridMinHeight);
         equipment = new InventoryPanel("equipment", start, y, ew, h, 112, gridMinHeight);
-        items = new InventoryPanel("items", start + ew, y, compact ? Math.min(196, width - ew - 8) : 214, h, 186,
+        items = new InventoryPanel("items", start + ew, y, compact ? Math.min(196, width - ew - 8 - aw) : 214, h, 186,
             gridMinHeight);
         information = new InventoryPanel("information", compact ? start : items.x + items.width + 8, y,
             compact ? ew : 208, Math.min(190, height - 54), 112, 128);
@@ -164,6 +191,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             int storageRows = (menu.slots.size() - PLAYER_SLOTS + 8) / 9;
             container.height = CompatBridge.storageGrid(menu) ? Math.min(240, 52 + storageRows * SLOT) : 148;
         }
+        panels.add(accessories);
         panels.add(equipment);
         panels.add(items);
         panels.add(information);
@@ -196,26 +224,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             final int c = i;
             categories.add(button(tr("category.short." + i), b -> category = c, 27));
         }
-        storageTabs.add(button(tr("storage.inventory"), b -> {
-            extras = false;
-            extraRow = 0;
-            positionSlots();
-        }, 54));
-        if (CompatBridge.loaded("curios")) storageTabs.add(button(Component.literal("Curios"), b -> {
-            if (kind == CompatBridge.Kind.CURIOS) {
-                extras = true;
-                positionSlots();
-            } else CompatBridge.openCurios();
-        }, 54));
-        if (CompatBridge.loaded("accessories")) storageTabs.add(button(Component.literal("Accessories"), b -> {
-            if (kind == CompatBridge.Kind.ACCESSORIES) {
-                extras = true;
-                positionSlots();
-            } else CompatBridge.openAccessories();
-        }, 54));
-        if (CompatBridge.loaded("aether")) {
-            storageTabs.add(button(Component.literal("Aether"), b -> CompatBridge.openAether(), 54));
-        }
         boolean backpack = kind == CompatBridge.Kind.BACKPACK;
         gearButton = button(tr(backpack ? "equipment" : "storage.backpack"), b -> {
             if (backpack) InventoryClient.personalInventory(true);
@@ -237,9 +245,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             AbilitySelection.activate(player);
             onClose();
         }, 100);
-        previousPage = button(Component.literal("<"), b -> changePage(false), 16);
-        nextPage = button(Component.literal(">"), b -> changePage(true), 16);
-        cosmetics = button(tr("cosmetics"), b -> toggleCosmetics(), 64);
+        cosmetics = addWidget(new MorrowindIconButton(COSMETIC_ICON, tr("cosmetics"), this::cosmeticsShown,
+            b -> toggleCosmetics()));
+        widgets.add(cosmetics);
         var reset = button(tr("reset"), b -> resetLayout(), 66);
         reset.setPosition(width - 72, 4);
         var normal = button(tr("vanilla"), b -> openNative(), 72);
@@ -272,20 +280,23 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         needle = value.toLowerCase(Locale.ROOT).strip();
     }
 
-    private void changePage(boolean next) {
-        if (kind == CompatBridge.Kind.ACCESSORIES) CompatBridge.accessoryPage(menu, next);
-        else CompatBridge.changeCuriosPage(menu, next);
-    }
-
     private void toggleCosmetics() {
         if (kind != CompatBridge.Kind.ACCESSORIES) {
             CompatBridge.cosmetics(menu);
         } else if (CompatBridge.originalAccessories(menu)) {
             CompatBridge.accessoryCosmetics(menu);
         } else {
-            accessoryCosmetic = !accessoryCosmetic;
-            extraRow = 0;
+            var preferences = InventoryPreferences.get();
+            preferences.accessoryCosmetics = !preferences.accessoryCosmetics;
+            preferences.save();
         }
+    }
+
+    /** Whether the cosmetic slots are shown; Curios keeps its own state, so its button never lights up. */
+    private boolean cosmeticsShown() {
+        if (kind != CompatBridge.Kind.ACCESSORIES) return false;
+        return CompatBridge.originalAccessories(menu) ? CompatBridge.accessoriesCosmetics(menu)
+            : InventoryPreferences.get().accessoryCosmetics;
     }
 
     private void togglePowers() {
@@ -311,7 +322,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return "v4." + (compact ? "compact." : "wide.") + layout + panel.id;
     }
 
+    /** The accessories window is always shown while Accessories is installed; it cannot be closed. */
+    private static boolean accessoriesShown() {
+        return CompatBridge.loaded("accessories");
+    }
+
     private void updateVisibility() {
+        accessories.visible = accessoriesShown();
         equipment.visible = !compact || !compactInfo;
         information.visible = !compact || compactInfo;
         container.visible = kind == CompatBridge.Kind.BLOCK;
@@ -319,18 +336,27 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         dockEquipment();
     }
 
+    /** Equipment sticks to the left of the items window, and the accessories window to the left of equipment. */
     private void dockEquipment() {
-        equipment.width = Math.max(equipment.minWidth, Math.min(equipment.width, width - items.width - 8));
-        items.x = Math.max(4 + equipment.width, Math.min(items.x, width - items.width - 4));
+        int cell = accessoryPitch();
+        accessories.width = Math.max(ACCESSORIES_MIN_WIDTH, 2 * cell + 26);
+        int aw = accessories.visible ? accessories.width : 0;
+        equipment.width = Math.max(equipment.minWidth, Math.min(equipment.width, width - items.width - 8 - aw));
+        items.x = Math.max(4 + equipment.width + aw, Math.min(items.x, width - items.width - 4));
         equipment.x = items.x - equipment.width;
         equipment.y = items.y;
         equipment.height = items.height;
+        accessories.x = equipment.x - accessories.width;
+        accessories.y = items.y;
+        accessories.height = items.height;
     }
 
     private void raise(InventoryPanel panel) {
-        if (panel == equipment || panel == items) {
+        if (panel == accessories || panel == equipment || panel == items) {
+            panels.remove(accessories);
             panels.remove(equipment);
             panels.remove(items);
+            panels.add(accessories);
             panels.add(equipment);
             panels.add(items);
         } else {
@@ -374,9 +400,17 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         if (owner == container) {
             return CompatBridge.storageGrid(menu) ? (float) InventoryPreferences.get().slotScale : containerSlotScale;
         }
+        if (owner == accessories) return accessoryScale();
         return owner == items ? (float) itemScale() : 1F;
     }
 
+    /** The slot scale, reduced so the eight classic rows fit between the title and the cosmetics button. */
+    private float accessoryScale() {
+        float space = (items.height - ACCESSORIES_TOP - ACCESSORIES_BOTTOM) / (float) (CLASSIC_ROWS * SLOT);
+        return (float) Math.min(InventoryPreferences.get().slotScale, Math.max(1, space));
+    }
+
+    private int accessoryPitch() { return Math.round(SLOT * accessoryScale()); }
     public int slotPixels(Slot slot) { return Math.round(ITEM * slotScale(slot)); }
     private int pitch() { return (int) Math.round(SLOT * itemScale()); }
     private int columns() { return Math.clamp((items.width - 20) / pitch(), 1, 9); }
@@ -418,38 +452,17 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private void positionControls() {
         boolean free = menu.getCarried().isEmpty();
         boolean wearsBackpack = !CompatBridge.backpack(player).isEmpty();
-        int n = storageTabs.size(), tabWidth = (items.width - 16) / n;
-        for (int i = 0; i < n; i++) {
-            var b = storageTabs.get(i);
-            b.setPosition(items.x + 8 + i * tabWidth, items.y + 25);
-            b.setWidth(tabWidth - 2);
-            b.active = free;
-        }
-        search.setPosition(items.x + 12, items.y + 50);
+        search.setPosition(items.x + 12, items.y + 25);
         search.setWidth(items.width - 24);
         int buttonWidth = (items.width - 20) / CATEGORIES;
         for (int i = 0; i < CATEGORIES; i++) {
-            categories.get(i).setPosition(items.x + 10 + i * buttonWidth, items.y + 70);
+            categories.get(i).setPosition(items.x + 10 + i * buttonWidth, items.y + 45);
             categories.get(i).setWidth(buttonWidth - 1);
         }
-        previousPage.setPosition(items.x + items.width - 42, items.y + 2);
-        nextPage.setPosition(items.x + items.width - 23, items.y + 2);
-        if (kind == CompatBridge.Kind.ACCESSORIES && CompatBridge.originalAccessories(menu)) {
-            int shown = CompatBridge.integer(menu, "scrolledIndex", 0);
-            int total = CompatBridge.integer(menu, "totalSlots", 0);
-            previousPage.visible = nextPage.visible = extras && total > 8;
-            previousPage.active = shown > 0 && free;
-            nextPage.active = shown < total - 8 && free;
-        } else {
-            int current = CompatBridge.integer(menu, "currentPage", 0);
-            int total = CompatBridge.integer(menu, "totalPages", 1);
-            previousPage.visible = nextPage.visible = kind == CompatBridge.Kind.CURIOS && extras && total > 1;
-            previousPage.active = current > 0 && free;
-            nextPage.active = current + 1 < total && free;
-        }
-        cosmetics.setPosition(items.x + items.width - 82, items.y + items.height - 20);
-        cosmetics.visible = kind == CompatBridge.Kind.CURIOS && extras && CompatBridge.flag(menu, "hasCosmetics")
-            || kind == CompatBridge.Kind.ACCESSORIES && extras;
+        cosmetics.setPosition(accessories.x + (accessories.width - MorrowindIconButton.WIDTH) / 2,
+            accessories.y + accessories.height - 24);
+        cosmetics.visible = accessories.visible && (kind == CompatBridge.Kind.ACCESSORIES
+            || kind == CompatBridge.Kind.CURIOS && CompatBridge.flag(menu, "hasCosmetics"));
         cosmetics.active = free;
         if (powersButton != null) powersButton.active = free;
         int half = (information.width - 20) / 2;
@@ -502,7 +515,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return new Bounds(minX, maxX, minY, maxY);
     }
 
-    private int gridTop() { return items.y + (items.height < CATEGORY_ROW_HEIGHT ? 76 : 96); }
+    private int gridTop() { return items.y + (items.height < CATEGORY_ROW_HEIGHT ? 51 : 71); }
 
     private int mainRows() {
         int space = hotbarTop() - gridTop() - 10;
@@ -512,10 +525,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     private int bagTop() { return gridTop() + mainRows() * pitch() + SLOT; }
 
-    private boolean isExtraSlot(Slot s, IdentityHashMap<Slot, Boolean> active, boolean cosmeticPage) {
+    private boolean isExtraSlot(Slot s, IdentityHashMap<Slot, Boolean> active) {
         return switch (kind) {
-            case ACCESSORIES -> CompatBridge.accessoryArmor(s) < 0 && CompatBridge.accessorySlot(s)
-                && CompatBridge.cosmeticSlot(s) == cosmeticPage && active.getOrDefault(s, false);
+            // Cosmetic armour of the experimental menu is left out: the classic view has none.
+            case ACCESSORIES -> CompatBridge.accessoryItemSlot(s) && active.getOrDefault(s, false);
             case BACKPACK, BLOCK -> s.container != player.getInventory();
             case AETHER -> s.index >= AETHER_FIRST && s.index < AETHER_END;
             default -> s.index >= PLAYER_MENU_SLOTS;
@@ -531,9 +544,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             place(slot, xy[0], xy[1]);
             active.put(slot, slot.isActive());
         }
-        boolean cosmeticPage = kind == CompatBridge.Kind.ACCESSORIES && (CompatBridge.originalAccessories(menu)
-            ? CompatBridge.accessoriesCosmetics(menu) : accessoryCosmetic);
-        extraSlots = menu.slots.stream().filter(s -> isExtraSlot(s, active, cosmeticPage)).toList();
+        extraSlots = menu.slots.stream().filter(s -> isExtraSlot(s, active)).toList();
         for (var slot : menu.slots) place(slot, HIDDEN, HIDDEN);
         placePlayerSlots();
         if (kind == CompatBridge.Kind.ACCESSORIES && equipment.visible) {
@@ -550,8 +561,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 assign(extraSlots.get(i), equipment, equipment.x + 14 + i % 4 * SLOT,
                     equipment.y + equipment.height - 109 + i / 4 * SLOT);
             }
-        } else if (extras || kind == CompatBridge.Kind.BACKPACK) {
+        } else if (kind == CompatBridge.Kind.BACKPACK) {
             placeExtraGrid();
+        } else if (accessories.visible && (kind == CompatBridge.Kind.ACCESSORIES || kind == CompatBridge.Kind.CURIOS)) {
+            if (classicAccessories()) placeClassicAccessories();
+            else if (kind == CompatBridge.Kind.ACCESSORIES) placeAccessoryColumn();
+            else placeAccessoryGrid();
         }
         if (equipment.visible && hasCraftGrid()) {
             int cy = equipment.y + equipment.height - 53;
@@ -566,12 +581,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int cols = columns(), cell = pitch(), gx = items.x + (items.width - cols * cell) / 2, rows = mainRows();
         int totalRows = (MAIN + cols - 1) / cols, hotbarPitch = hotbarPitch();
         playerRow = Math.clamp(playerRow, 0, Math.max(0, totalRows - rows));
-        boolean mainShown = !extras || kind == CompatBridge.Kind.BACKPACK || kind == CompatBridge.Kind.BLOCK;
         for (var slot : menu.slots) {
             if (slot.container != player.getInventory()) continue;
             int i = slot.getContainerSlot(), r = (i - HOTBAR) % totalRows - playerRow;
             // Fill each column from top to bottom; menu and storage IDs stay intact.
-            if (i >= HOTBAR && i < MAIN_END && mainShown && r >= 0 && r < rows) {
+            if (i >= HOTBAR && i < MAIN_END && r >= 0 && r < rows) {
                 assign(slot, items, gx + (i - HOTBAR) / totalRows * cell, gridTop() + r * cell);
             } else if (i >= 0 && i < HOTBAR) {
                 assign(slot, items, items.x + (items.width - HOTBAR * hotbarPitch) / 2 + i * hotbarPitch, hotbarTop());
@@ -615,10 +629,67 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }
     }
 
+    /** Accessories' own column: rows as the menu scrolled them, the cosmetic column on the left. */
+    private void placeClassicAccessories() {
+        int cell = accessoryPitch(), shown = CompatBridge.integer(menu, "scrolledIndex", 0);
+        int left = accessories.x + (accessories.width - 6 - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        for (var slot : extraSlots) {
+            Integer row = accessoryRows.get(slot);
+            if (row == null || row - shown < 0 || row - shown >= CLASSIC_ROWS) continue;
+            int column = CompatBridge.cosmeticSlot(slot) ? 0 : 1;
+            assign(slot, accessories, left + column * (cell + 2), top + (row - shown) * cell);
+        }
+    }
+
+    /**
+     * Accessories' experimental menu laid out as the classic column: eight rows, the cosmetic column on the left while
+     * it is switched on, scrolled by this screen. All its slots are always active.
+     */
+    private void placeAccessoryColumn() {
+        int cell = accessoryPitch();
+        int left = accessories.x + (accessories.width - 6 - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        // The menu adds every accessory as a pair: its cosmetic slot, then the slot itself.
+        var rows = new ArrayList<Slot[]>();
+        Slot cosmetic = null;
+        for (var slot : extraSlots) {
+            if (CompatBridge.cosmeticSlot(slot)) {
+                cosmetic = slot;
+                continue;
+            }
+            rows.add(new Slot[]{cosmetic, slot});
+            cosmetic = null;
+        }
+        accessoryRowCount = rows.size();
+        accessoryMaxRow = Math.max(0, rows.size() - CLASSIC_ROWS);
+        accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
+        boolean cosmetics = InventoryPreferences.get().accessoryCosmetics;
+        for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < rows.size(); r++) {
+            var row = rows.get(accessoryRow + r);
+            int y = top + r * cell;
+            if (cosmetics && row[0] != null) assign(row[0], accessories, left, y);
+            assign(row[1], accessories, left + cell + 2, y);
+        }
+    }
+
+    /** Curios: its slots in two columns, scrolled by this screen. */
+    private void placeAccessoryGrid() {
+        int cell = accessoryPitch();
+        int left = accessories.x + (accessories.width - 2 * cell - 2) / 2, top = accessories.y + ACCESSORIES_TOP;
+        int visible = Math.max(1, (accessories.height - ACCESSORIES_TOP - ACCESSORIES_BOTTOM) / cell);
+        accessoryMaxRow = Math.max(0, (extraSlots.size() + 1) / 2 - visible);
+        accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
+        for (int i = 0; i < extraSlots.size(); i++) {
+            int r = i / 2 - accessoryRow;
+            if (r >= 0 && r < visible) {
+                assign(extraSlots.get(i), accessories, left + i % 2 * (cell + 2), top + r * cell);
+            }
+        }
+    }
+
     private void placeExtraGrid() {
         int cell = pitch();
-        int columns = Math.min(columns(), kind == CompatBridge.Kind.BACKPACK && extraSlots.size() == 24 ? 8 : 9);
-        int top = kind == CompatBridge.Kind.BACKPACK ? bagTop() : gridTop();
+        int columns = Math.min(columns(), extraSlots.size() == 24 ? 8 : 9);
+        int top = bagTop();
         int visible = Math.max(1, (hotbarTop() - 10 - top) / cell);
         int total = Math.max(1, (extraSlots.size() + columns - 1) / columns);
         extraRow = Math.clamp(extraRow, 0, Math.max(0, total - visible));
@@ -635,10 +706,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     public void containerTick() {
         CompatBridge.tick(menu);
         positionSlots();
-        if (autoBackpack && !backpackRequested && kind == CompatBridge.Kind.INVENTORY && menu.getCarried().isEmpty()
-                && !CompatBridge.backpack(player).isEmpty()) {
-            backpackRequested = CompatBridge.openBackpack();
-        }
+        if (menuRequested || kind != CompatBridge.Kind.INVENTORY || !menu.getCarried().isEmpty()) return;
+        // The accessory slots exist only in Accessories' menu, so the personal inventory always switches to it.
+        // A worn backpack is then opened with its button instead of automatically.
+        if (accessoriesShown()) menuRequested = CompatBridge.openAccessories();
+        else if (autoBackpack && !CompatBridge.backpack(player).isEmpty()) menuRequested = CompatBridge.openBackpack();
     }
 
     @Override
@@ -658,7 +730,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             if (categories.get(i).isHovered()) g.renderTooltip(font, tr("category." + i), mx, my);
         }
         for (var panel : panels) {
-            if (panel == top && panel.resizeEdges(mx, my) != 0) g.renderTooltip(font, tr("resize_hint"), mx, my);
+            if (panel == top && panel != accessories && panel.resizeEdges(mx, my) != 0) {
+                g.renderTooltip(font, tr("resize_hint"), mx, my);
+            }
         }
         if (hoveredSlot == null && dragging == null) {
             for (var panel : panels) if (panel.titleContains(mx, my)) g.renderTooltip(font, tr("move_hint"), mx, my);
@@ -725,7 +799,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             if (!panel.visible) continue;
             g.pose().pushPose();
             g.pose().translate(0, 0, panels.indexOf(panel) * WINDOW_Z);
-            renderPanel(g, panel, panel == container ? nativeScreen.getTitle() : tr(panel.id));
+            // The accessories window has no title text: it is narrower than any translation of it.
+            Component label = panel == container ? nativeScreen.getTitle()
+                : panel == accessories ? Component.empty() : tr(panel.id);
+            renderPanel(g, panel, label);
+            if (panel == accessories) renderAccessories(g);
             if (panel == equipment) renderEquipment(g);
             if (panel == items) renderItemsHeader(g);
             if (panel == information) {
@@ -787,9 +865,42 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }
     }
 
+    private void renderAccessories(GuiGraphics g) {
+        boolean slots = kind == CompatBridge.Kind.ACCESSORIES || kind == CompatBridge.Kind.CURIOS;
+        if (!slots) {
+            // Other menus (a chest, a backpack) carry no accessory slots; the window says where to find them.
+            if (kind != CompatBridge.Kind.INVENTORY) {
+                g.drawWordWrap(font, tr("accessories_elsewhere"), accessories.x + 8, accessories.y + ACCESSORIES_TOP,
+                    accessories.width - 16, MUTED);
+            }
+            return;
+        }
+        int total, first, shown;
+        if (classicAccessories()) {
+            total = CompatBridge.integer(menu, "totalSlots", 0);
+            first = CompatBridge.integer(menu, "scrolledIndex", 0);
+            shown = CLASSIC_ROWS;
+        } else if (kind == CompatBridge.Kind.ACCESSORIES) {
+            total = accessoryRowCount;
+            first = accessoryRow;
+            shown = CLASSIC_ROWS;
+        } else {
+            total = accessoryMaxRow + 1;
+            first = accessoryRow;
+            shown = 1;
+        }
+        if (total <= shown) return;
+        // Scroll bar along the right edge.
+        int x = accessories.x + accessories.width - 7, top = accessories.y + ACCESSORIES_TOP;
+        int track = accessories.height - ACCESSORIES_TOP - ACCESSORIES_BOTTOM;
+        int thumb = Math.max(8, track * shown / total), ty = top + (track - thumb) * first / Math.max(1, total - shown);
+        g.fill(x, top, x + 2, top + track, 0xFF232829);
+        g.fill(x, ty, x + 2, ty + thumb, 0xFFAF9462);
+    }
+
     private void renderItemsHeader(GuiGraphics g) {
-        g.fill(items.x + 8, items.y + 46, items.x + items.width - 8, items.y + 65, 0x35130E09);
-        MorrowindSkin.frame(g, items.x + 8, items.y + 46, items.width - 16, 19, false);
+        g.fill(items.x + 8, items.y + 21, items.x + items.width - 8, items.y + 40, 0x35130E09);
+        MorrowindSkin.frame(g, items.x + 8, items.y + 21, items.width - 16, 19, false);
         if (kind == CompatBridge.Kind.BACKPACK) {
             g.drawString(font, tr("storage.backpack"), items.x + 10, bagTop() - 12, GOLD, false);
         }
@@ -800,15 +911,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 if (matches(slot.getItem())) matched++;
             }
         }
-        String count = font.plainSubstrByWidth(tr("items_count", matched, occupied).getString(),
-            items.width - (cosmetics.visible ? 98 : 20));
+        String count = font.plainSubstrByWidth(tr("items_count", matched, occupied).getString(), items.width - 20);
         g.drawString(font, count, items.x + 10, items.y + items.height - 16, MUTED, false);
     }
 
     private InventoryPanel widgetOwner(AbstractWidget b) {
-        if (categories.contains(b) || storageTabs.contains(b) || b == previousPage || b == nextPage || b == cosmetics) {
-            return items;
-        }
+        if (categories.contains(b)) return items;
+        if (b == cosmetics) return accessories;
         if (b == summaryTab || b == attributeTab || b == attributeFilter) return information;
         if (b == ability) return powers;
         if (b == gearButton) return equipment;
@@ -1030,15 +1139,18 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 widget = true;
             }
         }
-        if (button == 0 && menu.getCarried().isEmpty() && top != null && !widget
-                && (top.resizeEdges(mx, my) != 0 || top.titleContains(mx, my))) {
-            raise(top);
-            dragging = top;
-            resizeMask = top.resizeEdges(mx, my);
-            anchorX = top.x;
-            anchorY = top.y;
-            anchorW = top.width;
-            anchorH = top.height;
+        // The accessories window is docked: its title moves the whole group, its edges do not resize it.
+        boolean grab = top == accessories ? top.titleContains(mx, my)
+            : top != null && (top.resizeEdges(mx, my) != 0 || top.titleContains(mx, my));
+        if (button == 0 && menu.getCarried().isEmpty() && !widget && grab) {
+            var target = top == accessories ? equipment : top;
+            raise(target);
+            dragging = target;
+            resizeMask = top == accessories ? 0 : top.resizeEdges(mx, my);
+            anchorX = target.x;
+            anchorY = target.y;
+            anchorW = target.width;
+            anchorH = target.height;
             dragOffsetX = (int) mx;
             dragOffsetY = (int) my;
             setFocused(null);
@@ -1132,8 +1244,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         } else if (top == container) {
             blockRow = Math.max(0, blockRow - (int) vertical);
             positionSlots();
+        } else if (top == accessories) {
+            scrollAccessories(vertical);
         } else if (top == items) {
-            if (kind == CompatBridge.Kind.BACKPACK && my >= bagTop() || extras) {
+            if (kind == CompatBridge.Kind.BACKPACK && my >= bagTop()) {
                 extraRow = Math.max(0, extraRow - (int) vertical);
             } else {
                 playerRow = Math.max(0, playerRow - (int) vertical);
@@ -1143,6 +1257,32 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             return super.mouseScrolled(mx, my, horizontal, vertical);
         }
         return true;
+    }
+
+    /** One row per wheel notch, whatever the size of the notch. */
+    private void scrollAccessories(double vertical) {
+        int step = vertical > 0 ? -1 : vertical < 0 ? 1 : 0;
+        if (step == 0) return;
+        if (classicAccessories()) {
+            // The server scrolls its menu and sends the same scroll back, which moves the client's slots.
+            int total = CompatBridge.integer(menu, "totalSlots", 0);
+            int shown = CompatBridge.integer(menu, "scrolledIndex", 0);
+            int target = Math.clamp(shown + step, 0, Math.max(0, total - CLASSIC_ROWS));
+            if (target != shown) CompatBridge.accessoryScroll(target);
+            return;
+        }
+        if (kind == CompatBridge.Kind.CURIOS && (step > 0 ? accessoryRow >= accessoryMaxRow : accessoryRow == 0)) {
+            // Past the last row Curios turns its own page.
+            int current = CompatBridge.integer(menu, "currentPage", 0);
+            int pages = CompatBridge.integer(menu, "totalPages", 1);
+            if (step > 0 ? current + 1 < pages : current > 0) {
+                CompatBridge.changeCuriosPage(menu, step > 0);
+                accessoryRow = step > 0 ? 0 : Integer.MAX_VALUE;
+            }
+            return;
+        }
+        accessoryRow = Math.max(0, accessoryRow + step);
+        positionSlots();
     }
 
     @Override
@@ -1180,9 +1320,14 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     public void removed() {
         saveLayout();
         original.forEach((slot, coordinates) -> place(slot, coordinates[0], coordinates[1]));
+        // Accessories moved its rows while this screen scrolled; its own screen reads their y.
+        int shown = classicAccessories() ? CompatBridge.integer(menu, "scrolledIndex", 0) : 0;
+        accessoryRows.forEach((slot, row) ->
+            place(slot, original.get(slot)[0], CLASSIC_FIRST_Y + (row - shown) * SLOT));
         if (!preserveMenu && minecraft.player != null && minecraft.player.containerMenu == menu) super.removed();
     }
 
+    public InventoryPanel accessoriesPanel() { return accessories; }
     public InventoryPanel equipmentPanel() { return equipment; }
     public InventoryPanel itemsPanel() { return items; }
     public InventoryPanel powersPanel() { return powers; }
@@ -1195,6 +1340,5 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     public CompatBridge.Kind integrationKind() { return kind; }
-    public boolean viewingExtras() { return extras; }
     public List<Slot> compatibilitySlots() { return extraSlots; }
 }

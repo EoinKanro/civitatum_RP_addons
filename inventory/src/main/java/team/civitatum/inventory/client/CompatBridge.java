@@ -42,10 +42,9 @@ public final class CompatBridge {
     private static final String CURIOS_PACKETS = "top.theillusivec4.curios.common.network.client.";
     private static final String ACCESSORIES_MENUS = "io.wispforest.accessories.menu.variants.Accessories";
     private static final String ACCESSORIES_ARMOR_SLOT = "io.wispforest.accessories.menu.AccessoriesArmorSlot";
+    private static final String ACCESSORIES_INTERNAL_SLOT = "io.wispforest.accessories.menu.AccessoriesInternalSlot";
     private static final String AETHER_MENUS = "com.aetherteam.aether.inventory.menu.";
     private static final String[] ARMOR_SLOT_TYPES = {"headSlot", "chestSlot", "legsSlot", "feetSlot"};
-    /** Accessories scrolls its slot list by one page of eight slots. */
-    private static final int ACCESSORIES_PAGE = 8;
     /** How long a chest screen counts as the answer to an ender-pack request. */
     private static final long BACKPACK_REQUEST_MILLIS = 5000;
 
@@ -112,19 +111,6 @@ public final class CompatBridge {
             || menu instanceof DispenserMenu || menu instanceof ShulkerBoxMenu;
     }
 
-    public static boolean openAether() {
-        if (!loaded("aether")) return false;
-        try {
-            Object payload = Class.forName("com.aetherteam.aether.network.packet.serverbound.OpenAccessoriesPacket")
-                .getConstructor(ItemStack.class).newInstance(ItemStack.EMPTY);
-            PacketDistributor.sendToServer((CustomPacketPayload) payload);
-            return true;
-        } catch (ReflectiveOperationException | LinkageError ex) {
-            fail("Aether", ex);
-            return false;
-        }
-    }
-
     public static double progress(AbstractContainerMenu menu, String method, double divisor) {
         try {
             double value = ((Number) method(menu.getClass(), method).invoke(menu)).doubleValue();
@@ -159,10 +145,10 @@ public final class CompatBridge {
         }
     }
 
-    public static boolean openCurios() {
-        return packet("CPacketOpenCurios", new Class<?>[]{ItemStack.class}, ItemStack.EMPTY);
-    }
-
+    /**
+     * Accessories' experimental menu. Unlike the original one it has the 2x2 crafting grid; this screen draws its
+     * accessory slots as the classic column itself.
+     */
     public static boolean openAccessories() {
         return openAccessories("EXPERIMENTAL_V1");
     }
@@ -198,6 +184,14 @@ public final class CompatBridge {
         } catch (ReflectiveOperationException ex) {
             return false;
         }
+    }
+
+    /**
+     * A slot of an accessory itself (regular or cosmetic). Armour and cosmetic armour slots of the experimental menu
+     * are subclasses and do not count.
+     */
+    public static boolean accessoryItemSlot(Slot slot) {
+        return slot.getClass().getName().equals(ACCESSORIES_INTERNAL_SLOT);
     }
 
     public static boolean accessorySlot(Slot slot) {
@@ -252,9 +246,9 @@ public final class CompatBridge {
         }
     }
 
-    public static void accessoryPage(AbstractContainerMenu menu, boolean next) {
+    /** Scrolls the classic menu to {@code index}; the server answers with the same scroll for the client's menu. */
+    public static void accessoryScroll(int index) {
         try {
-            int index = integer(menu, "scrolledIndex", 0) + (next ? ACCESSORIES_PAGE : -ACCESSORIES_PAGE);
             Object payload = Class.forName("io.wispforest.accessories.networking.server.MenuScroll")
                 .getConstructor(int.class, boolean.class).newInstance(index, false);
             accessoryPacket(payload);
