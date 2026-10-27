@@ -6,6 +6,9 @@ import java.util.*;
 
 public final class RaceCatalog {
     private static final LinkedHashMap<String, RaceDefinition> ALL = load();
+    private static final List<RaceDefinition> ROOTS = ALL.values().stream().filter(r -> r.parent == null).toList();
+    /** Sub-races by parent id, in catalog order. */
+    private static final Map<String, List<RaceDefinition>> CHILDREN = groupChildren();
     private static LinkedHashMap<String, RaceDefinition> load() {
         try (var in = RaceCatalog.class.getResourceAsStream("/races.json")) {
             if (in == null) throw new IllegalStateException("Missing races.json");
@@ -20,14 +23,23 @@ public final class RaceCatalog {
                 }
                 if (r.minHeight < .9f || r.maxHeight > 2.5f || r.minHeight > r.maxHeight) throw new IllegalStateException("Invalid height");
                 if (result.put(r.id, r) != null) throw new IllegalStateException("Duplicate race");
+                r.bake();
             }
             return result;
         } catch (Exception e) { throw new IllegalStateException("Cannot read race catalog", e); }
     }
     public static Collection<RaceDefinition> all() { return Collections.unmodifiableCollection(ALL.values()); }
     public static RaceDefinition get(String id) { return ALL.get(id); }
-    public static List<RaceDefinition> roots() { return ALL.values().stream().filter(r -> r.parent == null).toList(); }
-    public static List<RaceDefinition> children(String id) { return ALL.values().stream().filter(r -> id.equals(r.parent)).toList(); }
+    private static Map<String, List<RaceDefinition>> groupChildren() {
+        var children = new HashMap<String, List<RaceDefinition>>();
+        for (var r : ALL.values()) {
+            if (r.parent != null) children.computeIfAbsent(r.parent, k -> new ArrayList<>()).add(r);
+        }
+        children.replaceAll((parent, list) -> List.copyOf(list));
+        return Map.copyOf(children);
+    }
+    public static List<RaceDefinition> roots() { return ROOTS; }
+    public static List<RaceDefinition> children(String id) { return CHILDREN.getOrDefault(id, List.of()); }
     public static CharacterData defaults(String id, String sex) {
         RaceDefinition r = Objects.requireNonNull(get(id));
         var c = new CharacterData();

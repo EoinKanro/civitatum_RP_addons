@@ -20,7 +20,8 @@ public final class ClientCharacters {
     }
 
     public static RaceState state(Player p) {
-        return STATES.getOrDefault(p.getUUID(), p.getData(Civitatum.STATE));
+        var state = STATES.get(p.getUUID());
+        return state != null ? state : p.getData(Civitatum.STATE);
     }
 
     public static CharacterData get(Player p) {

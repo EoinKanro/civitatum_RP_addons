@@ -14,6 +14,12 @@ public final class BirthsignCatalog {
         new Sign("steed","Конь","Покровитель путников, не терпящих промедления.","+10% скорости передвижения."),
         new Sign("lord","Лорд","Сила восстановления требует осторожности перед огнём.","Восстановление 1 HP каждые 8 секунд при сытости от 6. +25% урона от огня.")
     );
+    private static final Map<String, Sign> BY_ID = byId();
+    private static Map<String, Sign> byId() {
+        var byId = new HashMap<String, Sign>();
+        for (var sign : ALL) byId.putIfAbsent(sign.id, sign);
+        return byId;
+    }
     public static List<Sign> all(){return ALL;}
-    public static Sign get(String id){return ALL.stream().filter(s->s.id.equals(id)).findFirst().orElse(null);}
+    public static Sign get(String id){return BY_ID.get(id);}
 }

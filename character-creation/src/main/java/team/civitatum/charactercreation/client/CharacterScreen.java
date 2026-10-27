@@ -462,31 +462,81 @@ public final class CharacterScreen extends Screen {
             return;
         }
         var source = initial.race.equals(draft.race) && initial.sex.equals(draft.sex) ? initial.copy() : RaceCatalog.defaults(draft.race, draft.sex);
-        String[] fields = switch (tab) {
-            case 0 -> new String[]{"skin", "skinOriginal"};
-            case 9 -> new String[]{"eyes", "eyesOriginal", "eyeHeight"};
-            case 1 -> new String[]{"ears", "earPitch", "earYaw", "earRoll", "earOffset"};
-            case 2, 13 ->
-                    new String[]{"horns", "hornColor", "hornPitch", "hornYaw", "hornRoll", "hornOffset", "hornSize", "hornOnForehead"};
-            case 7 -> new String[]{"tail"};
-            case 8 -> new String[]{"height"};
-            case 3 ->
-                    new String[]{"hairAsset", "hairStyle", "hair", "hairMain", "hairDecor1", "hairDecor2", "hairLinkedShades"};
-            case 10 -> new String[]{"beard", "mustache", "hair", "hairMain"};
-            case 4 -> new String[]{"tattoo", "tattooColor", "glow"};
-            case 6 -> new String[]{"wardrobe", "wardrobeEnabled", "outfitPreset", "naked", "underwearColor"};
-            case 5 ->
-                    new String[]{"bust", "bustX", "bustY", "bustZ", "cleavage", "bounce", "floppiness", "breastPhysics", "armorPhysics", "showInArmor", "uniboob"};
-            case 11 -> new String[]{"birthsign"};
-            default -> new String[]{"usePlayerSkin", "armModel"};
-        };
-        try {
-            for (String field : fields) {
-                var f = CharacterData.class.getField(field);
-                f.set(draft, f.get(source));
+        var d = draft;
+        switch (tab) {
+            case 0 -> {
+                d.skin = source.skin;
+                d.skinOriginal = source.skinOriginal;
             }
-        } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(e);
+            case 9 -> {
+                d.eyes = source.eyes;
+                d.eyesOriginal = source.eyesOriginal;
+                d.eyeHeight = source.eyeHeight;
+            }
+            case 1 -> {
+                d.ears = source.ears;
+                d.earPitch = source.earPitch;
+                d.earYaw = source.earYaw;
+                d.earRoll = source.earRoll;
+                d.earOffset = source.earOffset;
+            }
+            case 2, 13 -> {
+                d.horns = source.horns;
+                d.hornColor = source.hornColor;
+                d.hornPitch = source.hornPitch;
+                d.hornYaw = source.hornYaw;
+                d.hornRoll = source.hornRoll;
+                d.hornOffset = source.hornOffset;
+                d.hornSize = source.hornSize;
+                d.hornOnForehead = source.hornOnForehead;
+            }
+            case 7 -> d.tail = source.tail;
+            case 8 -> d.height = source.height;
+            case 3 -> {
+                d.hairAsset = source.hairAsset;
+                d.hairStyle = source.hairStyle;
+                d.hair = source.hair;
+                d.hairMain = source.hairMain;
+                d.hairDecor1 = source.hairDecor1;
+                d.hairDecor2 = source.hairDecor2;
+                d.hairLinkedShades = source.hairLinkedShades;
+            }
+            case 10 -> {
+                d.beard = source.beard;
+                d.mustache = source.mustache;
+                d.hair = source.hair;
+                d.hairMain = source.hairMain;
+            }
+            case 4 -> {
+                d.tattoo = source.tattoo;
+                d.tattooColor = source.tattooColor;
+                d.glow = source.glow;
+            }
+            case 6 -> {
+                d.wardrobe = source.wardrobe;
+                d.wardrobeEnabled = source.wardrobeEnabled;
+                d.outfitPreset = source.outfitPreset;
+                d.naked = source.naked;
+                d.underwearColor = source.underwearColor;
+            }
+            case 5 -> {
+                d.bust = source.bust;
+                d.bustX = source.bustX;
+                d.bustY = source.bustY;
+                d.bustZ = source.bustZ;
+                d.cleavage = source.cleavage;
+                d.bounce = source.bounce;
+                d.floppiness = source.floppiness;
+                d.breastPhysics = source.breastPhysics;
+                d.armorPhysics = source.armorPhysics;
+                d.showInArmor = source.showInArmor;
+                d.uniboob = source.uniboob;
+            }
+            case 11 -> d.birthsign = source.birthsign;
+            default -> {
+                d.usePlayerSkin = source.usePlayerSkin;
+                d.armModel = source.armModel;
+            }
         }
     }
 
