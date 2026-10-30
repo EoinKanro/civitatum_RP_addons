@@ -1,8 +1,16 @@
 package team.civitatum.inventory.client;
 
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.vertex.BufferBuilder;
+import com.mojang.blaze3d.vertex.BufferUploader;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import com.mojang.blaze3d.vertex.MeshData;
+import com.mojang.blaze3d.vertex.Tesselator;
+import com.mojang.blaze3d.vertex.VertexFormat;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
+import org.joml.Matrix4f;
 
 /** Original tiled textures; panel alpha 102/255 = 40% opacity / 60% transparency. */
 public final class MorrowindSkin {
@@ -17,11 +25,24 @@ public final class MorrowindSkin {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         g.setColor(1, 1, 1, (float) ((1 - InventoryPreferences.get().transparency) * 255 / PANEL_ALPHA));
+        // The vertices GuiGraphics.blit would emit tile by tile, as one mesh and one draw call for the whole panel.
+        RenderSystem.setShaderTexture(0, STONE);
+        RenderSystem.setShader(GameRenderer::getPositionTexShader);
+        Matrix4f pose = g.pose().last().pose();
+        BufferBuilder tiles = Tesselator.getInstance().begin(VertexFormat.Mode.QUADS, DefaultVertexFormat.POSITION_TEX);
         for (int dy = 0; dy < h; dy += TILE) {
             for (int dx = 0; dx < w; dx += TILE) {
-                g.blit(STONE, x + dx, y + dy, 0, 0, Math.min(TILE, w - dx), Math.min(TILE, h - dy), TILE, TILE);
+                int tw = Math.min(TILE, w - dx), th = Math.min(TILE, h - dy);
+                float x1 = x + dx, x2 = x + dx + tw, y1 = y + dy, y2 = y + dy + th;
+                float u = (float) tw / TILE, v = (float) th / TILE;
+                tiles.addVertex(pose, x1, y1, 0).setUv(0, 0);
+                tiles.addVertex(pose, x1, y2, 0).setUv(0, v);
+                tiles.addVertex(pose, x2, y2, 0).setUv(u, v);
+                tiles.addVertex(pose, x2, y1, 0).setUv(u, 0);
             }
         }
+        MeshData mesh = tiles.build();
+        if (mesh != null) BufferUploader.drawWithShader(mesh); // null: a panel without area
         g.flush();
         g.setColor(1, 1, 1, 1);
         RenderSystem.disableBlend();
@@ -29,14 +50,16 @@ public final class MorrowindSkin {
 
     public static void frame(GuiGraphics g, int x, int y, int w, int h, boolean lit) {
         int gold = lit ? LIT_GOLD : GOLD;
-        g.fill(x, y, x + w, y + 1, OUTLINE);
-        g.fill(x, y + h - 1, x + w, y + h, OUTLINE);
-        g.fill(x, y, x + 1, y + h, OUTLINE);
-        g.fill(x + w - 1, y, x + w, y + h, OUTLINE);
-        g.fill(x + 1, y + 1, x + w - 1, y + 2, gold);
-        g.fill(x + 1, y + 1, x + 2, y + h - 1, gold);
-        g.fill(x + 2, y + h - 2, x + w - 1, y + h - 1, SHADOW);
-        g.fill(x + w - 2, y + 2, x + w - 1, y + h - 1, SHADOW);
+        GuiBatch.fills(g, () -> {
+            g.fill(x, y, x + w, y + 1, OUTLINE);
+            g.fill(x, y + h - 1, x + w, y + h, OUTLINE);
+            g.fill(x, y, x + 1, y + h, OUTLINE);
+            g.fill(x + w - 1, y, x + w, y + h, OUTLINE);
+            g.fill(x + 1, y + 1, x + w - 1, y + 2, gold);
+            g.fill(x + 1, y + 1, x + 2, y + h - 1, gold);
+            g.fill(x + 2, y + h - 2, x + w - 1, y + h - 1, SHADOW);
+            g.fill(x + w - 2, y + 2, x + w - 1, y + h - 1, SHADOW);
+        });
     }
 
     /**
@@ -46,6 +69,10 @@ public final class MorrowindSkin {
     public static void circleFrame(GuiGraphics g, int x, int y, int size, boolean lit) {
         int[] colors = {0, OUTLINE, lit ? LIT_GOLD : GOLD, SHADOW};
         double radius = size / 2.0;
+        GuiBatch.fills(g, () -> circleRows(g, x, y, size, colors, radius));
+    }
+
+    private static void circleRows(GuiGraphics g, int x, int y, int size, int[] colors, double radius) {
         for (int row = 0; row < size; row++) {
             int runStart = 0;
             int runPart = FrameRing.NONE;

@@ -843,8 +843,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     /** An accessory switched off on the body (Ctrl+RMB): the item dimmed and struck through, as in Accessories. */
     private static void renderHidden(GuiGraphics g, int x, int y, int size) {
-        g.fill(x, y, x + size, y + size, HIDDEN_SHADE);
-        for (int i = 1; i < size - 1; i++) g.fill(x + i, y + i, x + i + 1, y + i + 1, HIDDEN_STRIKE);
+        GuiBatch.fills(g, () -> {
+            g.fill(x, y, x + size, y + size, HIDDEN_SHADE);
+            for (int i = 1; i < size - 1; i++) g.fill(x + i, y + i, x + i + 1, y + i + 1, HIDDEN_STRIKE);
+        });
     }
 
     private void renderOwnedSlot(GuiGraphics g, Slot slot) {
@@ -1169,11 +1171,13 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     private void renderSlotFrame(GuiGraphics g, int x, int y, int size) {
-        g.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x3018100A);
-        g.fill(x, y, x + size, y + 1, 0xFF473B2A);
-        g.fill(x, y, x + 1, y + size, 0xFF473B2A);
-        g.fill(x + 1, y + size - 1, x + size, y + size, 0xFFA48D61);
-        g.fill(x + size - 1, y + 1, x + size, y + size, 0xFFA48D61);
+        GuiBatch.fills(g, () -> {
+            g.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x3018100A);
+            g.fill(x, y, x + size, y + 1, 0xFF473B2A);
+            g.fill(x, y, x + 1, y + size, 0xFF473B2A);
+            g.fill(x + 1, y + size - 1, x + size, y + size, 0xFFA48D61);
+            g.fill(x + size - 1, y + 1, x + size, y + size, 0xFFA48D61);
+        });
     }
 
     public int modelScale() {
