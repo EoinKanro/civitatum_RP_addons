@@ -19,13 +19,7 @@ import net.minecraft.world.Container;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.AbstractFurnaceMenu;
-import net.minecraft.world.inventory.BrewingStandMenu;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.CraftingMenu;
-import net.minecraft.world.inventory.DispenserMenu;
-import net.minecraft.world.inventory.HopperMenu;
-import net.minecraft.world.inventory.ShulkerBoxMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
@@ -39,7 +33,7 @@ import net.neoforged.neoforge.network.PacketDistributor;
  * on the render thread.
  */
 public final class CompatBridge {
-    public enum Kind { INVENTORY, CURIOS, BACKPACK, ACCESSORIES, AETHER, BLOCK }
+    public enum Kind { INVENTORY, CURIOS, BACKPACK, ACCESSORIES, AETHER }
 
     private static final String CURIOS_MENU = "top.theillusivec4.curios.common.inventory.container.CuriosContainer";
     private static final String CURIOS_SLOT = "top.theillusivec4.curios.common.inventory.CurioSlot";
@@ -79,7 +73,6 @@ public final class CompatBridge {
         if (name.startsWith(ACCESSORIES_MENUS)) return Kind.ACCESSORIES;
         if (name.startsWith("net.satisfy.camping.") && name.endsWith("BackpackScreenHandler")) return Kind.BACKPACK;
         if (name.equals(AETHER_MENUS + "AetherAccessoriesMenu")) return Kind.AETHER;
-        if (blockMenu(type)) return Kind.BLOCK;
         return Kind.INVENTORY;
     }
 
@@ -98,50 +91,6 @@ public final class CompatBridge {
             enderpacks.add(menu);
         }
         return kind(menu) != Kind.INVENTORY;
-    }
-
-    public static boolean blockMenu(AbstractContainerMenu menu) {
-        return blockMenu(menu.getClass());
-    }
-
-    private static boolean blockMenu(Class<?> type) {
-        return ChestMenu.class.isAssignableFrom(type) || HopperMenu.class.isAssignableFrom(type)
-            || DispenserMenu.class.isAssignableFrom(type) || ShulkerBoxMenu.class.isAssignableFrom(type)
-            || AbstractFurnaceMenu.class.isAssignableFrom(type) || BrewingStandMenu.class.isAssignableFrom(type)
-            || CraftingMenu.class.isAssignableFrom(type) || BlockMenus.listed(type);
-    }
-
-    public static boolean storageGrid(AbstractContainerMenu menu) {
-        return menu instanceof ChestMenu || menu instanceof HopperMenu
-            || menu instanceof DispenserMenu || menu instanceof ShulkerBoxMenu;
-    }
-
-    /** A getter's value over {@code divisor}, as {@link GaugeMath#fraction}. */
-    public static double progress(AbstractContainerMenu menu, String method, double divisor) {
-        try {
-            return GaugeMath.fraction(method(menu.getClass(), method).invoke(menu), divisor);
-        } catch (ReflectiveOperationException ex) {
-            return 0;
-        }
-    }
-
-    /** The same for a getter that takes which bar to measure. */
-    public static double progress(AbstractContainerMenu menu, String method, int argument, double divisor) {
-        try {
-            return GaugeMath.fraction(method(menu.getClass(), method, int.class).invoke(menu, argument), divisor);
-        } catch (ReflectiveOperationException ex) {
-            return 0;
-        }
-    }
-
-    /** One getter over another, such as time cooked over time needed; 0 while nothing is needed. */
-    public static double ratio(AbstractContainerMenu menu, String done, String total) {
-        try {
-            var type = menu.getClass();
-            return GaugeMath.ratio(method(type, done).invoke(menu), method(type, total).invoke(menu));
-        } catch (ReflectiveOperationException ex) {
-            return 0;
-        }
     }
 
     public static ItemStack backpack(Player player) {
@@ -483,19 +432,9 @@ public final class CompatBridge {
 
     /** {@link Class#getMethod} without parameters, remembered together with a failure. */
     private static Method method(Class<?> type, String name) throws NoSuchMethodException {
-        return method(type, name, name);
-    }
-
-    /** {@link Class#getMethod} with one parameter, remembered apart from the method of that name without any. */
-    private static Method method(Class<?> type, String name, Class<?> parameter) throws NoSuchMethodException {
-        return method(type, name + "(" + parameter.getName() + ")", name, parameter);
-    }
-
-    private static Method method(Class<?> type, String key, String name, Class<?>... parameters)
-            throws NoSuchMethodException {
-        Object found = METHODS.computeIfAbsent(type, k -> new HashMap<>()).computeIfAbsent(key, k -> {
+        Object found = METHODS.computeIfAbsent(type, key -> new HashMap<>()).computeIfAbsent(name, key -> {
             try {
-                return type.getMethod(name, parameters);
+                return type.getMethod(key);
             } catch (NoSuchMethodException ex) {
                 return ex;
             }

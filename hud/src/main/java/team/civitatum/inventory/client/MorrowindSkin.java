@@ -15,6 +15,8 @@ import org.joml.Matrix4f;
 /** Original tiled textures; panel alpha 102/255 = 40% opacity / 60% transparency. */
 public final class MorrowindSkin {
     public static final int PANEL_ALPHA = 102;
+    /** The lit gold of a frame, see-through: a slot under the cursor, here and in the restyled vanilla screens. */
+    public static final int SLOT_HOVER = 0x60E2C18A;
     private static final ResourceLocation STONE =
         ResourceLocation.fromNamespaceAndPath("civitatum_hud", "textures/gui/stone.png");
     private static final int TILE = 32;

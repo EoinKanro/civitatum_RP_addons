@@ -27,3 +27,16 @@ tasks.register('generateStoneTexture', JavaExec) {
     mainClass = 'team.civitatum.inventory.tools.StoneTexture'
     workingDir = projectDir
 }
+
+tasks.register('generateVanillaStyle', JavaExec) {
+    group = 'tools'
+    description = 'Restyles vanilla block screens and widgets into assets/minecraft/textures/gui of the resources.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.inventory.tools.VanillaStyle'
+    workingDir = projectDir
+    // vanilla textures as ModDevGradle unpacks them while setting the module up
+    args layout.buildDirectory.file("moddev/artifacts/neoforge-${neo_version}-client-extra-aka-minecraft-resources.jar")
+        .get().asFile.absolutePath
+    // the mods' jars are not dependencies of the module: their folder is given by hand, -Pmods=<folder>
+    if (providers.gradleProperty('mods').isPresent()) args file(providers.gradleProperty('mods').get()).absolutePath
+}

@@ -57,8 +57,8 @@ public final class InventoryClient {
             screen.allowAutoBackpack(!skipBackpack);
             event.setNewScreen(screen);
         } else if (CompatBridge.supported(opened)) {
-            var nativeScreen = (AbstractContainerScreen<?>) opened;
-            event.setNewScreen(new CivitatumInventoryScreen(mc.player, nativeScreen.getMenu(), nativeScreen));
+            var container = (AbstractContainerScreen<?>) opened;
+            event.setNewScreen(new CivitatumInventoryScreen(mc.player, container.getMenu()));
         }
     }
 

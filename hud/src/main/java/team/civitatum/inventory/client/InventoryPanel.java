@@ -10,7 +10,7 @@ public final class InventoryPanel {
     private static final int GRIP = 10;
     /** Screen space kept free: the top button row and the sliders below. */
     /** Free space between a window and the screen edge. */
-    static final int MARGIN = 4;
+    private static final int MARGIN = 4;
     private static final int TOP_BAR = 25, BOTTOM_BAR = 44;
     public final String id;
     public final int minWidth, minHeight;
