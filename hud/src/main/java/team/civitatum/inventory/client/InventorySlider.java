@@ -1,12 +1,18 @@
 package team.civitatum.inventory.client;
 
 import java.util.function.DoubleConsumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.network.chat.Component;
 
+/** A slider drawn like {@link MorrowindButton}: a stone track in a frame and a framed stone handle. */
 public final class InventorySlider extends AbstractSliderButton {
     /** Slot scale moves in 5% steps, transparency and the HUD sizes in 1% steps. */
     private static final double SCALE_STEPS = 20, PERCENT_STEPS = 100;
+    /** As wide as vanilla's handle. */
+    private static final int HANDLE = 8;
+    private static final int TEXT = 0xFFE8D9B7, DISABLED_TEXT = 0xFF90846C, LIT_SHADE = 0x205F4824;
     private final String label;
     private final double min, max;
     private final DoubleConsumer change;
@@ -18,6 +24,19 @@ public final class InventorySlider extends AbstractSliderButton {
         this.max = max;
         this.change = change;
         updateMessage();
+    }
+
+    @Override
+    public void renderWidget(GuiGraphics g, int mx, int my, float tick) {
+        int x = getX(), y = getY(), w = getWidth(), h = getHeight();
+        boolean lit = isHoveredOrFocused() && active;
+        MorrowindSkin.body(g, x + 2, y + 2, w - 4, h - 4);
+        MorrowindSkin.frame(g, x, y, w, h, false);
+        int hx = x + (int) (value * (w - HANDLE));
+        MorrowindSkin.body(g, hx + 2, y + 2, HANDLE - 4, h - 4);
+        MorrowindSkin.frame(g, hx, y, HANDLE, h, lit);
+        if (lit) g.fill(hx + 2, y + 2, hx + HANDLE - 2, y + h - 2, LIT_SHADE);
+        renderScrollingString(g, Minecraft.getInstance().font, 2, active ? TEXT : DISABLED_TEXT);
     }
 
     @Override

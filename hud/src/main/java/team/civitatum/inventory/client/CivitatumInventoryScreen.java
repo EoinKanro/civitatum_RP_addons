@@ -1381,6 +1381,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
+        // AbstractContainerScreen only drags items and does not pass the drag on, so a slider would move by clicks only
+        if (dragging == null && button == 0 && isDragging() && getFocused() instanceof InventorySlider slider) {
+            return slider.mouseDragged(mx, my, button, dx, dy);
+        }
         if (dragging == null) return super.mouseDragged(mx, my, button, dx, dy);
         int ddx = (int) mx - dragOffsetX, ddy = (int) my - dragOffsetY;
         int nx = anchorX, ny = anchorY, right = anchorX + anchorW, bottom = anchorY + anchorH;
