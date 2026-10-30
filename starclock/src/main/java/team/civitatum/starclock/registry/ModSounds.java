@@ -1,13 +1,15 @@
 package team.civitatum.starclock.registry;
 
-import java.util.List;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.sounds.SoundEvent;
 import net.neoforged.neoforge.registries.DeferredHolder;
 import net.neoforged.neoforge.registries.DeferredRegister;
 import team.civitatum.starclock.CivitatumStarclock;
 
+import java.util.List;
+
 public final class ModSounds {
+
     public static final DeferredRegister<SoundEvent> SOUNDS =
             DeferredRegister.create(Registries.SOUND_EVENT, CivitatumStarclock.ID);
     public static final DeferredHolder<SoundEvent, SoundEvent> SHUFFLE = register("shuffle");
