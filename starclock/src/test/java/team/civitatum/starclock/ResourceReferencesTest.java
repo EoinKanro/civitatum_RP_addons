@@ -14,7 +14,6 @@ import static org.junit.jupiter.api.Assertions.*;
 class ResourceReferencesTest {
     private static final Path ROOT = Path.of(System.getProperty("starclock.projectDir"));
     private static final Path STATIC = ROOT.resolve("src/main/resources");
-    private static final Path GENERATED = Path.of(System.getProperty("starclock.generatedResources"));
 
     private static JsonObject json(Path file) throws IOException {
         return JsonParser.parseString(Files.readString(file)).getAsJsonObject();
@@ -41,8 +40,7 @@ class ResourceReferencesTest {
                 assertFalse(textureEntries.isEmpty());
                 for (var texture : textureEntries) {
                     Path relative = resource("textures", texture.getValue().getAsString(), ".png");
-                    Path imageFile = Files.isRegularFile(STATIC.resolve(relative))
-                            ? STATIC.resolve(relative) : GENERATED.resolve(relative);
+                    Path imageFile = STATIC.resolve(relative);
                     assertTrue(Files.isRegularFile(imageFile), imageFile.toString());
                     BufferedImage image = ImageIO.read(imageFile.toFile());
                     assertNotNull(image);

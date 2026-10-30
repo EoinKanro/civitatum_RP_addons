@@ -1,6 +1,7 @@
 # Звуки Civitatum Starclock
 
-Все восемь звуков синтезируются оригинальным кодом `tools/generate_sounds.py`, MIT.
+Все восемь звуков синтезируются оригинальным кодом `src/tools/java/.../tools/sound/`, MIT
+(перенос `tools/generate_sounds.py`).
 Готовые чужие записи и ассеты не используются.
 
 | Событие | Длительность | Звучание | Где используется |
@@ -17,21 +18,24 @@
 Змей использует только нейтральный звук переворота: благоприятность выбранного события
 не передаётся клиенту и не раскрывается звуком.
 
-Формат: Ogg Vorbis, один канал, 44 100 Гц. Выход:
-`starclock/build/generated/starclockAudio/assets/starclock/sounds/ritual/*.ogg`.
+Формат: Ogg Vorbis, один канал, 44 100 Гц. Файлы:
+`src/main/resources/assets/starclock/sounds/ritual/*.ogg`, хранятся в репозитории.
 Регистрация: `ModSounds`; определения и субтитры:
 `assets/civitatum_starclock/sounds.json`, `ru_ru.json`, `en_us.json`.
 
 ## Генерация
 
 ```sh
-./gradlew :starclock:generateSounds
+./gradlew :starclock:generateSounds -PstarclockFfmpeg=/path/to/ffmpeg
 ```
 
-Задачи `processResources` и `build` вызывают генерацию автоматически.
-Python-окружение устанавливает `imageio-ffmpeg==0.6.0` с готовым FFmpeg для платформы;
-ручная установка кодировщика не требуется на поддерживаемых платформах.
-При необходимости путь к совместимому FFmpeg задаётся переменной `IMAGEIO_FFMPEG_EXE`.
+Сборка генерацию не вызывает. Кодировщика Vorbis в Java нет, поэтому синтезированный PCM
+кодирует внешний FFmpeg с libvorbis: из `-PstarclockFfmpeg` или из `PATH`.
+Отчёт с длительностями, SHA-256 и размерами: `starclock/build/reports/starclock-audio.json`.
+
+Файлы в репозитории закодированы FFmpeg 7.0.2 из imageio-ffmpeg 0.6.0, как раньше Python-генератором;
+с ним вывод совпадает байт в байт. FFmpeg 8.1.3 кодирует два звука из восьми иначе
+(`omen_good`, `stars_reveal`): исходный PCM тот же, сжатые байты другие.
 
 PCM синтезируется с фиксированными начальными состояниями шумового генератора.
 Кодировщик запускается без переменных метаданных; серийные номера Ogg фиксируются,

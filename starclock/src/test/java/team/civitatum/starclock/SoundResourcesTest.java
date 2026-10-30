@@ -13,7 +13,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SoundResourcesTest {
     private static final Path STATIC = Path.of(System.getProperty("starclock.projectDir")).resolve("src/main/resources");
-    private static final Path GENERATED = Path.of(System.getProperty("starclock.generatedSounds"));
     private static final List<String> NAMES = List.of("shuffle", "sextant_click", "water_pour", "ring_hum",
             "stars_reveal", "card_flip", "omen_good", "omen_bad");
 
@@ -30,7 +29,7 @@ class SoundResourcesTest {
                 assertTrue(translations.has(definition.get("subtitle").getAsString()));
                 String id = definition.getAsJsonArray("sounds").get(0).getAsJsonObject().get("name").getAsString();
                 String[] parts = id.split(":", 2);
-                byte[] data = Files.readAllBytes(GENERATED.resolve("assets/" + parts[0] + "/sounds/" + parts[1] + ".ogg"));
+                byte[] data = Files.readAllBytes(STATIC.resolve("assets/" + parts[0] + "/sounds/" + parts[1] + ".ogg"));
                 assertEquals("OggS", new String(data, 0, 4, StandardCharsets.US_ASCII), name);
                 int packet = 27 + Byte.toUnsignedInt(data[26]);
                 assertEquals(1, data[packet], name);

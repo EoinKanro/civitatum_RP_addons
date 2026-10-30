@@ -17,8 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class GeoResourcesTest {
     private static final Path ASSETS = Path.of(System.getProperty("starclock.projectDir"))
             .resolve("src/main/resources/assets/starclock");
-    private static final Path TEXTURES = Path.of(System.getProperty("starclock.generatedResources"))
-            .resolve("assets/starclock/textures/model");
+    private static final Path TEXTURES = ASSETS.resolve("textures/model");
     private static final List<String> TOOLS = List.of("deck", "sextant", "bowl", "ring");
 
     private static JsonObject json(Path path) throws IOException {

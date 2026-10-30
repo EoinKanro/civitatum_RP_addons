@@ -25,80 +25,37 @@ neoForge {
     }
 }
 
-def windows = System.getProperty('os.name').toLowerCase(java.util.Locale.ROOT).contains('win')
-def pythonCommand = providers.gradleProperty('starclockPython').getOrElse(windows ? 'python' : 'python3')
-def pythonHome = layout.buildDirectory.dir('texture-python')
-def generatedResources = layout.buildDirectory.dir('generated/starclockResources')
-def venvPython = pythonHome.map { it.file(windows ? 'Scripts/python.exe' : 'bin/python') }
+// Генераторы ресурсов — ручные утилиты набора tools: они пишут прямо в src/main/resources,
+// результат хранится в репозитории, сборка их не вызывает.
+def resourcesDir = file('src/main/resources').absolutePath
 
-tasks.register('createTextureEnvironment', Exec) {
-    group = 'tools'
-    description = 'Создаёт отдельное окружение Python для генераторов.'
-    outputs.file(venvPython)
-    commandLine pythonCommand, '-m', 'venv', pythonHome.get().asFile.absolutePath
-}
-
-tasks.register('prepareTextureTools', Exec) {
-    group = 'tools'
-    description = 'Устанавливает закреплённые зависимости генераторов.'
-    dependsOn 'createTextureEnvironment'
-    inputs.file('tools/requirements.txt')
-    def marker = pythonHome.map { it.file('pillow.ready') }
-    outputs.file(marker)
-    commandLine venvPython.get().asFile.absolutePath, '-m', 'pip', 'install',
-            '--disable-pip-version-check', '-r', file('tools/requirements.txt').absolutePath
-    doLast {
-        marker.get().asFile.text = file('tools/requirements.txt').getText('UTF-8')
-    }
-}
-
-tasks.register('generateTextures', Exec) {
-    group = 'tools'
-    description = 'Детерминированно рисует спрайты и атласы моделей Starclock.'
-    dependsOn 'prepareTextureTools'
-    inputs.files('tools/generate_textures.py')
-    inputs.file('tools/requirements.txt')
-    outputs.dir(generatedResources)
-    doFirst {
-        commandLine venvPython.get().asFile.absolutePath, file('tools/generate_textures.py').absolutePath,
-                '--output', generatedResources.get().asFile.absolutePath
-    }
-}
-
-// Созвездия, карты, фон, искра и значки лежат в src/main/resources; эта задача перерисовывает их туда.
 tasks.register('generateArt', JavaExec) {
     group = 'tools'
-    description = 'Перерисовывает графику обряда из starsigns.zip в src/main/resources.'
+    description = 'Перерисовывает созвездия, карты, фон, искру и значки из starsigns.zip.'
     classpath = sourceSets.tools.runtimeClasspath
     mainClass = 'team.civitatum.starclock.tools.art.ArtGenerator'
-    args '--archive', file('starsigns.zip').absolutePath, '--output', file('src/main/resources').absolutePath
+    args '--archive', file('starsigns.zip').absolutePath, '--output', resourcesDir
 }
 
-sourceSets.main.resources.srcDir(generatedResources)
-tasks.named('processResources') { dependsOn 'generateTextures' }
-tasks.named('test') {
-    dependsOn 'generateTextures'
-    systemProperty 'starclock.projectDir', projectDir.absolutePath
-    systemProperty 'starclock.generatedResources', generatedResources.get().asFile.absolutePath
-}
-
-
-def generatedAudio = layout.buildDirectory.dir('generated/starclockAudio')
-def audioReport = layout.buildDirectory.file('reports/starclock-audio.json')
-tasks.register('generateSounds', Exec) {
+tasks.register('generateTextures', JavaExec) {
     group = 'tools'
-    description = 'Синтезирует оригинальные звуки обряда и кодирует их в Ogg Vorbis.'
-    dependsOn 'prepareTextureTools'
-    inputs.file('tools/generate_sounds.py')
-    inputs.file('tools/requirements.txt')
-    outputs.dir(generatedAudio)
-    outputs.file(audioReport)
-    commandLine venvPython.get().asFile.absolutePath, file('tools/generate_sounds.py').absolutePath,
-            '--output', generatedAudio.get().asFile.absolutePath, '--report', audioReport.get().asFile.absolutePath
+    description = 'Перерисовывает иконки предметов и атласы моделей.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.starclock.tools.textures.TextureGenerator'
+    args '--output', resourcesDir
 }
-sourceSets.main.resources.srcDir(generatedAudio)
-tasks.named('processResources') { dependsOn 'generateSounds' }
+
+// Кодировщика Vorbis в Java нет, звуки кодирует ffmpeg: из PATH или из -PstarclockFfmpeg=<путь>.
+tasks.register('generateSounds', JavaExec) {
+    group = 'tools'
+    description = 'Синтезирует звуки обряда и кодирует их в Ogg Vorbis.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.starclock.tools.sound.SoundGenerator'
+    args '--output', resourcesDir,
+            '--report', layout.buildDirectory.file('reports/starclock-audio.json').get().asFile.absolutePath,
+            '--ffmpeg', providers.gradleProperty('starclockFfmpeg').getOrElse('ffmpeg')
+}
+
 tasks.named('test') {
-    dependsOn 'generateSounds'
-    systemProperty 'starclock.generatedSounds', generatedAudio.get().asFile.absolutePath
+    systemProperty 'starclock.projectDir', projectDir.absolutePath
 }

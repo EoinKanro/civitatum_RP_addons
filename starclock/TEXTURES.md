@@ -4,7 +4,7 @@
 
 Генераторы детерминированные: вывод не зависит от времени и случайного состояния.
 
-Иконки предметов (`item/`) и атласы моделей (`model/`) рисует `tools/generate_textures.py` (Python 3.10+, Pillow 11.3.0) при каждой сборке: задача `./gradlew :starclock:generateTextures`, вывод в `starclock/build/generated/starclockResources/assets/starclock/textures/`, сборка включает его в jar.
+Иконки предметов (`item/`) и атласы моделей (`model/`) рисует Java-генератор `src/tools/java/.../tools/textures/TextureGenerator.java`: `./gradlew :starclock:generateTextures`. Результат лежит в `src/main/resources` и хранится в репозитории. Генератор — перенос `tools/generate_textures.py`; совпадает с ним попиксельно.
 
 Созвездия, карты, звёздное поле, искру и значки (`constellation/`, `gui/`, `particle/`) и отчёт `starclock-art.json` рисует Java-генератор `src/tools/java/.../tools/art/ArtGenerator.java` из сохранённого в репозитории `starsigns.zip`. Он извлекает цветные линии оригиналов, убирает фон, сохраняет пропорции и переводит линии в палитру мода. Результат лежит в `src/main/resources` и хранится в репозитории; после изменения архива или генератора: `./gradlew :starclock:generateArt`. Генератор — перенос `tools/generate_art.py` и нужных частей Pillow 11.3.0; на текущем архиве совпадает с ним попиксельно.
 

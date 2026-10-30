@@ -28,27 +28,23 @@
 
 ## Сборка
 
-Нужны Java 21, Python 3.12 или 3.13 с venv и доступ к Maven/PyPI при первой сборке.
-В CI используется Python 3.12. Если системный Python другой версии, укажите интерпретатор через `starclockPython`.
-Gradle создаёт отдельное Python-окружение в `starclock/build`, устанавливает Pillow 11.3.0
-и imageio-ffmpeg 0.6.0. FFmpeg для генерации звуков поставляется Python-пакетом.
-
-Из корня набора:
+Нужна Java 21. Текстуры и звуки лежат в `src/main/resources` и хранятся в репозитории,
+сборка их не генерирует.
 
 ```sh
-./gradlew :starclock:generateTextures :starclock:test :starclock:build
+./gradlew :starclock:build
 ```
 
-Windows:
-
-```powershell
-.\gradlew.bat :starclock:generateTextures :starclock:test :starclock:build
-```
-
-Другой интерпретатор: `-PstarclockPython=/absolute/path/to/python3`.
 Jar: `starclock/build/libs/civitatum-starclock-0.1.0.jar`.
-PNG из `starclock/build/generated/starclockResources` автоматически включаются в jar.
-Скрипты набора `tools` не включаются в jar.
+
+Генераторы ресурсов — ручные утилиты набора `tools` (`src/tools/java`), в jar не входят.
+Каждая пишет прямо в `src/main/resources`:
+
+```sh
+./gradlew :starclock:generateArt        # созвездия, карты, фон, искра, значки (TEXTURES.md)
+./gradlew :starclock:generateTextures   # иконки предметов и атласы моделей (TEXTURES.md)
+./gradlew :starclock:generateSounds     # звуки обряда, нужен ffmpeg (SOUNDS.md)
+```
 
 Разработка: `./gradlew :starclock:runClient` или `./gradlew :starclock:runServer`.
 Локальная установка: задайте `instanceDir` в пользовательском `~/.gradle/gradle.properties`,
