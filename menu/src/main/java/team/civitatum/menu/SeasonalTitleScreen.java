@@ -38,10 +38,6 @@ public final class SeasonalTitleScreen extends TitleScreen {
     private static final int CALENDAR_CHECK_TICKS = 1200;
     /** Vanilla's own copyright line, already translated by the game. */
     private static final Component COPYRIGHT = Component.translatable("title.credits");
-    /** Free space around a label of a paired button, 4 px on each side, so the label is drawn unshrunk. */
-    private static final int PAIR_PADDING = 8;
-    /** Space between the two buttons of a pair. */
-    private static final int PAIR_GAP = 10;
     /** Side of a top-right button; it and the spacing below are on the virtual canvas like the rest of the menu. */
     private static final int TOP_RIGHT_SIZE = 20;
     private static final int TOP_RIGHT_MARGIN = 3;
@@ -85,10 +81,10 @@ public final class SeasonalTitleScreen extends TitleScreen {
         }
 
         this.add(left - 1, y + 46, 200, "wardrobe", () -> Wardrobe.open(this));
-        this.addPair(left, y + 68, 200,
-            "mods", () -> ModsMenu.open(this),
-            "options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
-        this.add(left, y + 94, 200, "quit", this.minecraft::stop);
+        this.add(left, y + 68, 200, "mods", () -> ModsMenu.open(this));
+        this.add(left, y + 90, 200, "options",
+            () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
+        this.add(left, y + 116, 200, "quit", this.minecraft::stop);
         this.topRightLeft = this.width - Math.round((float)TOP_RIGHT_MARGIN * this.scale);
         if (c.showLanguageAndAccessibility) {
             this.addTopRightIcon("accessibility", Component.translatable("options.accessibility"),
@@ -117,16 +113,6 @@ public final class SeasonalTitleScreen extends TitleScreen {
                 action
             )
         );
-    }
-
-    /** Two buttons sized to their labels and centered together within {@code w}, so the labels stay close. */
-    private void addPair(int x, int y, int w, String leftKey, Runnable leftAction, String rightKey,
-        Runnable rightAction) {
-        int leftWidth = this.font.width(Component.translatable("menu.civitatum_menu." + leftKey)) + PAIR_PADDING;
-        int rightWidth = this.font.width(Component.translatable("menu.civitatum_menu." + rightKey)) + PAIR_PADDING;
-        int start = x + (w - leftWidth - PAIR_GAP - rightWidth) / 2;
-        this.add(start, y, leftWidth, leftKey, leftAction);
-        this.add(start + leftWidth + PAIR_GAP, y, rightWidth, rightKey, rightAction);
     }
 
     /** {@code icon}: the texture {@code textures/icon/<icon>.png}. */
