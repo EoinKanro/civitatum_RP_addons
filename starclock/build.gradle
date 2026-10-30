@@ -1,0 +1,131 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev'
+}
+
+repositories {
+    maven { url = 'https://dl.cloudsmith.io/public/geckolib3/geckolib/maven/' }
+}
+
+dependencies {
+    compileOnly project(':hud')
+    implementation 'software.bernie.geckolib:geckolib-neoforge-1.21.1:4.8.4'
+    testImplementation 'com.google.code.gson:gson:2.10.1'
+}
+
+// Скрипты доступны отдельному набору tools и не включаются в jar мода.
+sourceSets {
+    tools { resources.srcDirs = ['tools'] }
+    clientCheck {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+    gameTest {
+        compileClasspath += sourceSets.main.output + sourceSets.main.compileClasspath
+        runtimeClasspath += sourceSets.main.output + sourceSets.main.runtimeClasspath
+    }
+}
+
+neoForge {
+    mods {
+        civitatum_starclock {
+            sourceSet sourceSets.gameTest
+            if (providers.gradleProperty('starclockClientCheck').isPresent()) sourceSet sourceSets.clientCheck
+        }
+    }
+    runs {
+        gameTestServer {
+            type = 'gameTestServer'
+            systemProperty 'neoforge.enabledGameTestNamespaces', 'civitatum_starclock'
+            gameDirectory = layout.buildDirectory.dir('gameTestRun')
+        }
+        client { client() }
+        clientCheck {
+            client()
+            systemProperty 'starclock.clientCheck', 'true'
+            gameDirectory = layout.buildDirectory.dir('clientCheckRun')
+            programArguments.addAll('--quickPlaySingleplayer', 'StarclockCheck', '--width', '960', '--height', '640')
+        }
+        server { server(); programArgument '--nogui' }
+    }
+}
+
+def windows = System.getProperty('os.name').toLowerCase(java.util.Locale.ROOT).contains('win')
+def pythonCommand = providers.gradleProperty('starclockPython').getOrElse(windows ? 'python' : 'python3')
+def pythonHome = layout.buildDirectory.dir('texture-python')
+def generatedResources = layout.buildDirectory.dir('generated/starclockResources')
+def venvPython = pythonHome.map { it.file(windows ? 'Scripts/python.exe' : 'bin/python') }
+
+tasks.register('createTextureEnvironment', Exec) {
+    group = 'tools'
+    description = 'Создаёт отдельное окружение Python для генераторов.'
+    outputs.file(venvPython)
+    commandLine pythonCommand, '-m', 'venv', pythonHome.get().asFile.absolutePath
+}
+
+tasks.register('prepareTextureTools', Exec) {
+    group = 'tools'
+    description = 'Устанавливает закреплённые зависимости генераторов.'
+    dependsOn 'createTextureEnvironment'
+    inputs.file('tools/requirements.txt')
+    def marker = pythonHome.map { it.file('pillow.ready') }
+    outputs.file(marker)
+    commandLine venvPython.get().asFile.absolutePath, '-m', 'pip', 'install',
+            '--disable-pip-version-check', '-r', file('tools/requirements.txt').absolutePath
+    doLast {
+        marker.get().asFile.text = file('tools/requirements.txt').getText('UTF-8')
+    }
+}
+
+tasks.register('generateTextures', Exec) {
+    group = 'tools'
+    description = 'Детерминированно рисует спрайты и атласы моделей Starclock.'
+    dependsOn 'prepareTextureTools'
+    inputs.files('tools/generate_textures.py', 'tools/generate_art.py', 'starsigns.zip')
+    inputs.file('tools/requirements.txt')
+    outputs.dir(generatedResources)
+    doFirst {
+        commandLine venvPython.get().asFile.absolutePath, file('tools/generate_textures.py').absolutePath,
+                '--output', generatedResources.get().asFile.absolutePath
+    }
+}
+
+sourceSets.main.resources.srcDir(generatedResources)
+tasks.named('processResources') { dependsOn 'generateTextures' }
+tasks.named('test') {
+    dependsOn 'generateTextures'
+    systemProperty 'starclock.projectDir', projectDir.absolutePath
+    systemProperty 'starclock.generatedResources', generatedResources.get().asFile.absolutePath
+}
+
+
+def generatedGameTestResources = layout.buildDirectory.dir('generated/starclockGameTestResources')
+tasks.register('generateGameTestResources', Exec) {
+    dependsOn 'createTextureEnvironment'
+    inputs.file('tools/generate_test_structure.py')
+    outputs.dir(generatedGameTestResources)
+    commandLine venvPython.get().asFile.absolutePath, file('tools/generate_test_structure.py').absolutePath,
+            '--output', generatedGameTestResources.get().asFile.absolutePath
+}
+sourceSets.gameTest.resources.srcDir(generatedGameTestResources)
+tasks.named('processGameTestResources') { dependsOn 'generateGameTestResources' }
+
+def generatedAudio = layout.buildDirectory.dir('generated/starclockAudio')
+def audioReport = layout.buildDirectory.file('reports/starclock-audio.json')
+tasks.register('generateSounds', Exec) {
+    group = 'tools'
+    description = 'Синтезирует оригинальные звуки обряда и кодирует их в Ogg Vorbis.'
+    dependsOn 'prepareTextureTools'
+    inputs.file('tools/generate_sounds.py')
+    inputs.file('tools/requirements.txt')
+    outputs.dir(generatedAudio)
+    outputs.file(audioReport)
+    commandLine venvPython.get().asFile.absolutePath, file('tools/generate_sounds.py').absolutePath,
+            '--output', generatedAudio.get().asFile.absolutePath, '--report', audioReport.get().asFile.absolutePath
+}
+sourceSets.main.resources.srcDir(generatedAudio)
+tasks.named('processResources') { dependsOn 'generateSounds' }
+tasks.named('test') {
+    dependsOn 'generateSounds'
+    systemProperty 'starclock.generatedSounds', generatedAudio.get().asFile.absolutePath
+}
