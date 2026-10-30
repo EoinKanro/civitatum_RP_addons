@@ -101,7 +101,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** A worn accessory under the cursor where the window only shows them; its tooltip is drawn last. */
     private ItemStack wornHover = ItemStack.EMPTY;
     private boolean wornHoverShown;
-    private boolean preserveMenu;
     private EditBox search;
     private Button summaryTab, attributeTab, attributeFilter, ability, compactToggle, gearButton;
     private final PowersView powersView = new PowersView();
@@ -165,7 +164,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         imageWidth = width;
         imageHeight = height;
         compact = width < WIDE_WIDTH;
-        preserveMenu = false;
         panels.clear();
         categories.clear();
         widgets.clear();
@@ -270,10 +268,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         widgets.add(cosmetics);
         var reset = button(tr("reset"), b -> resetLayout(), 66);
         reset.setPosition(width - 72, 4);
-        var normal = button(tr("vanilla"), b -> openNative(), 72);
-        normal.setPosition(width - 148, 4);
         powersButton = button(tr("powers"), b -> togglePowers(), 54);
-        powersButton.setPosition(width - 208, 4);
+        powersButton.setPosition(width - 132, 4);
         var preferences = InventoryPreferences.get();
         var opacity = addWidget(new InventorySlider("transparency", preferences.transparency, 0, 0.9,
             v -> InventoryPreferences.get().transparency = v));
@@ -1520,7 +1516,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int shown = classicAccessories() ? CompatBridge.integer(menu, "scrolledIndex", 0) : 0;
         accessoryRows.forEach((slot, row) ->
             place(slot, original.get(slot)[0], CLASSIC_FIRST_Y + (row - shown) * SLOT));
-        if (!preserveMenu && minecraft.player != null && minecraft.player.containerMenu == menu) super.removed();
+        if (minecraft.player != null && minecraft.player.containerMenu == menu) super.removed();
     }
 
     public InventoryPanel accessoriesPanel() { return accessories; }
@@ -1529,11 +1525,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     public InventoryPanel powersPanel() { return powers; }
     public InventoryPanel containerPanel() { return container; }
     public InventoryPanel informationPanel() { return information; }
-
-    public void openNative() {
-        preserveMenu = true;
-        InventoryClient.nativeScreen(nativeScreen);
-    }
 
     public CompatBridge.Kind integrationKind() { return kind; }
     public List<Slot> compatibilitySlots() { return extraSlots; }

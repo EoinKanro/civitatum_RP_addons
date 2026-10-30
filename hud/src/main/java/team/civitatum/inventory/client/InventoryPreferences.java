@@ -23,7 +23,6 @@ public final class InventoryPreferences {
     private static final double DEFAULT_HUD_SCALE = 1.0;
     public static final double MIN_HUD_SCALE = 0.5, MAX_HUD_SCALE = 2.0;
     private static InventoryPreferences instance;
-    public boolean enabled = true;
     public double transparency = DEFAULT_TRANSPARENCY;
     public double slotScale = DEFAULT_SLOT_SCALE;
     public HotbarStyle hotbarStyle = DEFAULT_HOTBAR_STYLE;

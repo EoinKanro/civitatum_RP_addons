@@ -50,7 +50,7 @@ public final class CivitatumHud {
 
     public static boolean active() {
         var mc = Minecraft.getInstance();
-        return InventoryPreferences.get().enabled && mc.player != null && !mc.player.isSpectator()
+        return mc.player != null && !mc.player.isSpectator()
             && mc.gameMode != null && !mc.gameMode.hasInfiniteItems();
     }
 
