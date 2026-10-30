@@ -12,4 +12,6 @@ dependencies {
     compileOnly 'maven.modrinth:better-modlist:21.1.4'
     // Supplementaries 1.21.1-3.9.9 for NeoForge (Modrinth version id): its gear button is removed from our screen
     compileOnly 'maven.modrinth:supplementaries:WrZWfRjP'
+    // Quark 4.1-487 (Modrinth version id): its "q" button is moved to our top-right row
+    compileOnly 'maven.modrinth:quark:18h0L19k'
 }
