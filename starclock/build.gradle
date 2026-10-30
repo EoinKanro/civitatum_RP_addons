@@ -56,13 +56,22 @@ tasks.register('generateTextures', Exec) {
     group = 'tools'
     description = 'Детерминированно рисует спрайты и атласы моделей Starclock.'
     dependsOn 'prepareTextureTools'
-    inputs.files('tools/generate_textures.py', 'tools/generate_art.py', 'starsigns.zip')
+    inputs.files('tools/generate_textures.py')
     inputs.file('tools/requirements.txt')
     outputs.dir(generatedResources)
     doFirst {
         commandLine venvPython.get().asFile.absolutePath, file('tools/generate_textures.py').absolutePath,
                 '--output', generatedResources.get().asFile.absolutePath
     }
+}
+
+// Созвездия, карты, фон, искра и значки лежат в src/main/resources; эта задача перерисовывает их туда.
+tasks.register('generateArt', JavaExec) {
+    group = 'tools'
+    description = 'Перерисовывает графику обряда из starsigns.zip в src/main/resources.'
+    classpath = sourceSets.tools.runtimeClasspath
+    mainClass = 'team.civitatum.starclock.tools.art.ArtGenerator'
+    args '--archive', file('starsigns.zip').absolutePath, '--output', file('src/main/resources').absolutePath
 }
 
 sourceSets.main.resources.srcDir(generatedResources)

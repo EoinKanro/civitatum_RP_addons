@@ -3,7 +3,6 @@
 import argparse
 from pathlib import Path
 from PIL import Image, ImageDraw
-from generate_art import generate as generate_art
 
 NIGHT = "#0B1020"
 GOLD = "#E3C07B"
@@ -188,4 +187,3 @@ if __name__ == "__main__":
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
     generate(args.output)
-    generate_art(args.output, Path(__file__).resolve().parents[1] / "starsigns.zip")

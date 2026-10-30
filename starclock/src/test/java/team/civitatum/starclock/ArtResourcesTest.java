@@ -12,7 +12,7 @@ import team.civitatum.starclock.prediction.Constellation;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ArtResourcesTest {
-    private static final Path ROOT = Path.of(System.getProperty("starclock.generatedResources"));
+    private static final Path ROOT = Path.of(System.getProperty("starclock.projectDir")).resolve("src/main/resources");
     private static final Path TEXTURES = ROOT.resolve("assets/starclock/textures");
 
     private void dimensions(String name, int width, int height) throws IOException {
