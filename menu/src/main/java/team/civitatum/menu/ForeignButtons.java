@@ -14,7 +14,8 @@ import org.violetmoon.quark.base.client.config.QButton;
 /**
  * Tidies the buttons other mods put on every {@code TitleScreen}, our subclass included.
  * Removes Better ModList's mods button, Supplementaries' gear (by its config it opens a mod list),
- * Cumulus' "Menu List" and "W" (world preview toggle); replaces Quark's "q" by our own in the top-right row.
+ * Cumulus' "Menu List", "W" (world preview toggle) and "Q" (quick load);
+ * replaces Quark's "q" by our own in the top-right row.
  * Must run after their own {@code ScreenEvent.Init.Post} listeners.
  */
 public final class ForeignButtons {
@@ -26,7 +27,8 @@ public final class ForeignButtons {
     private static final String QUARK_LABEL = "q";
     /** Cumulus builds its buttons as plain vanilla ones, so only their labels tell them apart. */
     private static final Set<String> CUMULUS_BUTTONS =
-        Set.of("gui.cumulus_menus.button.menu_list", "gui.cumulus_menus.menu.button.world_preview");
+        Set.of("gui.cumulus_menus.button.menu_list", "gui.cumulus_menus.menu.button.world_preview",
+            "gui.cumulus_menus.menu.button.quick_load");
 
     private ForeignButtons() {
     }
