@@ -25,6 +25,7 @@ public final class PowersView {
     private List<Component> hover = List.of();
     private int scroll;
     private int effectScroll;
+    private final WheelSteps wheel = new WheelSteps();
 
     private static int columns(InventoryPanel p) {
         return Math.max(1, (p.width - 20) / CELL);
@@ -124,7 +125,7 @@ public final class PowersView {
 
     public void scroll(InventoryPanel p, Player player, double my, double delta) {
         if (my < effectsBottom(p, player, RacesBridge.read(player))) {
-            effectScroll = Math.max(0, effectScroll - (int) delta);
+            effectScroll = Math.max(0, effectScroll - wheel.rows(delta));
         }
         else scroll = Math.max(0, scroll - (int) (delta * ROW));
     }

@@ -109,7 +109,6 @@ public final class BookEditor {
         int oldPage = page;
         int oldCursor = cursor;
         int oldAnchor = anchor;
-        remember(before);
         try {
             int start = selectionStart();
             currentPage().replace(start, selectionEnd(), insertion);
@@ -117,6 +116,8 @@ public final class BookEditor {
             anchor = cursor;
             paginate(measure);
             BookDocument.parse(document.bytes());
+            // only an accepted change becomes an undo step and drops the redo history
+            remember(before);
         } catch (RuntimeException exception) {
             document = BookDocument.parse(before);
             page = oldPage;

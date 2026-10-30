@@ -59,7 +59,7 @@ public final class StarclockClient {
     public static void overlay(RenderGuiEvent.Post event) {
         var state = RitualClientState.current();
         var mc = Minecraft.getInstance();
-        if (state == null || state.drawing() || mc.player == null || mc.level == null) return;
+        if (state == null || state.drawing() || mc.player == null || mc.level == null || mc.options.hideGui) return;
         var graphics = event.getGuiGraphics();
         int center = graphics.guiWidth() / 2;
         int top = 20;

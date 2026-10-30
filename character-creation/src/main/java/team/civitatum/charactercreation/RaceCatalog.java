@@ -68,7 +68,8 @@ public final class RaceCatalog {
         c.eyes = paletteIndex(c.eyes, r.eyeColors); c.hornColor = paletteIndex(c.hornColor, r.hornColors);
         c.tattooColor = paletteIndex(c.tattooColor, r.tattooColors);
         boolean ears=r.pointedEars || java.util.Arrays.stream(r.earStyles).anyMatch(n->n>0);
-        c.ears = ears ? clamp(c.ears,r.pointedEars?1:0,4) : 0;
+        c.ears = !ears ? 0
+            : contains(earOptions(r), c.ears) ? c.ears : clamp(c.ears, r.pointedEars ? 1 : 0, SHARED_EARS);
         if (!r.hornsAllowed) c.horns = 0;
         else {
             boolean mayNone = !r.hornsRequired || (r.algnor() && c.female());
@@ -107,6 +108,16 @@ public final class RaceCatalog {
         return Float.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback;
     }
     static float angle(float value) { return finite(value, -60, 60, 0); }
+    /** Ear shapes 1..4 are shared by every race with ears; firbolgs, goblins and algnors have their own after them. */
+    private static final int SHARED_EARS = 4;
+
+    /** Ear shapes a race may pick: the shared ones (pointed ears have no flat 0), then the race's own. */
+    public static int[] earOptions(RaceDefinition r) {
+        var shared = java.util.stream.IntStream.rangeClosed(r.pointedEars ? 1 : 0, SHARED_EARS);
+        var own = java.util.Arrays.stream(r.earStyles).filter(n -> n > SHARED_EARS);
+        return java.util.stream.IntStream.concat(shared, own).distinct().toArray();
+    }
+
     static int clamp(int n, int min, int max) { return Math.max(min, Math.min(max, n)); }
     static boolean contains(int[] values, int n) { for (int v : values) if (v == n) return true; return false; }
 }

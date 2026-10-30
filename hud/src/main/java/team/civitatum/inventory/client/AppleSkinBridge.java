@@ -1,7 +1,10 @@
 package team.civitatum.inventory.client;
 
 import com.mojang.logging.LogUtils;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Supplier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodProperties;
@@ -15,6 +18,9 @@ public final class AppleSkinBridge {
     private static final double DEFAULT_FLASH_ALPHA = 0.65;
     private static Class<?> config;
     private static Method isFood, canConsume, query;
+    /** The settings and the food field are read every frame; their lookup is done once. Render thread only. */
+    private static final Map<String, Field> SETTINGS = new HashMap<>();
+    private static Field modifiedFood;
     private static boolean failed;
 
     /**
@@ -52,7 +58,12 @@ public final class AppleSkinBridge {
     }
 
     private static Object setting(String name) throws ReflectiveOperationException {
-        return ((Supplier<?>) config.getField(name).get(null)).get();
+        Field field = SETTINGS.get(name);
+        if (field == null) {
+            field = config.getField(name);
+            SETTINGS.put(name, field);
+        }
+        return ((Supplier<?>) field.get(null)).get();
     }
 
     private static int hunger(Player player, ItemStack stack) {
@@ -60,7 +71,8 @@ public final class AppleSkinBridge {
         try {
             if (!(Boolean) isFood.invoke(null, stack, player)) return 0;
             Object result = query.invoke(null, stack, player);
-            var food = (FoodProperties) result.getClass().getField("modifiedFoodProperties").get(result);
+            if (modifiedFood == null) modifiedFood = result.getClass().getField("modifiedFoodProperties");
+            var food = (FoodProperties) modifiedFood.get(result);
             return food != null && (Boolean) canConsume.invoke(null, player, food) ? food.nutrition() : 0;
         } catch (ReflectiveOperationException | RuntimeException ex) {
             return 0;

@@ -562,6 +562,8 @@ public final class BookScreen extends Screen {
     }
 
     private void insert(String text) {
+        // Backspace at the start, Delete at the end, Ctrl+X without a selection: nothing to change or save
+        if (text.isEmpty() && editor.cursor == editor.anchor) return;
         try {
             editor.insert(text, this::glyphWidth);
             imageSelected = false;
@@ -571,17 +573,23 @@ public final class BookScreen extends Screen {
         }
     }
 
-    /** A layout failure restores the entire change, including its image and formatting. */
     private void mutate(Runnable action, boolean paginate) {
-        if (!editing()) return;
+        if (editing()) apply(action, paginate);
+    }
+
+    /**
+     * A layout failure restores the entire change, including its image and formatting. Unlike {@link #mutate} it does
+     * not require the editing mode: an uploaded image belongs on its page even if the author switched to reading.
+     */
+    private void apply(Runnable action, boolean paginate) {
         String before = editor.document.json();
         int previousPage = editor.page;
         int previousCursor = editor.cursor;
-        editor.remember(before);
         try {
             action.run();
             if (paginate) editor.paginate(this::glyphWidth);
             BookDocument.parse(editor.document.bytes());
+            editor.remember(before);
             changed();
         } catch (RuntimeException exception) {
             editor.document = BookDocument.parse(before);
@@ -726,8 +734,9 @@ public final class BookScreen extends Screen {
         }
         if (packet.result() == BookNetwork.Result.IMAGE) {
             saveFailed = false;
+            if (!editable) return;
             editor.selectPage(Math.min(uploadPage, editor.document.pages.size() - 1));
-            mutate(() -> {
+            apply(() -> {
                 BookPage page = editor.currentPage();
                 page.image = packet.message();
                 BookImages.Image image = images.get(page.image);

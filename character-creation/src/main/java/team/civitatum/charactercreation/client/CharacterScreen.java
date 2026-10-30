@@ -38,6 +38,7 @@ public final class CharacterScreen extends Screen {
     private final List<Slider> sliders = new ArrayList<>();
     private CharacterData draft;
     private int category, tab = 12, garmentGroup, portraitScroll, focus = -1;
+    private double portraitWheel;
     private String error = "";
     private boolean nameFocus, sending, portraitDragging, breastAdvanced, confirming;
     private float zoom = 1, panX, panY, angle = -.35f, previewZoom = 1, startTick;
@@ -278,7 +279,7 @@ public final class CharacterScreen extends Screen {
                 wrapped(g, t("eye_hint"), 716, 362, 208, MUTED, 6);
             }
             case 1 -> {
-                int[] options = r.pointedEars ? new int[]{1, 2, 3, 4} : new int[]{0, 1, 2, 3, 4};
+                int[] options = RaceCatalog.earOptions(r);
                 cycle(g, t("ear_shape"), 212, draft.ears, options, n -> draft.ears = n, mode.body() && (r.pointedEars || Arrays.stream(r.earStyles).anyMatch(n -> n > 0)));
                 number(g, t("pitch"), 268, draft.earPitch, 5, -60, 60, n -> draft.earPitch = n, mode.body() && draft.ears > 0);
                 number(g, t("yaw"), 316, draft.earYaw, 5, -60, 60, n -> draft.earYaw = n, mode.body() && draft.ears > 0);
@@ -844,7 +845,13 @@ public final class CharacterScreen extends Screen {
     public boolean mouseScrolled(double x, double y, double horizontal, double vertical) {
         geometry();
         double mx = (x - panX) / zoom, my = (y - panY) / zoom;
-        if (mx < 250 && my >= 285 && my <= 437) portraitScroll = Math.max(0, portraitScroll - (int) vertical * 3);
+        if (mx < 250 && my >= 285 && my <= 437) {
+            // touchpads send fractions of a notch; they add up instead of being cut to zero
+            portraitWheel += vertical * 3;
+            int rows = (int) portraitWheel;
+            portraitWheel -= rows;
+            portraitScroll = Math.max(0, portraitScroll - rows);
+        }
         else if (mx >= 258 && mx <= 696 && my >= 136 && my <= 472)
             previewZoom = Math.clamp(previewZoom + (float) vertical * .2f, 1, 3);
         return true;

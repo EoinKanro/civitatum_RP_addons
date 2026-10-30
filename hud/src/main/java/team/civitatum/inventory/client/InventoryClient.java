@@ -89,10 +89,11 @@ public final class InventoryClient {
 
     private static void toggle() {
         var mc = Minecraft.getInstance();
+        // the creative inventory is never replaced, so F8 there would only flip the setting unseen
+        if (mc.gameMode != null && mc.gameMode.hasInfiniteItems()) return;
         var preferences = InventoryPreferences.get();
         preferences.enabled = !preferences.enabled;
         preferences.save();
-        if (mc.gameMode != null && mc.gameMode.hasInfiniteItems()) return;
         if (mc.screen instanceof CivitatumInventoryScreen screen) {
             screen.openNative();
         } else if (mc.player != null && mc.screen instanceof InventoryScreen) {

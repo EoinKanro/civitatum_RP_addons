@@ -107,6 +107,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private final PowersView powersView = new PowersView();
     private boolean autoBackpack = true, menuRequested;
     private int playerRow, blockRow, resizeMask, anchorX, anchorY, anchorW, anchorH;
+    private final WheelSteps wheel = new WheelSteps();
     private boolean modifiedAttributes;
     private int category, page, scroll, dragOffsetX, dragOffsetY;
     private boolean compact, compactInfo;
@@ -1427,15 +1428,15 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         } else if (top == information) {
             scroll = Math.max(0, scroll - (int) (vertical * 20));
         } else if (top == container) {
-            blockRow = Math.max(0, blockRow - (int) vertical);
+            blockRow = Math.max(0, blockRow - wheel.rows(vertical));
             positionSlots();
         } else if (top == accessories) {
             scrollAccessories(vertical);
         } else if (top == items) {
             if (kind == CompatBridge.Kind.BACKPACK && my >= bagTop()) {
-                extraRow = Math.max(0, extraRow - (int) vertical);
+                extraRow = Math.max(0, extraRow - wheel.rows(vertical));
             } else {
-                playerRow = Math.max(0, playerRow - (int) vertical);
+                playerRow = Math.max(0, playerRow - wheel.rows(vertical));
             }
             positionSlots();
         } else {

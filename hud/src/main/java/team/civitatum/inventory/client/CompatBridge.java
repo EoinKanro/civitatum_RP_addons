@@ -58,7 +58,7 @@ public final class CompatBridge {
     private static final Map<Class<?>, Map<String, Object>> METHODS = new HashMap<>();
     private static final Map<Class<?>, Map<String, Object>> FIELDS = new HashMap<>();
     private static long backpackRequestUntil;
-    private static Method capabilityOf, shouldRender;
+    private static Method capabilityOf, shouldRender, equippedBackpack;
     private static List<String> armorNames;
     private static boolean wornFailed;
 
@@ -131,8 +131,11 @@ public final class CompatBridge {
         if (!loaded("camping")) return ItemStack.EMPTY;
         try {
             Object platform = field(type("net.satisfy.camping.platform.Services"), "PLATFORM").get(null);
-            Method equipped = platform.getClass().getMethod("getEquippedBackpack", Player.class);
-            return (ItemStack) equipped.invoke(platform, player);
+            // asked twice a frame while the inventory is open; the platform object never changes
+            if (equippedBackpack == null) {
+                equippedBackpack = platform.getClass().getMethod("getEquippedBackpack", Player.class);
+            }
+            return (ItemStack) equippedBackpack.invoke(platform, player);
         } catch (ReflectiveOperationException | LinkageError ex) {
             return ItemStack.EMPTY;
         }
