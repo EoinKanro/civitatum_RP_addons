@@ -214,6 +214,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         panels.add(information);
         panels.add(powers);
         panels.add(container);
+        if (kind == CompatBridge.Kind.BLOCK) placeBlockPair(work);
         for (var panel : panels) {
             panel.restore(InventoryPreferences.get().panels.get(layoutKey(panel)), width, height);
             panel.constrain(width, height);
@@ -223,9 +224,22 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             container.height = Math.max(container.height, work.height() + 55);
             container.constrain(width, height);
         }
-        if (kind == CompatBridge.Kind.BLOCK && !compact) {
-            information.y = Math.min(height - information.height - 44, container.y + container.height + 8);
-        }
+    }
+
+    /**
+     * A block's menu shows only the items window on the left and the block's window on the right, side by side and
+     * centred. The block's window narrows to its minimum when both do not fit.
+     */
+    private void placeBlockPair(Bounds work) {
+        final int gap = 8;
+        int space = width - 2 * InventoryPanel.MARGIN - gap;
+        items.width = Math.min(items.width, space - container.minWidth);
+        container.width = Math.max(container.minWidth, Math.min(container.width, space - items.width));
+        if (work != null) container.width = Math.max(container.width, Math.min(space - items.width, work.width() + 40));
+        container.height = items.height;
+        items.x = Math.max(InventoryPanel.MARGIN, (width - items.width - gap - container.width) / 2);
+        container.x = items.x + items.width + gap;
+        container.y = items.y;
     }
 
     private void createWidgets() {
@@ -282,7 +296,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }));
         scale.setPosition(width - 162, height - 40);
         widgets.add(scale);
-        compactToggle = compact ? button(tr(compactInfo ? "equipment" : "information"), b -> {
+        compactToggle = compact && kind != CompatBridge.Kind.BLOCK ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
             updateVisibility();
             positionControls();
@@ -361,7 +375,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private String layoutKey(InventoryPanel panel) {
         String layout = switch (kind) {
             case BACKPACK -> "joint.";
-            case BLOCK -> "block." + menu.getClass().getSimpleName() + ".";
+            case BLOCK -> "block2." + menu.getClass().getSimpleName() + ".";
             case AETHER -> "aether.";
             default -> "";
         };
@@ -377,9 +391,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     }
 
     private void updateVisibility() {
-        equipment.visible = !compact || !compactInfo;
+        boolean block = kind == CompatBridge.Kind.BLOCK;
+        equipment.visible = !block && (!compact || !compactInfo);
         accessories.visible = accessoriesShown() && equipment.visible;
-        information.visible = !compact || compactInfo;
+        information.visible = !block && (!compact || compactInfo);
         container.visible = kind == CompatBridge.Kind.BLOCK;
         powers.visible = InventoryPreferences.get().powersVisible && !compact && kind != CompatBridge.Kind.BLOCK;
         dockEquipment();
@@ -391,7 +406,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         accessories.width = 2 * ACCESSORIES_MARGIN + columns * cell + (columns - 1) * COLUMN_GAP + SCROLL_BAR;
         int aw = accessories.visible ? accessories.width : 0;
         equipment.width = Math.max(equipment.minWidth, Math.min(equipment.width, width - items.width - 8 - aw));
-        items.x = Math.max(4 + equipment.width + aw, Math.min(items.x, width - items.width - 4));
+        // In a block's menu equipment is hidden and keeps no room on the left of the items window.
+        int ew = kind == CompatBridge.Kind.BLOCK ? 0 : equipment.width;
+        items.x = Math.max(4 + ew + aw, Math.min(items.x, width - items.width - 4));
         equipment.x = items.x - equipment.width;
         equipment.y = items.y;
         equipment.height = items.height;
@@ -411,6 +428,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         } else {
             panels.remove(panel);
             panels.add(panel);
+        }
+        // A block's window is never covered by the inventory: it stays the topmost.
+        if (container.visible && panels.getLast() != container) {
+            panels.remove(container);
+            panels.add(container);
         }
     }
 
@@ -516,7 +538,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         cosmetics.visible = accessories.visible
             && (kind != CompatBridge.Kind.CURIOS || CompatBridge.flag(menu, "hasCosmetics"));
         cosmetics.active = free;
-        if (powersButton != null) powersButton.active = free;
+        if (powersButton != null) {
+            powersButton.active = free;
+            // the powers window is not shown next to a block's menu
+            powersButton.visible = kind != CompatBridge.Kind.BLOCK;
+        }
         int half = (information.width - 20) / 2;
         summaryTab.setPosition(information.x + 8, information.y + 25);
         summaryTab.setWidth(half);
