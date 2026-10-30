@@ -86,8 +86,8 @@ public final class SeasonalTitleScreen extends TitleScreen {
 
         this.add(left - 1, y + 46, 200, "wardrobe", () -> Wardrobe.open(this));
         this.addPair(left, y + 68, 200,
-            "options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)),
-            "mods", () -> ModsMenu.open(this));
+            "mods", () -> ModsMenu.open(this),
+            "options", () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
         this.add(left, y + 94, 200, "quit", this.minecraft::stop);
         this.topRightLeft = this.width - Math.round((float)TOP_RIGHT_MARGIN * this.scale);
         if (c.showLanguageAndAccessibility) {
