@@ -105,12 +105,10 @@ public final class CompatBridge {
     }
 
     private static boolean blockMenu(Class<?> type) {
-        String n = type.getName();
         return ChestMenu.class.isAssignableFrom(type) || HopperMenu.class.isAssignableFrom(type)
             || DispenserMenu.class.isAssignableFrom(type) || ShulkerBoxMenu.class.isAssignableFrom(type)
             || AbstractFurnaceMenu.class.isAssignableFrom(type) || BrewingStandMenu.class.isAssignableFrom(type)
-            || CraftingMenu.class.isAssignableFrom(type) || n.equals(AETHER_MENUS + "AltarMenu")
-            || n.equals(AETHER_MENUS + "FreezerMenu") || n.equals(AETHER_MENUS + "IncubatorMenu");
+            || CraftingMenu.class.isAssignableFrom(type) || BlockMenus.listed(type);
     }
 
     public static boolean storageGrid(AbstractContainerMenu menu) {
@@ -118,10 +116,29 @@ public final class CompatBridge {
             || menu instanceof DispenserMenu || menu instanceof ShulkerBoxMenu;
     }
 
+    /** A getter's value over {@code divisor}, as {@link GaugeMath#fraction}. */
     public static double progress(AbstractContainerMenu menu, String method, double divisor) {
         try {
-            double value = ((Number) method(menu.getClass(), method).invoke(menu)).doubleValue();
-            return Math.clamp(value / divisor, 0, 1);
+            return GaugeMath.fraction(method(menu.getClass(), method).invoke(menu), divisor);
+        } catch (ReflectiveOperationException ex) {
+            return 0;
+        }
+    }
+
+    /** The same for a getter that takes which bar to measure. */
+    public static double progress(AbstractContainerMenu menu, String method, int argument, double divisor) {
+        try {
+            return GaugeMath.fraction(method(menu.getClass(), method, int.class).invoke(menu, argument), divisor);
+        } catch (ReflectiveOperationException ex) {
+            return 0;
+        }
+    }
+
+    /** One getter over another, such as time cooked over time needed; 0 while nothing is needed. */
+    public static double ratio(AbstractContainerMenu menu, String done, String total) {
+        try {
+            var type = menu.getClass();
+            return GaugeMath.ratio(method(type, done).invoke(menu), method(type, total).invoke(menu));
         } catch (ReflectiveOperationException ex) {
             return 0;
         }
@@ -466,9 +483,19 @@ public final class CompatBridge {
 
     /** {@link Class#getMethod} without parameters, remembered together with a failure. */
     private static Method method(Class<?> type, String name) throws NoSuchMethodException {
-        Object found = METHODS.computeIfAbsent(type, key -> new HashMap<>()).computeIfAbsent(name, key -> {
+        return method(type, name, name);
+    }
+
+    /** {@link Class#getMethod} with one parameter, remembered apart from the method of that name without any. */
+    private static Method method(Class<?> type, String name, Class<?> parameter) throws NoSuchMethodException {
+        return method(type, name + "(" + parameter.getName() + ")", name, parameter);
+    }
+
+    private static Method method(Class<?> type, String key, String name, Class<?>... parameters)
+            throws NoSuchMethodException {
+        Object found = METHODS.computeIfAbsent(type, k -> new HashMap<>()).computeIfAbsent(key, k -> {
             try {
-                return type.getMethod(key);
+                return type.getMethod(name, parameters);
             } catch (NoSuchMethodException ex) {
                 return ex;
             }

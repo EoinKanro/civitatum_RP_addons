@@ -19,7 +19,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.AbstractFurnaceMenu;
-import net.minecraft.world.inventory.BrewingStandMenu;
 import net.minecraft.world.inventory.CraftingMenu;
 import net.minecraft.world.inventory.DispenserMenu;
 import net.minecraft.world.inventory.HopperMenu;
@@ -296,7 +295,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         }));
         scale.setPosition(width - 162, height - 40);
         widgets.add(scale);
-        compactToggle = compact && kind != CompatBridge.Kind.BLOCK ? button(tr(compactInfo ? "equipment" : "information"), b -> {
+        boolean toggles = compact && kind != CompatBridge.Kind.BLOCK;
+        compactToggle = toggles ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
             updateVisibility();
             positionControls();
@@ -1149,23 +1149,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     private void renderProgress(GuiGraphics g) {
         if (CompatBridge.storageGrid(menu) || extraSlots.isEmpty()) return;
-        double burn = 0, fuel = 0;
+        var gauges = BlockMenus.gauges(menu);
+        double burn = gauges.isEmpty() ? 0 : gauges.getFirst().level().applyAsDouble(menu);
         boolean furnace = menu instanceof AbstractFurnaceMenu;
-        String name = menu.getClass().getName();
-        if (furnace) {
-            burn = CompatBridge.progress(menu, "getBurnProgress", 1);
-            fuel = CompatBridge.progress(menu, "getLitProgress", 1);
-        } else if (name.endsWith("AltarMenu") || name.endsWith("FreezerMenu")) {
-            burn = CompatBridge.progress(menu, "getBurnProgress", 24);
-            fuel = CompatBridge.progress(menu, "getLitProgress", 13);
-        } else if (name.endsWith("IncubatorMenu")) {
-            burn = CompatBridge.progress(menu, "getIncubationProgressScaled", 54);
-        } else if (menu instanceof BrewingStandMenu) {
-            // Brewing ticks count down from 400.
-            double brewing = CompatBridge.progress(menu, "getBrewingTicks", 400);
-            burn = brewing > 0 ? 1 - brewing : 0;
-            fuel = CompatBridge.progress(menu, "getFuel", 20);
-        }
         Slot output = menu instanceof CraftingMenu ? extraSlots.getFirst()
             : furnace && extraSlots.size() > 2 ? extraSlots.get(2) : null;
         if (output != null) {
@@ -1178,17 +1164,20 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             if (furnace) {
                 var input = extraSlots.getFirst();
                 var coal = extraSlots.get(1);
+                double fuel = gauges.get(1).level().applyAsDouble(menu);
                 int fx = input.x + size / 2 - 3, fy = (input.y + size + coal.y) / 2 - 5;
                 g.fill(fx, fy, fx + 6, fy + 9, 0xFF4D3929);
                 g.fill(fx, fy + 9 - (int) (9 * fuel), fx + 6, fy + 9, 0xFFCC8B43);
             }
         }
+        // the work as a thick bar, then each supply as a thin one under it
         int x = container.x + 14, y = container.y + container.height - 20, w = container.width - 28;
-        if (!(menu instanceof CraftingMenu)) {
-            g.fill(x, y, x + w, y + 5, 0x66201810);
-            g.fill(x, y, x + (int) (w * burn), y + 5, 0xFFBDA06B);
-            g.fill(x, y + 7, x + w, y + 9, 0x44201810);
-            g.fill(x, y + 7, x + (int) (w * fuel), y + 9, 0xFFBB7744);
+        for (int i = 0; i < gauges.size(); i++) {
+            var gauge = gauges.get(i);
+            int top = i == 0 ? y : y + 4 + 3 * i, bottom = i == 0 ? y + 5 : top + 2;
+            int fill = (int) (w * (i == 0 ? burn : gauge.level().applyAsDouble(menu)));
+            g.fill(x, top, x + w, bottom, i == 0 ? 0x66201810 : 0x44201810);
+            g.fill(x, top, x + fill, bottom, gauge.colour());
         }
     }
 
