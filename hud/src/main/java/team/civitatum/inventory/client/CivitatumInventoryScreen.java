@@ -41,6 +41,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int ARROW = 0xFFB29A6B;
     /** Vanilla slot pitch and item size. */
     private static final int SLOT = 18, ITEM = 16;
+    /** Left edge of the screen title in the wide layout. */
+    private static final int TITLE_X = 10;
     /** Main inventory: slots 9..35 of the player inventory; 0..8 are the hotbar, 36..39 armour, 40 the off hand. */
     private static final int HOTBAR = 9, MAIN = 27, MAIN_END = 36, ARMOR_END = 39, OFFHAND = 40;
     /** A container menu ends with the 36 slots of the player inventory. */
@@ -269,7 +271,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         var reset = button(tr("reset"), b -> resetLayout(), 66);
         reset.setPosition(width - 72, 4);
         powersButton = button(tr("powers"), b -> togglePowers(), 54);
-        powersButton.setPosition(width - 132, 4);
         var preferences = InventoryPreferences.get();
         var opacity = addWidget(new InventorySlider("transparency", preferences.transparency, 0, 0.9,
             v -> InventoryPreferences.get().transparency = v));
@@ -289,6 +290,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             b.setMessage(tr(compactInfo ? "equipment" : "information"));
         }, 82) : null;
         if (compactToggle != null) compactToggle.setPosition(6, 4);
+        // Top left: after "Character" in the narrow layout, after the screen title in the wide one.
+        int powersX = compactToggle != null ? compactToggle.getX() + compactToggle.getWidth() + 4
+            : TITLE_X + font.width(tr("title")) + 8;
+        powersButton.setPosition(powersX, 4);
     }
 
     private void setQuery(String value) {
@@ -887,7 +892,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     @Override
     protected void renderBg(GuiGraphics g, float tick, int mx, int my) {
-        if (!compact) g.drawString(font, tr("title"), 10, 9, GOLD, false);
+        if (!compact) g.drawString(font, tr("title"), TITLE_X, 9, GOLD, false);
         for (var panel : List.copyOf(panels)) {
             if (!panel.visible) continue;
             g.pose().pushPose();
