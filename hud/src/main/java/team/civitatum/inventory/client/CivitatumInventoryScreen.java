@@ -108,6 +108,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private boolean autoBackpack = true, menuRequested;
     private int playerRow, blockRow, resizeMask, anchorX, anchorY, anchorW, anchorH;
     private final WheelSteps wheel = new WheelSteps();
+    /** Positions of the scrolled player and backpack grids, set where their slots are laid out. */
+    private RowScrollBar playerScroll, extraScroll;
     private boolean modifiedAttributes;
     private int category, page, scroll, dragOffsetX, dragOffsetY;
     private boolean compact, compactInfo;
@@ -633,6 +635,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int cols = columns(), cell = pitch(), gx = items.x + (items.width - cols * cell) / 2, rows = mainRows();
         int totalRows = (MAIN + cols - 1) / cols, hotbarPitch = hotbarPitch();
         playerRow = Math.clamp(playerRow, 0, Math.max(0, totalRows - rows));
+        playerScroll = new RowScrollBar(gx + cols * cell + 2, gridTop(), rows * cell, playerRow, rows, totalRows);
         for (var slot : menu.slots) {
             if (slot.container != player.getInventory()) continue;
             int i = slot.getContainerSlot(), r = (i - HOTBAR) % totalRows - playerRow;
@@ -757,11 +760,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int visible = Math.max(1, (hotbarTop() - 10 - top) / cell);
         int total = Math.max(1, (extraSlots.size() + columns - 1) / columns);
         extraRow = Math.clamp(extraRow, 0, Math.max(0, total - visible));
+        int left = items.x + (items.width - columns * cell) / 2;
+        extraScroll = new RowScrollBar(left + columns * cell + 2, top, visible * cell, extraRow, visible, total);
         for (int i = 0; i < extraSlots.size(); i++) {
             int r = i % total - extraRow;
             if (r >= 0 && r < visible) {
-                assign(extraSlots.get(i), items, items.x + (items.width - columns * cell) / 2 + i / total * cell,
-                    top + r * cell);
+                assign(extraSlots.get(i), items, left + i / total * cell, top + r * cell);
             }
         }
     }
@@ -1093,7 +1097,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         MorrowindSkin.frame(g, items.x + 8, items.y + 21, items.width - 16, 19, false);
         if (kind == CompatBridge.Kind.BACKPACK) {
             g.drawString(font, tr("storage.backpack"), items.x + 10, bagTop() - 12, GOLD, false);
+            if (extraScroll != null) extraScroll.render(g);
         }
+        if (playerScroll != null) playerScroll.render(g);
         int occupied = 0, matched = 0;
         for (var slot : menu.slots) {
             if (owners.get(slot) == items && !slot.getItem().isEmpty()) {
