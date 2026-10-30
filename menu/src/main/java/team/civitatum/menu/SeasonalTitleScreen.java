@@ -26,6 +26,9 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class SeasonalTitleScreen extends TitleScreen {
     private static final ResourceLocation LOGO = CivitatumMenu.resource("textures/label.png");
+    /** The same logo with its subtitle redrawn in English; shown for every language but {@link #RUSSIAN}. */
+    private static final ResourceLocation LOGO_EN = CivitatumMenu.resource("textures/label_en.png");
+    private static final String RUSSIAN = "ru_ru";
     /** Virtual canvas every coordinate of the layout is given on; the screen scales it to fit. */
     private static final float CANVAS_WIDTH = 960.0F;
     private static final float CANVAS_HEIGHT = 540.0F;
@@ -208,7 +211,8 @@ public final class SeasonalTitleScreen extends TitleScreen {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         int logoX = Math.round((this.virtualWidth - (float)c.logoWidth) / 2.0F);
-        graphics.blit(LOGO, logoX, c.logoTop, c.logoWidth, c.logoHeight,
+        ResourceLocation logo = RUSSIAN.equals(this.minecraft.getLanguageManager().getSelected()) ? LOGO : LOGO_EN;
+        graphics.blit(logo, logoX, c.logoTop, c.logoWidth, c.logoHeight,
             0.0F, 0.0F, LOGO_WIDTH, LOGO_HEIGHT, LOGO_WIDTH, LOGO_HEIGHT);
         RenderSystem.disableBlend();
         String music = this.font.plainSubstrByWidth(MenuMusic.label(),
