@@ -24,7 +24,7 @@ import javax.imageio.ImageIO;
  * <p>Run with {@code ./gradlew :hud:generateVanillaStyle} after the module has been set up once (it reads vanilla's
  * textures from the resources jar that ModDevGradle unpacks), or start {@link #main} with that jar as the argument
  * from the {@code hud} folder. A folder of mod jars as the second argument ({@code -Pmods=<folder>} for Gradle) also
- * restyles {@link #FOREIGN} and the mods' screens ({@link ModStyle}); without it those files are left as they are.
+ * restyles the mods' screens and slot hints ({@link ModStyle}); without it those files are left as they are.
  */
 public final class VanillaStyle {
     /** The built-in pack that the mod puts above all mods' resources. */
@@ -49,15 +49,9 @@ public final class VanillaStyle {
      */
     private static final List<String> BORROWED_SPRITES = List.of("container/creative_inventory/scroller",
         "container/creative_inventory/scroller_disabled");
-    /**
-     * Other mods' pictures drawn on restyled screens, by the start of their jar's name. Moonlight replaces the loom's
-     * banner slot hint with these, cycling between them, when an item of Supplementaries can go into that slot.
-     */
-    private static final Map<String, String> FOREIGN = Map.of(
-        "moonlight-", "assets/moonlight/textures/item/gui_slots/empty_slot_banner.png",
-        "supplementaries-", "assets/supplementaries/textures/item/gui_slots/empty_slot_flag.png");
-    // the greys of those slot hints
-    private static final int HINT_FILL = 0xFFC3C3C3, HINT_EDGE = 0xFF808080;
+    /** Vanilla's hints of empty slots (a smithing template, armour, lapis), items drawn in a slot as a grey shape. */
+    private static final String HINTS = "assets/minecraft/textures/item/empty_";
+    private static final int HINT_SIZE = 16, MAX_HINT_GREYS = 3;
     /**
      * Where a sprite lies on its screen's background, so its stone grain continues the background's. Vanilla draws a
      * partly filled sprite with the same offset into the sprite as on the screen.
@@ -136,8 +130,9 @@ public final class VanillaStyle {
     /**
      * Neighbours (of eight) in the face that make a recess grey a line of a drawing (Ice and Fire's dragon, an arrow's
      * rim, Supplementaries' scale marks) rather than a slot, and neighbours in the recess that make another grey a mark
-     * drawn in a slot (a hint of what goes there). Our recess and stone are both dark, so those turn to gold enough to
-     * be seen, as vanilla's light and mid greys were. A recess grey with no other around it is a speck of a texture.
+     * drawn in a slot (a hint of what goes there). Our recess and stone are both dark: a line turns to gold enough to
+     * be seen, as vanilla's light and mid greys were, and a mark to the bronze of the loom's hints. A recess grey with
+     * no other around it is a speck of a texture.
      * One with the face on all four sides and its own grey on the corners is a dither (Create's panels), and so is a
      * mark with the recess on all four sides and its own grey on the corners: neither is a line nor a mark.
      */
@@ -148,7 +143,12 @@ public final class VanillaStyle {
      * Arrow shafts and drawings are thinner.
      */
     private static final int SLOT_SQUARE = 10;
-    private static final double ENGRAVING_GOLD = 0.45, MARK_GOLD = 0.4;
+    private static final double ENGRAVING_GOLD = 0.45;
+    /**
+     * Channels of a mark drawn in a slot may differ this much: a warm grey there (Herbal Brews' bottles,
+     * {@code 5C5451}) is a hint like any other, drawn in the bronze of the loom's hints.
+     */
+    private static final int MARK_SPREAD = 0x10;
 
     private final BufferedImage stone = StoneTexture.generate();
 
@@ -167,10 +167,9 @@ public final class VanillaStyle {
         if (args.length == 2) clear(PACK.resolve("assets"));
         style.run(Path.of(args[0]));
         if (args.length == 2) {
-            style.foreign(Path.of(args[1]));
             new ModStyle(style).run(Path.of(args[1]));
         } else {
-            System.out.println("No mods folder: " + FOREIGN.values() + " and mods' screens left as they are");
+            System.out.println("No mods folder: mods' screens and slot hints left as they are");
         }
     }
 
@@ -185,6 +184,12 @@ public final class VanillaStyle {
         try (var zip = new ZipFile(jar.toFile())) {
             for (String name : CONTAINERS) restyle(zip, "container/" + name + ".png");
             restyle(zip, "recipe_book.png");
+            for (var entry : zip.stream().toList()) {
+                if (!entry.getName().startsWith(HINTS) || !entry.getName().endsWith(".png")) continue;
+                try (InputStream in = zip.getInputStream(entry)) {
+                    write(hint(ImageIO.read(in)), PACK.resolve(entry.getName()));
+                }
+            }
             for (var entry : zip.stream().toList()) {
                 String name = entry.getName();
                 if (!name.endsWith(".png") || !name.startsWith(VANILLA + "sprites/")) continue;
@@ -211,29 +216,49 @@ public final class VanillaStyle {
         write(plate(), OUTPUT.resolve("sprites/container/crafter/disabled_slot.png"));
     }
 
-    private void foreign(Path mods) throws IOException {
-        for (var entry : FOREIGN.entrySet()) {
-            Path jar;
-            try (var jars = Files.list(mods)) {
-                jar = jars.filter(f -> f.getFileName().toString().startsWith(entry.getKey())).findFirst()
-                    .orElseThrow(() -> new IOException("No " + entry.getKey() + "*.jar in " + mods));
+    /**
+     * A hint of an empty slot in one style for all, the loom's: its darkest grey (the outline, or the whole of a flat
+     * shape) in the colour of a slot's edge, its lighter greys sunk into the slot. Only for a picture whose visible
+     * pixels are all opaque greys, see {@link #isHint}.
+     */
+    BufferedImage hint(BufferedImage image) {
+        int darkest = 0xFF;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 != 0) darkest = Math.min(darkest, argb >> 8 & 0xFF);
             }
-            BufferedImage image;
-            try (var zip = new ZipFile(jar.toFile())) {
-                try (InputStream in = zip.getInputStream(zip.getEntry(entry.getValue()))) {
-                    image = ImageIO.read(in);
-                }
-            }
-            var out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            for (int y = 0; y < image.getHeight(); y++) {
-                for (int x = 0; x < image.getWidth(); x++) {
-                    int argb = image.getRGB(x, y);
-                    // as vanilla's banner slot hint: the shape sunk into the slot, its outline in the slot edge colour
-                    out.setRGB(x, y, argb == HINT_FILL ? recess(x, y) : argb == HINT_EDGE ? SLOT_EDGE : argb);
-                }
-            }
-            write(out, PACK.resolve(entry.getValue()));
         }
+        var out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0) continue;
+                out.setRGB(x, y, (argb >> 8 & 0xFF) == darkest ? SLOT_EDGE : recess(x, y));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * Whether a picture is a hint of an empty slot: an item's size, all of it opaque greys, a shape in one or two of
+     * them (with a third for a highlight at most), as vanilla's and the mods' copies of them are.
+     */
+    static boolean isHint(BufferedImage image) {
+        if (image.getWidth() != HINT_SIZE || image.getHeight() != HINT_SIZE) return false;
+        var colours = new java.util.HashSet<Integer>();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0) continue;
+                int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+                if (argb >>> 24 != 0xFF || Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) > GREY_TOLERANCE) {
+                    return false;
+                }
+                colours.add(argb);
+            }
+        }
+        return !colours.isEmpty() && colours.size() <= MAX_HINT_GREYS;
     }
 
     /**
@@ -328,7 +353,7 @@ public final class VanillaStyle {
      */
     int detail(java.util.function.IntBinaryOperator pixels, int width, int height, int x, int y, boolean[][] slots) {
         int argb = pixels.applyAsInt(x, y);
-        if (argb >>> 24 != 0xFF || !neutral(argb)) return 0;
+        if (argb >>> 24 != 0xFF || !greyish(argb)) return 0;
         int grey = vanillaGrey(argb), face = 0, recess = 0, sideFace = 0, sideRecess = 0, cornerSame = 0;
         if (grey == RECESS && slots[y][x]) {
             if (face(pixels, width, height, x, y + 1) || face(pixels, width, height, x + 1, y)) return GOLD;
@@ -349,10 +374,10 @@ public final class VanillaStyle {
             }
         }
         boolean dither = (sideFace == SIDES || sideRecess == SIDES) && cornerSame >= MIN_AROUND;
-        if (grey == RECESS && face >= MIN_AROUND && recess > 0 && !dither) {
+        if (grey == RECESS && face >= MIN_AROUND && recess > 0 && !dither && neutral(argb)) {
             return mix(stone(x, y), GOLD, ENGRAVING_GOLD);
         }
-        if (grey == 0 && recess >= MIN_AROUND && !dither) return mix(recess(x, y), GOLD, MARK_GOLD);
+        if (grey == 0 && recess >= MIN_AROUND && !dither) return SLOT_EDGE;
         return 0;
     }
 
@@ -428,6 +453,12 @@ public final class VanillaStyle {
             return argb & 0xFF000000 | (int) Math.round(from + (to - from) * t) * 0x010101;
         }
         return argb;
+    }
+
+    /** Whether a colour is near enough a grey to be a mark in a slot, see {@link #MARK_SPREAD}. */
+    private static boolean greyish(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        return neutral(argb) || Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) <= MARK_SPREAD;
     }
 
     /** The neutral grey of an opaque colour's brightness. */

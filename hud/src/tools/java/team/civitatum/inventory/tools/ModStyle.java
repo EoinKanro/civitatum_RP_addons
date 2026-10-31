@@ -86,6 +86,14 @@ final class ModStyle {
     private static final List<String> NOT_SCREEN = List.of("icon", "hud", "abilities", "penalties", "hanging_signs",
         "cursors", "panorama", "title/", "main_menu", "logo", "banner", "patreon", "drawing", "bestiary", "book",
         "flags/", "media/", "professions/", "personalities/", "heart", "color");
+    /**
+     * Pictures that may be hints of empty slots, by their path within {@code textures/}: Curios', Accessories' and
+     * the Aether's slot icons, Moonlight's for the cartography table, Supplementaries' for the pulley and the loom,
+     * Farmer's Delight's bowl for the cooking pot. What they show decides, see {@link VanillaStyle#isHint}.
+     */
+    private static final java.util.regex.Pattern HINT_PATH = java.util.regex.Pattern.compile("(?i)slot|empty|hint");
+    /** Folders of the world's textures, whose pictures are never slot hints. */
+    private static final List<String> WORLD_FOLDERS = List.of("block", "entity", "particle", "models", "armor");
     static final Path SCREENS = Path.of("src/main/resources/civitatum_hud/restyled_screens.txt");
 
     private final VanillaStyle style;
@@ -129,16 +137,23 @@ final class ModStyle {
     private void restyle(String jar, InputStream in) throws IOException {
         var pictures = new LinkedHashMap<String, byte[]>();
         var metadata = new HashMap<String, byte[]>();
+        var hints = new LinkedHashMap<String, byte[]>();
         var classes = new HashMap<String, byte[]>();
         var zip = new ZipInputStream(in);
         for (var entry = zip.getNextEntry(); entry != null; entry = zip.getNextEntry()) {
             String name = entry.getName();
-            if (interfacePicture(name)) pictures.put(name, zip.readAllBytes());
+            if (interfacePicture(name)) {
+                byte[] bytes = zip.readAllBytes();
+                pictures.put(name, bytes);
+                if (hintPicture(name)) hints.put(name, bytes);
+            } else if (hintPicture(name)) hints.put(name, zip.readAllBytes());
             else if (name.endsWith(".png.mcmeta")) metadata.put(name, zip.readAllBytes());
             else if (name.endsWith(".class")) classes.put(name.substring(0, name.length() - ".class".length()),
                 zip.readAllBytes());
             else if (name.endsWith(".jar")) bundled.put(jar + "!" + name, zip.readAllBytes());
         }
+        int hinted = restyleHints(hints);
+        if (hinted > 0) report.add(hinted + " slot hints from " + jar);
         var images = new LinkedHashMap<String, BufferedImage>();
         var backgrounds = new HashSet<String>();
         var lightPalette = new HashSet<String>();
@@ -176,6 +191,27 @@ final class ModStyle {
         }
         if (restyled > 0) report.add(restyled + " pictures from " + jar);
         findScreens(classes, names);
+    }
+
+    /** Writes the hints of empty slots among the pictures in the loom's style; returns how many there were. */
+    private int restyleHints(Map<String, byte[]> hints) throws IOException {
+        int count = 0;
+        for (var hint : hints.entrySet()) {
+            if (written.contains(hint.getKey())) continue;
+            BufferedImage image;
+            try {
+                image = ImageIO.read(new ByteArrayInputStream(hint.getValue()));
+            } catch (IOException ex) {
+                continue;
+            }
+            if (image == null || !VanillaStyle.isHint(image)) continue;
+            Path target = VanillaStyle.PACK.resolve(hint.getKey());
+            Files.createDirectories(target.getParent());
+            ImageIO.write(style.hint(image), "png", target.toFile());
+            written.add(hint.getKey());
+            count++;
+        }
+        return count;
     }
 
     /**
@@ -279,6 +315,16 @@ final class ModStyle {
         // by folder, not by file name: a block of the world may well be called a screen
         var folders = List.of(inTextures.substring(0, Math.max(0, inTextures.lastIndexOf('/'))).split("/"));
         return folders.getFirst().equals("gui") || folders.stream().anyMatch(INTERFACE_FOLDERS::contains);
+    }
+
+    /** A mod's picture that may be a hint of an empty slot, by its path ({@link #HINT_PATH}); a button never is. */
+    private static boolean hintPicture(String path) {
+        if (!path.startsWith("assets/") || path.startsWith("assets/minecraft/") || !path.endsWith(".png")) return false;
+        int textures = path.indexOf("/textures/");
+        if (textures < 0) return false;
+        String inTextures = path.substring(textures + "/textures/".length());
+        return HINT_PATH.matcher(inTextures).find() && !inTextures.contains("button")
+            && !WORLD_FOLDERS.contains(inTextures.split("/")[0]);
     }
 
     /** Whether no folder or name on the picture's path marks it as an icon, a HUD part, a sign or a cursor. */

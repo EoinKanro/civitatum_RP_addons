@@ -53,6 +53,15 @@ public final class RestyledScreens {
         return restyled(Minecraft.getInstance().screen);
     }
 
+    /** The text with dark colours of its own style ({@link LabelColours}) drawn as {@link #LABEL}. */
+    public static net.minecraft.util.FormattedCharSequence lightStyles(net.minecraft.util.FormattedCharSequence text) {
+        return sink -> text.accept((index, style, codePoint) -> {
+            var colour = style.getColor();
+            boolean dark = colour != null && LabelColours.dark(colour.getValue());
+            return sink.accept(index, dark ? style.withColor(LABEL & 0xFFFFFF) : style, codePoint);
+        });
+    }
+
     public static boolean restyled(Screen screen) {
         if (screen == null) return false;
         return SCREENS.contains(screen.getClass()) || MOD_SCREENS.contains(screen.getClass().getName());

@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "client": [
     "AeSlotHoverMixin",
+    "AeUpgradesPanelMixin",
     "ContainerLabelMixin",
     "SlotHoverMixin",
     "SlotPositionAccessor"

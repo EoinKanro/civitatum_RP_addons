@@ -19,6 +19,8 @@ public final class MorrowindSkin {
     public static final int SLOT_HOVER = 0x60E2C18A;
     /** The same gold, opaque: the rim AE2 draws around the slot under the cursor. */
     public static final int SLOT_HOVER_EDGE = 0xFFE2C18A;
+    /** The gold of frames, for the rims mods draw in their code (AE2's upgrade panel). */
+    public static final int FRAME_GOLD = 0xFFB29A6B;
     private static final ResourceLocation STONE =
         ResourceLocation.fromNamespaceAndPath("civitatum_hud", "textures/gui/stone.png");
     private static final int TILE = 32;
