@@ -38,7 +38,8 @@ final class ModStyle {
     private static final double MIN_GREYS = 0.5;
     private static final int MIN_FACE = 200;
     /** Folders that hold interface pictures besides {@code textures/gui}, as some mods name them (AE2's guis). */
-    private static final List<String> INTERFACE_FOLDERS = List.of("gui", "guis", "screen", "screens", "container", "menu");
+    private static final List<String> INTERFACE_FOLDERS =
+        List.of("gui", "guis", "screen", "screens", "container", "menu");
     /** Opaque pixels of a screen background; a smaller picture in vanilla's greys is a button, not a screen. */
     private static final int MIN_SCREEN = 4000;
     /**
@@ -54,6 +55,19 @@ final class ModStyle {
      * palette, when it has less of vanilla's face than of its own.
      */
     private static final double MIN_LIGHT_PALETTE = 0.05;
+    /**
+     * Palettes of mods that draw their screens in greys of their own, by namespace: each colour and the vanilla grey
+     * it stands for. Brightness alone gets them wrong. AE2 draws violet greys, its slots ({@code ADB0C4}) closer to
+     * the face ({@code CBCCD4}) than to vanilla's recess, and its sky stone chest is dark with slots lighter than
+     * the face.
+     */
+    private static final Map<String, Map<Integer, Integer>> PALETTES = Map.of("ae2", Map.ofEntries(
+        Map.entry(0xFFCBCCD4, 0xFFC6C6C6), Map.entry(0xFFADB0C4, 0xFF8B8B8B), Map.entry(0xFF9A9FB4, 0xFF373737),
+        Map.entry(0xFFF2F2F2, 0xFFFFFFFF), Map.entry(0xFF878FA5, 0xFF373737), Map.entry(0xFF413F54, 0xFF000000),
+        Map.entry(0xFF696D88, 0xFF555555), Map.entry(0xFF4D4D67, 0xFF373737),
+        Map.entry(0xFF2D2F2D, 0xFFC6C6C6), Map.entry(0xFF454D45, 0xFF8B8B8B), Map.entry(0xFF323835, 0xFF373737),
+        Map.entry(0xFF575E54, 0xFFFFFFFF), Map.entry(0xFF393E39, 0xFFFFFFFF), Map.entry(0xFF1F2221, 0xFF555555),
+        Map.entry(0xFF161717, 0xFF000000)));
     private static final int LIGHT_FACE = 0xE4, LIGHT_SLOT = 0xC3, LIGHT_TOLERANCE = 3, LIGHT_SPREAD = 2;
     /** Share of greys of any shade that makes a picture part of a screen, to be recoloured. */
     private static final double MIN_BACKING = 0.15;
@@ -165,8 +179,8 @@ final class ModStyle {
     }
 
     /**
-     * Writes the picture recoloured, with its metadata; one drawn in the {@code light} palette is first shifted to
-     * vanilla's. Returns the share of its visible pixels that changed, 0 when
+     * Writes the picture recoloured, with its metadata; one drawn in the {@code light} palette or in a mod's own
+     * ({@link #PALETTES}) is first shifted to vanilla's. Returns the share of its visible pixels that changed, 0 when
      * it has no grey to swap; 1 when a mod written earlier had the picture, which is then left as it was written.
      */
     private double recolour(String path, BufferedImage image, Map<String, byte[]> metadata, boolean light)
@@ -174,11 +188,19 @@ final class ModStyle {
         if (written.contains(path)) return 1;
         String file = path.substring(path.lastIndexOf('/') + 1, path.length() - ".png".length());
         var out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
-        int visible = 0, changed = 0;
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                int argb = image.getRGB(x, y);
-                int recoloured = style.recolour(light ? VanillaStyle.vanillaFromLight(argb) : argb, x, y, file);
+        int visible = 0, changed = 0, width = image.getWidth(), height = image.getHeight();
+        var palette = PALETTES.getOrDefault(namespace(path), Map.of());
+        java.util.function.IntBinaryOperator pixels = (px, py) -> {
+            int argb = image.getRGB(px, py);
+            Integer own = palette.get(argb | 0xFF000000);
+            if (own != null) return argb & 0xFF000000 | own & 0xFFFFFF;
+            return light ? VanillaStyle.vanillaFromLight(argb) : argb;
+        };
+        boolean[][] slots = VanillaStyle.slots(pixels, width, height);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = image.getRGB(x, y), detail = style.detail(pixels, width, height, x, y, slots);
+                int recoloured = detail != 0 ? detail : style.recolour(pixels.applyAsInt(x, y), x, y, file);
                 if (argb >>> 24 != 0) visible++;
                 if (recoloured != argb) changed++;
                 out.setRGB(x, y, recoloured);
@@ -310,7 +332,7 @@ final class ModStyle {
             return visible > 0 && light == visible;
         }
 
-        /** A screen in the lighter palette of {@link VanillaStyle#LIGHT_RAMP}: its face and slots, little of vanilla's. */
+        /** A screen in the lighter palette of {@link VanillaStyle#LIGHT_RAMP}: its face and slots, few of vanilla's. */
         boolean lightPalette() {
             return lightFace >= MIN_LIGHT_PALETTE * opaque && lightSlot >= MIN_LIGHT_PALETTE * opaque
                 && exactFace < lightFace;

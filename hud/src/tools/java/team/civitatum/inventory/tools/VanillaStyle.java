@@ -44,6 +44,12 @@ public final class VanillaStyle {
         "container/cartography_table", "container/brewing_stand", "container/beacon", "container/smithing",
         "container/anvil", "container/grindstone", "recipe_book");
     /**
+     * Single sprites of screens that are not restyled themselves: the creative inventory's scroll thumb, which mods
+     * borrow for their own lists (Tom's Storage terminals). On the creative tabs it is gold on vanilla's grey.
+     */
+    private static final List<String> BORROWED_SPRITES = List.of("container/creative_inventory/scroller",
+        "container/creative_inventory/scroller_disabled");
+    /**
      * Other mods' pictures drawn on restyled screens, by the start of their jar's name. Moonlight replaces the loom's
      * banner slot hint with these, cycling between them, when an item of Supplementaries can go into that slot.
      */
@@ -127,6 +133,23 @@ public final class VanillaStyle {
     private static final double RECESS_DEPTH = 0.45;
     private static final int RECESS_BASE = 0x0E0A07;
 
+    /**
+     * Neighbours (of eight) in the face that make a recess grey a line of a drawing (Ice and Fire's dragon, an arrow's
+     * rim, Supplementaries' scale marks) rather than a slot, and neighbours in the recess that make another grey a mark
+     * drawn in a slot (a hint of what goes there). Our recess and stone are both dark, so those turn to gold enough to
+     * be seen, as vanilla's light and mid greys were. A recess grey with no other around it is a speck of a texture.
+     * One with the face on all four sides and its own grey on the corners is a dither (Create's panels), and so is a
+     * mark with the recess on all four sides and its own grey on the corners: neither is a line nor a mark.
+     */
+    private static final int MIN_AROUND = 3, SIDES = 4;
+    /**
+     * A solid square of the recess this big is a slot, never a line. A slot that sits on the face with no edge of its
+     * own (AE2's) gets vanilla's: dark where the face is above or to the left, gold where it is below or to the right.
+     * Arrow shafts and drawings are thinner.
+     */
+    private static final int SLOT_SQUARE = 10;
+    private static final double ENGRAVING_GOLD = 0.45, MARK_GOLD = 0.4;
+
     private final BufferedImage stone = StoneTexture.generate();
 
     VanillaStyle() {}
@@ -167,7 +190,9 @@ public final class VanillaStyle {
                 if (!name.endsWith(".png") || !name.startsWith(VANILLA + "sprites/")) continue;
                 String sprite = name.substring(VANILLA.length() + "sprites/".length());
                 String folder = sprite.substring(0, sprite.lastIndexOf('/'));
-                if (SPRITE_FOLDERS.contains(folder)) restyle(zip, "sprites/" + sprite);
+                if (SPRITE_FOLDERS.contains(folder) || BORROWED_SPRITES.contains(sprite.replace(".png", ""))) {
+                    restyle(zip, "sprites/" + sprite);
+                }
             }
         }
         // border sizes are ours: the bevels need three pixels, vanilla's disabled button and slider keep only one
@@ -295,6 +320,65 @@ public final class VanillaStyle {
                 yield ramp(argb, x, y, file);
             }
         };
+    }
+
+    /**
+     * The pixel at {@code x, y} of a mod's picture, read through {@code pixels}, as a line or a mark that would be
+     * lost on our dark ground (see {@link #MIN_AROUND}); 0 when it is neither, and is recoloured as any other.
+     */
+    int detail(java.util.function.IntBinaryOperator pixels, int width, int height, int x, int y, boolean[][] slots) {
+        int argb = pixels.applyAsInt(x, y);
+        if (argb >>> 24 != 0xFF || !neutral(argb)) return 0;
+        int grey = vanillaGrey(argb), face = 0, recess = 0, sideFace = 0, sideRecess = 0, cornerSame = 0;
+        if (grey == RECESS && slots[y][x]) {
+            if (face(pixels, width, height, x, y + 1) || face(pixels, width, height, x + 1, y)) return GOLD;
+            if (face(pixels, width, height, x, y - 1) || face(pixels, width, height, x - 1, y)) return SLOT_EDGE;
+            return 0;
+        }
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int nx = x + dx, ny = y + dy;
+                if (dx == 0 && dy == 0 || nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                int around = vanillaGrey(pixels.applyAsInt(nx, ny));
+                boolean side = dx == 0 || dy == 0;
+                if (around == FACE) face++;
+                if (around == RECESS) recess++;
+                if (around == FACE && side) sideFace++;
+                if (around == RECESS && side) sideRecess++;
+                if (pixels.applyAsInt(nx, ny) == argb && !side) cornerSame++;
+            }
+        }
+        boolean dither = (sideFace == SIDES || sideRecess == SIDES) && cornerSame >= MIN_AROUND;
+        if (grey == RECESS && face >= MIN_AROUND && recess > 0 && !dither) {
+            return mix(stone(x, y), GOLD, ENGRAVING_GOLD);
+        }
+        if (grey == 0 && recess >= MIN_AROUND && !dither) return mix(recess(x, y), GOLD, MARK_GOLD);
+        return 0;
+    }
+
+    private static boolean face(java.util.function.IntBinaryOperator pixels, int width, int height, int x, int y) {
+        return x >= 0 && y >= 0 && x < width && y < height && vanillaGrey(pixels.applyAsInt(x, y)) == FACE;
+    }
+
+    /** Pixels of a picture that belong to a slot: those inside a solid square of the recess ({@link #SLOT_SQUARE}). */
+    static boolean[][] slots(java.util.function.IntBinaryOperator pixels, int width, int height) {
+        // sums of recess pixels over the rectangle from the top left corner, to count any square at once
+        var sums = new int[height + 1][width + 1];
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int recess = vanillaGrey(pixels.applyAsInt(x, y)) == RECESS ? 1 : 0;
+                sums[y + 1][x + 1] = recess + sums[y][x + 1] + sums[y + 1][x] - sums[y][x];
+            }
+        }
+        var slots = new boolean[height][width];
+        for (int y = 0; y + SLOT_SQUARE <= height; y++) {
+            for (int x = 0; x + SLOT_SQUARE <= width; x++) {
+                int y2 = y + SLOT_SQUARE, x2 = x + SLOT_SQUARE;
+                if (sums[y2][x2] - sums[y][x2] - sums[y2][x] + sums[y][x] != SLOT_SQUARE * SLOT_SQUARE) continue;
+                for (int sy = y; sy < y2; sy++) java.util.Arrays.fill(slots[sy], x, x2, true);
+            }
+        }
+        return slots;
     }
 
     /** Any other neutral grey between the two vanilla greys around it; other colours unchanged. */

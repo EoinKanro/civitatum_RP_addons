@@ -4,6 +4,7 @@
   "package": "team.civitatum.inventory.mixin",
   "compatibilityLevel": "JAVA_21",
   "client": [
+    "AeSlotHoverMixin",
     "ContainerLabelMixin",
     "SlotHoverMixin",
     "SlotPositionAccessor"
