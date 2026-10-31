@@ -68,6 +68,41 @@ final class ModStyle {
         Map.entry(0xFF2D2F2D, 0xFFC6C6C6), Map.entry(0xFF454D45, 0xFF8B8B8B), Map.entry(0xFF323835, 0xFF373737),
         Map.entry(0xFF575E54, 0xFFFFFFFF), Map.entry(0xFF393E39, 0xFFFFFFFF), Map.entry(0xFF1F2221, 0xFF555555),
         Map.entry(0xFF161717, 0xFF000000)));
+    /**
+     * The largest side of a small picture: an icon or a button, not a panel. Its cool tints are colours of what it
+     * shows (a dragon's scales, an ender eye), not greys of a panel, and what stood out from its ground must still.
+     */
+    private static final int SMALL = 32;
+    /**
+     * Brightness apart from the ground of a small picture that marks a drawing on it (an icon on a button), and the
+     * least it must keep after recolouring; one that came closer is pushed towards dark or light by that share.
+     */
+    private static final int STOOD_OUT = 0x20, MIN_CONTRAST = 0x20;
+    /** Neighbours (of eight) in colour that make a grey of a small picture part of a coloured drawing. */
+    private static final int MIN_COLOURED_AROUND = 4;
+    private static final double CONTRAST_PUSH = 0.75;
+    /**
+     * Least share of the ground, and most of a colour pushed off it: a drawing is small on a clear ground. A picture
+     * of a few large areas (a plain button) keeps them as recoloured.
+     */
+    private static final double MIN_GROUND = 0.4, MAX_DRAWING = 0.25;
+    /** Saturation of a neighbour that counts as a drawing's colour: brown stains on a grey plate do not. */
+    private static final double MIN_DRAWING_SATURATION = 0.3;
+    /**
+     * A small picture with this share of strong cool colours (of this saturation) is a coloured drawing, a blue
+     * dragon or an ender eye: its cool greys are shades of those colours and stay. One without is a grey thing with a
+     * cool cast (FTB Quests' chain, Moonlight's chat bubble, MineColonies' lavender white button), recoloured whole.
+     * Deciding for the whole picture keeps a gradient of tints from splitting into two colours.
+     */
+    private static final double MIN_COOL_DRAWING = 0.1, STRONG_COOL = 0.35;
+    /** Brightest channel of a colour too dark for its saturation to tell: Moonlight's near black outline. */
+    private static final int DARKEST_COLOUR = 0x50;
+    /** Brightness of a ground too dark to be one: the outline of a picture made mostly of its outline. */
+    private static final int DARKEST_GROUND = 0x20;
+    /** Pictures of a hovered or selected button, and the share of blue that makes the blue all theirs. */
+    private static final java.util.regex.Pattern HOVER =
+        java.util.regex.Pattern.compile("(?i)hover|highlight|selected");
+    private static final double MIN_HOVER_BLUE = 0.5;
     private static final int LIGHT_FACE = 0xE4, LIGHT_SLOT = 0xC3, LIGHT_TOLERANCE = 3, LIGHT_SPREAD = 2;
     /** Share of greys of any shade that makes a picture part of a screen, to be recoloured. */
     private static final double MIN_BACKING = 0.15;
@@ -170,7 +205,9 @@ final class ModStyle {
             if (greys.screen()) styled.add(namespace(picture.getKey()));
             if (greys.visible() >= MIN_SCREEN) backgrounds.add(picture.getKey());
             if (greys.lightPalette()) lightPalette.add(picture.getKey());
-            if (greys.screen() || greys.backing() && !greys.fill() && partOfScreen(picture.getKey())) {
+            boolean part = (greys.backing() && !greys.fill() || blueHover(picture.getKey(), image))
+                && partOfScreen(picture.getKey());
+            if (greys.screen() || part) {
                 images.put(picture.getKey(), image);
             }
         }
@@ -191,6 +228,124 @@ final class ModStyle {
         }
         if (restyled > 0) report.add(restyled + " pictures from " + jar);
         findScreens(classes, names);
+    }
+
+    /** Whether a picture is a hovered or selected button, blue for the most part: it turns gold, as vanilla's does. */
+    private static boolean blueHover(String path, BufferedImage image) {
+        String file = path.substring(path.lastIndexOf('/') + 1);
+        return HOVER.matcher(file).find() && blueShare(image) >= MIN_HOVER_BLUE;
+    }
+
+    /**
+     * Pixels of a small picture that stood out from its ground (its most common colour) and were recoloured into it
+     * get their difference back: darker ones towards the outline, lighter ones towards the lit gold. Otherwise a grey
+     * icon on a hovered button's blue turns as brown as the button.
+     */
+    private static void keepContrast(BufferedImage image, BufferedImage out) {
+        var counts = new HashMap<Integer, Integer>();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0xFF) counts.merge(argb, 1, Integer::sum);
+            }
+        }
+        if (counts.isEmpty()) return;
+        int ground = counts.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow().getKey();
+        int opaque = counts.values().stream().mapToInt(Integer::intValue).sum();
+        if (counts.get(ground) < MIN_GROUND * opaque || brightness(ground) < DARKEST_GROUND) return;
+        long sum = 0;
+        int n = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                if (image.getRGB(x, y) != ground) continue;
+                sum += brightness(out.getRGB(x, y));
+                n++;
+            }
+        }
+        int was = brightness(ground), now = (int) (sum / n);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 != 0xFF || argb == ground || counts.get(argb) > MAX_DRAWING * opaque) continue;
+                int apart = brightness(argb) - was, recoloured = out.getRGB(x, y);
+                if (Math.abs(apart) < STOOD_OUT || Math.abs(brightness(recoloured) - now) >= MIN_CONTRAST) continue;
+                int towards = apart < 0 ? VanillaStyle.OUTLINE : VanillaStyle.LIT_GOLD;
+                out.setRGB(x, y, VanillaStyle.mix(recoloured, towards, CONTRAST_PUSH));
+            }
+        }
+    }
+
+    /**
+     * Whether a grey of a small picture lies within a coloured drawing (the pale scales of Dragon Survival's dragons):
+     * then it is a colour of the drawing and stays. The blue of a hovered button is no drawing's colour.
+     */
+    private static boolean inColour(java.util.function.IntBinaryOperator pixels, int width, int height, int x, int y,
+                                    boolean hoverBlue) {
+        int grey = pixels.applyAsInt(x, y);
+        // white, black and vanilla's greys are the picture's frame and shading, never the drawing's own
+        if (!VanillaStyle.neutral(grey) || VanillaStyle.vanillaGrey(grey) != 0) return false;
+        int coloured = 0;
+        for (int dy = -1; dy <= 1; dy++) {
+            for (int dx = -1; dx <= 1; dx++) {
+                int nx = x + dx, ny = y + dy;
+                if (dx == 0 && dy == 0 || nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                int around = pixels.applyAsInt(nx, ny);
+                // beside a vanilla grey (a white glyph) it is that glyph's shading and goes with it
+                if (around >>> 24 == 0xFF && VanillaStyle.vanillaGrey(around) != 0) return false;
+                if (around >>> 24 != 0xFF || saturation(around) < MIN_DRAWING_SATURATION
+                    || brightest(around) < DARKEST_COLOUR
+                    || VanillaStyle.buttonish(around)) {
+                    continue;
+                }
+                if (hoverBlue && VanillaStyle.anyBlue(around)) continue;
+                coloured++;
+            }
+        }
+        return coloured >= MIN_COLOURED_AROUND;
+    }
+
+    /** Whether a small picture is a coloured drawing in cool colours, see {@link #MIN_COOL_DRAWING}. */
+    private static boolean coolDrawing(BufferedImage image) {
+        int visible = 0, cool = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0) continue;
+                visible++;
+                int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+                boolean bright = brightest(argb) >= DARKEST_COLOUR;
+                if (bright && saturation(argb) >= STRONG_COOL && (g > r || b > r)) cool++;
+            }
+        }
+        return visible > 0 && cool >= MIN_COOL_DRAWING * visible;
+    }
+
+    private static int brightest(int argb) {
+        return Math.max(argb >> 16 & 0xFF, Math.max(argb >> 8 & 0xFF, argb & 0xFF));
+    }
+
+    private static double saturation(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF, max = Math.max(r, Math.max(g, b));
+        return max == 0 ? 0 : (max - Math.min(r, Math.min(g, b))) / (double) max;
+    }
+
+    /** Perceived brightness of an opaque colour, 0 to 255. */
+    private static int brightness(int argb) {
+        return ((argb >> 16 & 0xFF) * 3 + (argb >> 8 & 0xFF) * 6 + (argb & 0xFF)) / 10;
+    }
+
+    /** The share of a picture's visible pixels that are blue, see {@link VanillaStyle#anyBlue}. */
+    private static double blueShare(BufferedImage image) {
+        int visible = 0, blue = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0) continue;
+                visible++;
+                if (VanillaStyle.anyBlue(argb)) blue++;
+            }
+        }
+        return visible == 0 ? 0 : blue / (double) visible;
     }
 
     /** Writes the hints of empty slots among the pictures in the loom's style; returns how many there were. */
@@ -226,6 +381,7 @@ final class ModStyle {
         var out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
         int visible = 0, changed = 0, width = image.getWidth(), height = image.getHeight();
         var palette = PALETTES.getOrDefault(namespace(path), Map.of());
+        boolean hoverBlue = blueHover(path, image);
         java.util.function.IntBinaryOperator pixels = (px, py) -> {
             int argb = image.getRGB(px, py);
             Integer own = palette.get(argb | 0xFF000000);
@@ -233,16 +389,30 @@ final class ModStyle {
             return light ? VanillaStyle.vanillaFromLight(argb) : argb;
         };
         boolean[][] slots = VanillaStyle.slots(pixels, width, height);
+        boolean small = Math.max(width, height) <= SMALL;
+        boolean coolDrawing = small && coolDrawing(image);
+        // a coloured blue button (Structurize's) keeps its blues; a hovered one's blue is still the hover's
+        boolean ownBlues = coolDrawing && !HOVER.matcher(file).find();
+        style.flat(small);
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int argb = image.getRGB(x, y), detail = style.detail(pixels, width, height, x, y, slots);
-                int recoloured = detail != 0 ? detail : style.recolour(pixels.applyAsInt(x, y), x, y, file);
+                int shifted = pixels.applyAsInt(x, y);
+                int recoloured = detail != 0 ? detail
+                    : hoverBlue && shifted >>> 24 == 0xFF && VanillaStyle.anyBlue(shifted)
+                    ? style.litBlue(shifted, x, y, file)
+                    : ownBlues && !VanillaStyle.neutral(shifted) && !VanillaStyle.vanillaHover(shifted) ? shifted
+                    : small && (coolDrawing && VanillaStyle.coolGrey(shifted)
+                        || inColour(pixels, width, height, x, y, hoverBlue))
+                    ? shifted : style.recolour(shifted, x, y, file);
                 if (argb >>> 24 != 0) visible++;
                 if (recoloured != argb) changed++;
                 out.setRGB(x, y, recoloured);
             }
         }
+        style.flat(false);
         if (changed == 0) return 0;
+        if (small) keepContrast(image, out);
         written.add(path);
         Path target = VanillaStyle.PACK.resolve(path);
         Files.createDirectories(target.getParent());

@@ -85,7 +85,8 @@ public final class VanillaStyle {
     private static final int THUMB_LIGHT = 0xFFE4E4E4, THUMB_MID = 0xFFC3C3C3, THUMB_DARK = 0xFF9C9C9C;
     private static final int REFUSED = 0x8A2222;
     // the colours of MorrowindSkin.frame and the slot frame of the inventory screen
-    private static final int OUTLINE = 0xFF17130E, SHADOW = 0xFF54422C, GOLD = 0xFFB29A6B, LIT_GOLD = 0xFFE2C18A;
+    static final int OUTLINE = 0xFF17130E, LIT_GOLD = 0xFFE2C18A;
+    private static final int SHADOW = 0xFF54422C, GOLD = 0xFFB29A6B;
     private static final int SLOT_EDGE = 0xFF473B2A, LIT_SHADE = 0x205F4824, THUMB = 0xFFD3B478;
     /**
      * How far a neutral grey may stray from one of vanilla's six and still count as it: mods paint with
@@ -151,6 +152,9 @@ public final class VanillaStyle {
     private static final int MARK_SPREAD = 0x10;
 
     private final BufferedImage stone = StoneTexture.generate();
+    private final int flatStone = average(stone);
+    /** Whether the stone is drawn flat, without its grain: on an icon or a small button the grain hides the drawing. */
+    private boolean flat;
 
     VanillaStyle() {}
 
@@ -339,9 +343,7 @@ public final class VanillaStyle {
             default -> {
                 int grey = vanillaGrey(argb);
                 if (grey != 0 && grey != argb) yield recolour(grey, x, y, file);
-                if (buttonBlue(argb) && BUTTON.matcher(file).find()) {
-                    yield mix(ramp(grey(argb), x, y, file + "_highlighted"), LIT_GOLD, BUTTON_GOLD);
-                }
+                if (buttonBlue(argb) && BUTTON.matcher(file).find()) yield litBlue(argb, x, y, file);
                 yield ramp(argb, x, y, file);
             }
         };
@@ -431,6 +433,32 @@ public final class VanillaStyle {
         return spread <= NEUTRAL_SPREAD || !warm && spread <= COOL_GREY_SHARE * max;
     }
 
+    /** A blue of a hovered button in the lit palette, by its brightness, with a touch of the lit gold. */
+    int litBlue(int argb, int x, int y, String file) {
+        return mix(ramp(grey(argb), x, y, file + "_highlighted"), LIT_GOLD, BUTTON_GOLD);
+    }
+
+    /**
+     * Whether an opaque colour is blue of any strength: in a picture of a hovered button that is mostly blue (Tom's
+     * Storage's vivid {@code 2576C6}), all of it is the hover's colour. Teal is not (an ender eye on Waystones'
+     * button), and neither is cyan (Tom's mark of a selected button).
+     */
+    static boolean anyBlue(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        return b - g >= MIN_BUTTON_BLUE_OVER_GREEN && b - r >= MIN_BUTTON_BLUE;
+    }
+
+    /** Whether an opaque colour is a button's: one of its blues, or a colour of vanilla's hover. */
+    static boolean buttonish(int argb) {
+        return buttonBlue(argb) || vanillaHover(argb);
+    }
+
+    /** Whether an opaque colour is one of vanilla's hover, which the palette swaps by name. */
+    static boolean vanillaHover(int argb) {
+        return argb == HOVER || argb == BEACON_HOVER || argb == HOVER_LIGHT || argb == HOVER_LIGHT_2
+            || argb == HOVER_EDGE || argb == HOVER_EDGE_2 || argb == HOVER_SHADE;
+    }
+
     /** Whether an opaque colour is one of the blues of a hovered or pressed button, see {@link #MIN_BUTTON_BLUE}. */
     private static boolean buttonBlue(int argb) {
         int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
@@ -459,6 +487,12 @@ public final class VanillaStyle {
     private static boolean greyish(int argb) {
         int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
         return neutral(argb) || Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) <= MARK_SPREAD;
+    }
+
+    /** Whether a colour is grey only by its cool tint ({@link #COOL_GREY_SHARE}), not by {@link #NEUTRAL_SPREAD}. */
+    static boolean coolGrey(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        return neutral(argb) && Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) > NEUTRAL_SPREAD;
     }
 
     /** The neutral grey of an opaque colour's brightness. */
@@ -505,7 +539,27 @@ public final class VanillaStyle {
 
     /** The stone of the windows, opaque, tiled from the top left corner. */
     private int stone(int x, int y) {
+        if (flat) return flatStone;
         return 0xFF000000 | stone.getRGB(x % stone.getWidth(), y % stone.getHeight()) & 0xFFFFFF;
+    }
+
+    /** Draws the stone flat or with its grain, see {@link #flat}. */
+    void flat(boolean flat) {
+        this.flat = flat;
+    }
+
+    private static int average(BufferedImage image) {
+        long r = 0, g = 0, b = 0;
+        int n = image.getWidth() * image.getHeight();
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                r += argb >> 16 & 0xFF;
+                g += argb >> 8 & 0xFF;
+                b += argb & 0xFF;
+            }
+        }
+        return 0xFF000000 | (int) (r / n) << 16 | (int) (g / n) << 8 | (int) (b / n);
     }
 
     /** The stone as the windows draw it by default, at its own translucency. */
