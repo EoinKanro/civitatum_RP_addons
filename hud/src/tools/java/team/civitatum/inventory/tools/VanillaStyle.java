@@ -104,6 +104,17 @@ public final class VanillaStyle {
      * one of vanilla's scroll thumb: an {@code E4E4E4} face, {@code C3C3C3} slots with {@code 808080} edges. Its greys,
      * dark to light, stand for those of {@link #GREY_RAMP}; without the shift the slots would read as the face.
      */
+    /** What {@link #GREY_RAMP} becomes in an icon, in order of brightness, see {@link #iconGrey}. */
+    private static final int[] ICON_RAMP = {OUTLINE, SLOT_EDGE, SHADOW, mix(SHADOW, GOLD, 0.2), mix(SHADOW, GOLD, 0.35),
+        mix(SHADOW, GOLD, 0.6), GOLD};
+    private static final int[] LIT_ICON_RAMP = {OUTLINE, SLOT_EDGE, SHADOW, mix(SHADOW, LIT_GOLD, 0.2),
+        mix(SHADOW, LIT_GOLD, 0.35), mix(SHADOW, LIT_GOLD, 0.6), LIT_GOLD};
+    /**
+     * The greys the icons' ramp is laid on: vanilla's, with one more step near white, where the shading of a white
+     * glyph lies ({@code E7E7E7} beside {@code FFFFFF}) and would otherwise merge into one gold. The ramp climbs
+     * steepest there, so that shading keeps the depth it gives.
+     */
+    private static final int[] ICON_GREYS = {0x00, 0x37, 0x55, 0x8B, 0xC6, 0xE4, 0xFF};
     static final int[] LIGHT_RAMP = {BLACK, 0xFF808080, THUMB_DARK, THUMB_MID, THUMB_LIGHT, LIGHT};
     /** Channels of a grey that is meant as neutral may differ this much; tinted pictures keep their colours. */
     private static final int NEUTRAL_SPREAD = 6;
@@ -433,6 +444,23 @@ public final class VanillaStyle {
         return spread <= NEUTRAL_SPREAD || !warm && spread <= COOL_GREY_SHARE * max;
     }
 
+    /**
+     * A grey of an icon or a small button other than its ground, by its brightness on a ramp that keeps vanilla's
+     * order, from the outline up to the gold ({@link #ICON_RAMP}): the shading of a drawing stays readable. The
+     * screens' ramp is not in order (vanilla's recess turns darker than its shade), which suits a slot, not a picture.
+     */
+    int iconGrey(int argb, boolean lit) {
+        int g = grey(argb) & 0xFF;
+        int[] ramp = lit ? LIT_ICON_RAMP : ICON_RAMP;
+        for (int i = 1; i < ICON_GREYS.length; i++) {
+            int dark = ICON_GREYS[i - 1], light = ICON_GREYS[i];
+            if (g > light) continue;
+            int colour = blend(ramp[i - 1], ramp[i], (g - dark) / (double) (light - dark));
+            return argb & 0xFF000000 | colour & 0xFFFFFF;
+        }
+        return argb & 0xFF000000 | ramp[ramp.length - 1] & 0xFFFFFF;
+    }
+
     /** A blue of a hovered button in the lit palette, by its brightness, with a touch of the lit gold. */
     int litBlue(int argb, int x, int y, String file) {
         return mix(ramp(grey(argb), x, y, file + "_highlighted"), LIT_GOLD, BUTTON_GOLD);
@@ -441,11 +469,11 @@ public final class VanillaStyle {
     /**
      * Whether an opaque colour is blue of any strength: in a picture of a hovered button that is mostly blue (Tom's
      * Storage's vivid {@code 2576C6}), all of it is the hover's colour. Teal is not (an ender eye on Waystones'
-     * button), and neither is cyan (Tom's mark of a selected button).
+     * button), and neither is cyan (Tom's mark of a selected button) or purple (Curios' bow).
      */
     static boolean anyBlue(int argb) {
         int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
-        return b - g >= MIN_BUTTON_BLUE_OVER_GREEN && b - r >= MIN_BUTTON_BLUE;
+        return b - g >= MIN_BUTTON_BLUE_OVER_GREEN && b - r >= MIN_BUTTON_BLUE && g >= r;
     }
 
     /** Whether an opaque colour is a button's: one of its blues, or a colour of vanilla's hover. */
