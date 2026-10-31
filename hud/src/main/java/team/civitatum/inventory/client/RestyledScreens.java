@@ -1,5 +1,10 @@
 package team.civitatum.inventory.client;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
 import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -23,14 +28,14 @@ import net.minecraft.client.gui.screens.inventory.SmokerScreen;
 import net.minecraft.client.gui.screens.inventory.StonecutterScreen;
 
 /**
- * Vanilla block screens whose backgrounds this mod paints dark ({@code assets/minecraft/textures/gui/container}).
- * Their titles are drawn in vanilla's dark grey, unreadable on stone, so that one colour is swapped for ours there.
+ * Screens whose backgrounds this mod paints dark (the built-in pack {@code resourcepacks/civitatum_style}): vanilla's
+ * block screens and the mods' screens listed by the style generator in {@code civitatum_hud/restyled_screens.txt}.
+ * Their labels are drawn in dark colours, unreadable on stone, so those are swapped for our light colour there.
  *
- * <p>Exact classes only: a mod's subclass may draw its own light background under the same labels.
+ * <p>Exact classes only: a subclass may draw its own light background under the same labels.
  */
 public final class RestyledScreens {
-    /** The grey of {@code AbstractContainerScreen.renderLabels} and of the labels most screens copy from it. */
-    private static final int VANILLA_LABEL = 0x404040;
+    private static final String LIST = "/civitatum_hud/restyled_screens.txt";
     /** The window titles of the inventory screen, drawn with a shadow as there. */
     public static final int LABEL = 0xFFE9E3D4;
     private static final Set<Class<? extends Screen>> SCREENS = Set.of(ContainerScreen.class,
@@ -39,15 +44,30 @@ public final class RestyledScreens {
         AnvilScreen.class, EnchantmentScreen.class, GrindstoneScreen.class, SmithingScreen.class,
         StonecutterScreen.class, LoomScreen.class, CartographyTableScreen.class, BeaconScreen.class,
         CrafterScreen.class);
+    private static final Set<String> MOD_SCREENS = read();
 
-    /** Whether text of this colour is a label on a dark background now. Vanilla passes it without alpha. */
+    /** Whether text of this colour is a label on a dark background now. Labels are passed without alpha or opaque. */
     public static boolean darkLabel(int color) {
-        if ((color & 0xFFFFFF) != VANILLA_LABEL) return false;
+        int alpha = color >>> 24;
+        if (alpha != 0 && alpha != 0xFF || !LabelColours.dark(color)) return false;
         return restyled(Minecraft.getInstance().screen);
     }
 
     public static boolean restyled(Screen screen) {
-        return screen != null && SCREENS.contains(screen.getClass());
+        if (screen == null) return false;
+        return SCREENS.contains(screen.getClass()) || MOD_SCREENS.contains(screen.getClass().getName());
+    }
+
+    private static Set<String> read() {
+        var names = new HashSet<String>();
+        var in = RestyledScreens.class.getResourceAsStream(LIST);
+        if (in == null) return names;
+        try (var reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
+            reader.lines().map(String::strip).filter(l -> !l.isEmpty() && !l.startsWith("#")).forEach(names::add);
+        } catch (IOException ex) {
+            org.slf4j.LoggerFactory.getLogger("Civitatum HUD").warn("Cannot read {}: {}", LIST, ex.toString());
+        }
+        return names;
     }
 
     private RestyledScreens() {}

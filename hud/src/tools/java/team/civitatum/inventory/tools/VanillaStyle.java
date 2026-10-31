@@ -8,12 +8,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
 
 /**
  * Restyles vanilla screens in the look of the inventory windows: stone instead of light grey, gold bevels, dark slot
- * recesses. The files go to {@code assets/minecraft} of the mod's resources and override vanilla's.
+ * recesses. The files go to the mod's built-in pack {@code resourcepacks/civitatum_style}, above vanilla and mods.
  *
  * <p>Block screens are vanilla's own textures with their six greys swapped for ours, pixel for pixel: every slot,
  * arrow and picture stays where the screen's code expects it, and other colours (the beacon's gems, the enchanting
@@ -23,13 +24,15 @@ import javax.imageio.ImageIO;
  * <p>Run with {@code ./gradlew :hud:generateVanillaStyle} after the module has been set up once (it reads vanilla's
  * textures from the resources jar that ModDevGradle unpacks), or start {@link #main} with that jar as the argument
  * from the {@code hud} folder. A folder of mod jars as the second argument ({@code -Pmods=<folder>} for Gradle) also
- * restyles {@link #FOREIGN}; without it those files are left as they are.
+ * restyles {@link #FOREIGN} and the mods' screens ({@link ModStyle}); without it those files are left as they are.
  */
 public final class VanillaStyle {
-    private static final Path OUTPUT = Path.of("src/main/resources/assets/minecraft/textures/gui");
+    /** The built-in pack that the mod puts above all mods' resources. */
+    static final Path PACK = Path.of("src/main/resources/resourcepacks/civitatum_style");
+    private static final Path OUTPUT = PACK.resolve("assets/minecraft/textures/gui");
     private static final String VANILLA = "assets/minecraft/textures/gui/";
     /** Screens of blocks; villager and horse screens belong to entities and keep vanilla's look. */
-    private static final List<String> CONTAINERS = List.of("generic_54", "shulker_box", "dispenser", "hopper",
+    static final List<String> CONTAINERS = List.of("generic_54", "shulker_box", "dispenser", "hopper",
         "furnace", "blast_furnace", "smoker", "crafting_table", "brewing_stand", "anvil", "enchanting_table",
         "grindstone", "smithing", "stonecutter", "loom", "cartography_table", "beacon", "crafter");
     /**
@@ -69,6 +72,13 @@ public final class VanillaStyle {
     private static final int BEACON_HOVER_EDGE = 0xFF373860, HOVER_SHADE = 0xFF444964;
     private static final int HOVER_LIGHT = 0xFFCFD0F7, HOVER_LIGHT_2 = 0xFFAFB6DA;
     // a recipe that cannot be made, plain and hovered; the disabled beacon button
+    /**
+     * The lilac of a hovered stonecutter recipe or loom pattern, over buttons of tan {@code A09172}: it turns into
+     * that tan lit by our gold, as the blue hover of other screens does.
+     */
+    private static final int PATTERN_HOVER = 0xFFB688AE, PATTERN_HOVER_LIGHT = 0xFFFAB9EF;
+    private static final int PATTERN_HOVER_SHADE = 0xFF654C61, PATTERN = 0xFFA09172, PATTERN_SHADE = 0xFF544C3B;
+    private static final double PATTERN_GOLD = 0.5;
     private static final int UNCRAFTABLE = 0xFF936B6B, UNCRAFTABLE_HOVER = 0xFF8D7E99, UNCRAFTABLE_SLOT = 0xFF6A6A6A;
     private static final int DISABLED_DARK = 0xFF2D2D2D, DISABLED_LIGHT = 0xFF494949;
     // scroll thumbs and the brewing arrow
@@ -77,13 +87,49 @@ public final class VanillaStyle {
     // the colours of MorrowindSkin.frame and the slot frame of the inventory screen
     private static final int OUTLINE = 0xFF17130E, SHADOW = 0xFF54422C, GOLD = 0xFFB29A6B, LIT_GOLD = 0xFFE2C18A;
     private static final int SLOT_EDGE = 0xFF473B2A, LIT_SHADE = 0x205F4824, THUMB = 0xFFD3B478;
+    /**
+     * How far a neutral grey may stray from one of vanilla's six and still count as it: mods paint with
+     * {@code C7C7C7}, {@code 8C8C8C}, {@code 343434}, {@code 545454} or {@code C2C2C2} where vanilla has its own.
+     */
+    private static final int GREY_TOLERANCE = 8, GREY_SPREAD = 2;
+    private static final int[] VANILLA_GREYS = {FACE, RECESS, LIGHT, DARK_EDGE, SHADE, BLACK};
+    /**
+     * Vanilla's greys from dark to light. A neutral grey between two of them (a mod's {@code E4E4E4} panel, its
+     * {@code 747474} slot, its {@code 9C9C9C} scroller) is laid between what those two become, by its brightness.
+     */
+    private static final int[] GREY_RAMP = {BLACK, DARK_EDGE, SHADE, RECESS, FACE, LIGHT};
+    /**
+     * The lighter palette some mods draw whole screens in (Quark's crate, MineColonies, Supplementaries' pulley), the
+     * one of vanilla's scroll thumb: an {@code E4E4E4} face, {@code C3C3C3} slots with {@code 808080} edges. Its greys,
+     * dark to light, stand for those of {@link #GREY_RAMP}; without the shift the slots would read as the face.
+     */
+    static final int[] LIGHT_RAMP = {BLACK, 0xFF808080, THUMB_DARK, THUMB_MID, THUMB_LIGHT, LIGHT};
+    /** Channels of a grey that is meant as neutral may differ this much; tinted pictures keep their colours. */
+    private static final int NEUTRAL_SPREAD = 6;
+    /**
+     * A cool grey (Create's green grey slot frames, AE2's violet grey) is still grey to the eye while its
+     * channels differ by this share of the brightest. Warm ones are not: there it is cream paper or wood.
+     */
+    private static final double COOL_GREY_SHARE = 0.3;
+    /**
+     * Vanilla's blue of a hovered button as mods vary it, pressed, dimmed or striped when disabled (Create's buttons),
+     * steel blue (Waystones) or pale (Stellaris): blue over red by this much at least, and at most this share of the
+     * blue apart from the weakest channel. Only in pictures of buttons and highlights: elsewhere blue is an icon's.
+     */
+    private static final int MIN_BUTTON_BLUE = 0x18;
+    /** Blue over green of a button's blue; teal (an ender eye on a button) is no button's colour. */
+    private static final int MIN_BUTTON_BLUE_OVER_GREEN = 0x10;
+    private static final double MAX_BUTTON_SATURATION = 0.6;
+    private static final Pattern BUTTON = Pattern.compile("(?i)button|widget|hover|highlight|selected|checkbox");
+    /** How much of the lit gold a hovered button's blue turns into, over the grey of its brightness. */
+    private static final double BUTTON_GOLD = 0.2;
     /** Slots and empty arrows sink this far towards near black, so they read on the dark stone. */
     private static final double RECESS_DEPTH = 0.45;
     private static final int RECESS_BASE = 0x0E0A07;
 
     private final BufferedImage stone = StoneTexture.generate();
 
-    private VanillaStyle() {}
+    VanillaStyle() {}
 
     public static void main(String[] args) throws IOException {
         if (args.length < 1 || args.length > 2) {
@@ -94,9 +140,22 @@ public final class VanillaStyle {
                 + Path.of("").toAbsolutePath() + ")");
         }
         var style = new VanillaStyle();
+        // a full run writes the whole pack anew, so pictures of mods removed since then do not linger
+        if (args.length == 2) clear(PACK.resolve("assets"));
         style.run(Path.of(args[0]));
-        if (args.length == 2) style.foreign(Path.of(args[1]));
-        else System.out.println("No mods folder: " + FOREIGN.values() + " left as they are");
+        if (args.length == 2) {
+            style.foreign(Path.of(args[1]));
+            new ModStyle(style).run(Path.of(args[1]));
+        } else {
+            System.out.println("No mods folder: " + FOREIGN.values() + " and mods' screens left as they are");
+        }
+    }
+
+    private static void clear(Path folder) throws IOException {
+        if (!Files.exists(folder)) return;
+        try (var files = Files.walk(folder)) {
+            for (Path file : files.sorted(java.util.Comparator.reverseOrder()).toList()) Files.delete(file);
+        }
     }
 
     private void run(Path jar) throws IOException {
@@ -148,7 +207,7 @@ public final class VanillaStyle {
                     out.setRGB(x, y, argb == HINT_FILL ? recess(x, y) : argb == HINT_EDGE ? SLOT_EDGE : argb);
                 }
             }
-            write(out, Path.of("src/main/resources").resolve(entry.getValue()));
+            write(out, PACK.resolve(entry.getValue()));
         }
     }
 
@@ -198,9 +257,15 @@ public final class VanillaStyle {
     }
 
     /** One pixel of a vanilla screen or sprite {@code file} in our palette; {@code x, y} place the stone grain. */
-    private int recolour(int argb, int x, int y, String file) {
-        if (argb >>> 24 != 0xFF) return argb;
-        if (file.startsWith("scroller") || file.equals("brew_progress")) return thumb(argb, file.endsWith("disabled"));
+    int recolour(int argb, int x, int y, String file) {
+        int alpha = argb >>> 24;
+        if (alpha == 0) return argb;
+        // a see-through grey (a shadow, a dimmed panel) is the same grey: recoloured, at its own translucency
+        if (alpha != 0xFF) return alpha << 24 | recolour(argb | 0xFF000000, x, y, file) & 0xFFFFFF;
+        if (file.startsWith("scroller") || file.equals("brew_progress")) {
+            int thumb = thumb(argb, file.endsWith("disabled"));
+            if (thumb != argb) return thumb;
+        }
         boolean lit = file.endsWith("highlighted"), off = file.contains("disabled");
         return switch (argb) {
             case FACE -> stone(x, y);
@@ -214,12 +279,98 @@ public final class VanillaStyle {
             case FRAME_LIGHT, RIM, DISABLED_RIM -> GOLD;
             case HOVER, BEACON_HOVER -> mix(stone(x, y), LIT_GOLD, 0.25);
             case HOVER_LIGHT, HOVER_LIGHT_2 -> LIT_GOLD;
+            case PATTERN_HOVER -> mix(PATTERN, LIT_GOLD, PATTERN_GOLD);
+            case PATTERN_HOVER_LIGHT -> mix(LIT_GOLD, LIGHT, PATTERN_GOLD);
+            case PATTERN_HOVER_SHADE -> mix(PATTERN_SHADE, LIT_GOLD, PATTERN_GOLD / 2);
             case UNCRAFTABLE -> mix(recess(x, y), REFUSED, 0.4);
             // its red rim stays: it is what tells the slot apart
             case UNCRAFTABLE_SLOT -> mix(recess(x, y), REFUSED, 0.2);
             case UNCRAFTABLE_HOVER -> mix(stone(x, y), REFUSED, 0.4);
-            default -> argb;
+            default -> {
+                int grey = vanillaGrey(argb);
+                if (grey != 0 && grey != argb) yield recolour(grey, x, y, file);
+                if (buttonBlue(argb) && BUTTON.matcher(file).find()) {
+                    yield mix(ramp(grey(argb), x, y, file + "_highlighted"), LIT_GOLD, BUTTON_GOLD);
+                }
+                yield ramp(argb, x, y, file);
+            }
         };
+    }
+
+    /** Any other neutral grey between the two vanilla greys around it; other colours unchanged. */
+    private int ramp(int argb, int x, int y, String file) {
+        if (!neutral(argb)) return argb;
+        int g = grey(argb) & 0xFF;
+        for (int i = 1; i < GREY_RAMP.length; i++) {
+            int dark = GREY_RAMP[i - 1] & 0xFF, light = GREY_RAMP[i] & 0xFF;
+            if (g > light) continue;
+            double t = (g - dark) / (double) (light - dark);
+            return blend(recolour(GREY_RAMP[i - 1], x, y, file), recolour(GREY_RAMP[i], x, y, file), t);
+        }
+        return argb;
+    }
+
+    /**
+     * Whether a colour is a grey: its channels differ by no more than {@link #NEUTRAL_SPREAD}, or, when it is not
+     * warm, by no more than {@link #COOL_GREY_SHARE} of the brightest.
+     */
+    static boolean neutral(int argb) {
+        if (argb >>> 24 == 0) return false;
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        int max = Math.max(r, Math.max(g, b)), spread = max - Math.min(r, Math.min(g, b));
+        boolean warm = r > b + NEUTRAL_SPREAD && r >= g;
+        return spread <= NEUTRAL_SPREAD || !warm && spread <= COOL_GREY_SHARE * max;
+    }
+
+    /** Whether an opaque colour is one of the blues of a hovered or pressed button, see {@link #MIN_BUTTON_BLUE}. */
+    private static boolean buttonBlue(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        return b - r >= MIN_BUTTON_BLUE && b - g >= MIN_BUTTON_BLUE_OVER_GREEN
+            && b - Math.min(r, g) <= MAX_BUTTON_SATURATION * b;
+    }
+
+    /**
+     * A grey of the {@link #LIGHT_RAMP} as the vanilla grey it stands for, laid between them by brightness as
+     * {@link #ramp} does; other colours unchanged, and so is the translucency.
+     */
+    static int vanillaFromLight(int argb) {
+        if (!neutral(argb)) return argb;
+        int g = grey(argb) & 0xFF;
+        for (int i = 1; i < LIGHT_RAMP.length; i++) {
+            int dark = LIGHT_RAMP[i - 1] & 0xFF, light = LIGHT_RAMP[i] & 0xFF;
+            if (g > light) continue;
+            double t = (g - dark) / (double) (light - dark);
+            int from = GREY_RAMP[i - 1] & 0xFF, to = GREY_RAMP[i] & 0xFF;
+            return argb & 0xFF000000 | (int) Math.round(from + (to - from) * t) * 0x010101;
+        }
+        return argb;
+    }
+
+    /** The neutral grey of an opaque colour's brightness. */
+    private static int grey(int argb) {
+        int level = ((argb >> 16 & 0xFF) + (argb >> 8 & 0xFF) + (argb & 0xFF)) / 3;
+        return 0xFF000000 | level * 0x010101;
+    }
+
+    /** Two opaque colours mixed, {@code t} of the way from the first to the second. */
+    private static int blend(int from, int to, double t) {
+        int argb = 0xFF000000;
+        for (int shift = 0; shift <= 16; shift += 8) {
+            int a = from >> shift & 0xFF, b = to >> shift & 0xFF;
+            argb |= (int) Math.round(a + (b - a) * t) << shift;
+        }
+        return argb;
+    }
+
+    /** The vanilla grey that an opaque neutral grey stands for, or 0 when it is not close to any of them. */
+    static int vanillaGrey(int argb) {
+        if (argb >>> 24 != 0xFF) return 0;
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        if (Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) > GREY_SPREAD) return 0;
+        for (int grey : VANILLA_GREYS) {
+            if (Math.abs((grey & 0xFF) - g) <= GREY_TOLERANCE) return grey;
+        }
+        return 0;
     }
 
     /** A scroll thumb or the brewing arrow in the gold of the inventory's scroll bars; dark while it cannot move. */

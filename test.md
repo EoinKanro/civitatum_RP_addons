@@ -111,6 +111,7 @@
 - **Стол зачаровывания** — три строки вариантов и лазурит. Книжные полки вокруг не нужны для проверки.
 - **Кузнечный стол** — подсказки шаблона и стойка с бронёй (ванильные, сохранились).
 - **Крафтер** — щелчок по пустой ячейке сетки отключает её: на её месте золотая плашка с тёмным контуром.
+- **Камнерез и ткацкий станок** — вариант под курсором подсвечен светлым золотом (в ванили он сиреневый).
 - **Ткацкий станок** — подсказка в пустом слоте знамени (слева сверху) сменяется с подсказкой флага Supplementaries; обе тёмные с бронзовым контуром.
 - **Наведение на слот** — в этих экранах и в нашем инвентаре полупрозрачная золотая подсветка вместо белой.
 - **Маяк** — нужна пирамида:
@@ -130,9 +131,16 @@
 - «Сетевая игра» → «Добавить»: поля ввода, при фокусе рамка светлее.
 - Неактивная кнопка — например, «Подключиться» без выбранного сервера.
 
-## Блоки модов (родные экраны)
+## Экраны модов
 
-Наши окна для блоков модов убраны: у них снова родные экраны. Проверить, что ничего не сломалось, всё открывается и работает как в моде. Фоны этих модов пока в своём стиле; их надписи не перекрашиваются.
+Наши окна для блоков модов убраны: у них снова родные экраны, и большинство из них перекрашено автоматически (README hud, «Экраны модов»). Проверить в каждом:
+
+- экран открывается и работает как в моде;
+- фон тёмный, слоты, стрелки и картинки на своих местах;
+- заголовки и подписи светлые и читаются, цветной текст (цены, ошибки) остался цветным;
+- наведение на слот — полупрозрачное золото.
+
+Записывать экраны, где остались любые серые куски, тёмный текст на тёмном фоне или светлый текст на светлом. Книги, путеводители, доска объявлений Supplementaries и клипборд Create намеренно оставлены со своей бумагой и тёмным текстом.
 
 ```
 /give @s farmersdelight:cooking_pot
@@ -151,6 +159,48 @@
 /give @s supplementaries:sack
 /give @s create:brown_toolbox
 /give @s irons_jewelry:jewelcrafting_station
+/give @s create:stock_ticker
+/give @s create:redstone_requester
+/give @s create:schematic_table
+/give @s create:schematicannon
+/give @s supplementaries:present
+/give @s supplementaries:pulley_block
+/give @s supplementaries:cannon
+/give @s supplementaries:flag_white
+/give @s quark:backpack
+/give @s iceandfire:dragonforge_fire_core
+
+/give @s iceandfire:podium_oak
+/give @s doggytalents:food_bowl
+/give @s doggytalents:rice_mill
+/give @s swem:locker
+/give @s cozyhome:oak_drawer
+/give @s cozyhome:oak_storage_counter
+/give @s toms_storage:inventory_connector
+/give @s toms_storage:storage_terminal
+/give @s toms_storage:crafting_terminal
+/give @s tfmg:steel_chemical_vat
+/give @s tfmg:steel_distillation_controller
+/give @s tfmg:engine_controller
+/give @s tfmg:electricians_wrench
+/give @s simulated:linked_typewriter
+/give @s simulated:steering_wheel
+/give @s simulated:altitude_sensor
+/give @s waystones:waystone
+/give @s ae2:inscriber
+/give @s ae2:drive
+/give @s ae2:sky_stone_chest
+/give @s ae2:molecular_assembler
 ```
+
+`supplementaries:flag_white` кладётся в ткацкий станок вместо знамени. Пока установлен Supplementaries, пустой слот знамени по очереди показывает две подсказки (знамя и флаг), обе должны быть тёмными с бронзовым контуром.
+
+Экраны без блоков:
+
+- JEI — окно рецептов (R или U на предмете в инвентаре) и панель предметов справа;
+- Simple Voice Chat — меню голосового чата (V);
+- Corpse — окно своего трупа после смерти;
+- Female Gender Mod — гардероб (клавиша «Female Gender Menu» в настройках управления);
+- Quark — рюкзак (`quark:backpack`, надеть и открыть инвентарь).
 
 Сундуки модов, которые используют ванильный экран сундука (большинство шкафов и ящиков), получают новый стиль вместе с ним.
