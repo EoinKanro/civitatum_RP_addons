@@ -23,6 +23,11 @@ public final class StoneTexture {
     // grain of the noise, and the closest placement of light and dark patches.
     private static final int SEED = 297860597;
     private static final int ALPHA = 0xFF;
+    /**
+     * The original texture's brightness taken down by 15%, noise and veins with it, so the grain keeps its look: the
+     * windows read darker behind their items and text, with the restyled screens alike.
+     */
+    private static final double SHADE = 0.85;
 
     private static final Path DEFAULT_OUTPUT =
             Path.of("src/main/resources/assets/civitatum_hud/textures/gui/stone.png");
@@ -48,12 +53,16 @@ public final class StoneTexture {
             for (int x = 0; x < SIZE; x++) {
                 int noise = random.nextInt(17) - 8; // -8..8
                 int vein = (x + y * 3) % 23 < 3 ? 3 : 0;
-                int red = Math.max(0, 39 + noise + vein);
-                int green = Math.max(0, 35 + noise + vein);
-                int blue = Math.max(0, 29 + noise);
+                int red = shade(39 + noise + vein);
+                int green = shade(35 + noise + vein);
+                int blue = shade(29 + noise);
                 image.setRGB(x, y, ALPHA << 24 | red << 16 | green << 8 | blue);
             }
         }
         return image;
+    }
+
+    private static int shade(int channel) {
+        return (int) Math.round(Math.max(0, channel) * SHADE);
     }
 }
