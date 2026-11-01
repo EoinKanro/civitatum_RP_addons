@@ -9,7 +9,9 @@
     "ContainerLabelMixin",
     "SlotHighlightFillMixin",
     "SlotHoverMixin",
-    "SlotPositionAccessor"
+    "SlotPositionAccessor",
+    "TrashSlotComponentMixin",
+    "TrashSlotMixin"
   ],
   "injectors": {
     "defaultRequire": 1

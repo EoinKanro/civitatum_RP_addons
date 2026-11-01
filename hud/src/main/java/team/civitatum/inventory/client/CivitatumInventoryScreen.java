@@ -52,6 +52,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** Z step between stacked windows; items are drawn up to 210 above their window. */
     private static final int WINDOW_Z = 40, OVERLAY_Z = 210, TOP_Z = 400;
     /**
+     * TrashSlot's cell, by the items window's bottom right corner: left of the resize grip, in the row of the item
+     * count, under the hotbar. Its gap keeps the count clear of it.
+     */
+    private static final int TRASH_RIGHT = 30, TRASH_BOTTOM = 21, TRASH_GAP = 4;
+    /**
      * Accessories' classic menu: a column of accessory slots with a cosmetic column on its left, eight rows in view.
      * The menu creates them at x = -46 (cosmetic) and -26, y = 8 + 18 * row, rows shifted by the scrolled index.
      */
@@ -102,6 +107,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private final WheelSteps wheel = new WheelSteps();
     /** Positions of the scrolled player and backpack grids, set where their slots are laid out. */
     private RowScrollBar playerScroll, extraScroll;
+    private Slot trash;
     private boolean modifiedAttributes;
     private int category, page, scroll, dragOffsetX, dragOffsetY;
     private boolean compact, compactInfo;
@@ -143,6 +149,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     @Override
     protected void init() {
+        // before TrashSlot, after this, looks up how it shows its cell on the screen
+        TrashSlotBridge.register();
         super.init();
         leftPos = 0;
         topPos = 0;
@@ -655,8 +663,12 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     public void render(GuiGraphics g, int mx, int my, float tick) {
         positionControls();
         positionSlots();
+        placeTrash();
         super.render(g, mx, my, tick);
         renderTooltip(g, mx, my);
+        if (trash != null && trashUnder(mx, my) && !menu.getCarried().isEmpty()) {
+            g.renderTooltip(font, TrashSlotBridge.carriedTooltip(), mx, my);
+        }
         var top = topPane(mx, my);
         if (page == 2 && top == information) AttributeView.tooltip(g, font, information);
         if (top == powers) powersView.tooltip(g, font, powers);
@@ -698,6 +710,49 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** Drawn inside its owner window, with that window's depth. */
     @Override
     protected void renderSlot(GuiGraphics g, Slot slot) {}
+
+    /**
+     * TrashSlot's slot in its cell, or null when it has none here: TrashSlot missing on either side, the cell hidden
+     * with its key, the items window closed or the corner under another window.
+     */
+    private void placeTrash() {
+        trash = TrashSlotBridge.slot();
+        int x = items.x + items.width - TRASH_RIGHT, y = items.y + items.height - TRASH_BOTTOM;
+        if (trash != null && (!TrashSlotBridge.shown() || !items.visible
+            || covered(items, x - 1, y - 1, ITEM + 2, ITEM + 2))) {
+            // off the screen, as our hidden slots are: TrashSlot would still take a click at its last place
+            place(trash, HIDDEN, HIDDEN);
+            trash = null;
+        }
+        if (trash == null) {
+            TrashCell.hide();
+            return;
+        }
+        // TrashSlot reads the slot's place for its clicks and keys: the screen's corner is the origin here
+        place(trash, x, y);
+        TrashCell.show(x - 1, y - 1, ITEM + 2);
+    }
+
+    private boolean trashUnder(double mx, double my) {
+        return TrashCell.inside((int) Math.floor(mx), (int) Math.floor(my)) && topPane(mx, my) == items;
+    }
+
+    /** The trash cell as our slots are: framed, its can drawn as the empty slots' hints, gold under the cursor. */
+    private void renderTrash(GuiGraphics g, int mx, int my) {
+        if (trash == null) return;
+        renderSlotFrame(g, trash.x - 1, trash.y - 1, ITEM + 2);
+        g.pose().pushPose();
+        g.pose().translate(0, 0, -95);
+        super.renderSlot(g, trash);
+        g.flush();
+        g.pose().popPose();
+        if (!trashUnder(mx, my)) return;
+        g.pose().pushPose();
+        g.pose().translate(0, 0, OVERLAY_Z);
+        g.fill(trash.x, trash.y, trash.x + ITEM, trash.y + ITEM, MorrowindSkin.SLOT_HOVER);
+        g.flush();
+        g.pose().popPose();
+    }
 
     @Override
     protected void renderSlotHighlight(GuiGraphics g, Slot slot, int mx, int my, float tick) {
@@ -778,6 +833,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             }
             if (panel == powers) powersView.render(g, font, powers, player, mx, my);
             for (var slot : menu.slots) if (owners.get(slot) == panel && !isSlotCovered(slot)) renderOwnedSlot(g, slot);
+            if (panel == items) renderTrash(g, mx, my);
             if (panel == items && !covered(items, search)) search.render(g, mx, my, tick);
             for (var b : widgets) {
                 if (widgetOwner(b) == panel && b.visible && !covered(panel, b)) b.render(g, mx, my, tick);
@@ -968,7 +1024,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 if (matches(slot.getItem())) matched++;
             }
         }
-        String count = font.plainSubstrByWidth(tr("items_count", matched, occupied).getString(), items.width - 20);
+        int room = trash != null ? items.width - 10 - (TRASH_RIGHT + 1) - TRASH_GAP : items.width - 20;
+        String count = font.plainSubstrByWidth(tr("items_count", matched, occupied).getString(), room);
         g.drawString(font, count, items.x + 10, items.y + items.height - 16, MUTED, false);
     }
 

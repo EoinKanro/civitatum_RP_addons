@@ -152,9 +152,11 @@ final class ModStyle {
     /**
      * Pictures that may be hints of empty slots, by their path within {@code textures/}: Curios', Accessories' and
      * the Aether's slot icons, Moonlight's for the cartography table, Supplementaries' for the pulley and the loom,
-     * Farmer's Delight's bowl for the cooking pot. What they show decides, see {@link VanillaStyle#isHint}.
+     * Farmer's Delight's bowl for the cooking pot, TrashSlot's can in its cell. What they show decides, see
+     * {@link VanillaStyle#isHint}.
      */
-    private static final java.util.regex.Pattern HINT_PATH = java.util.regex.Pattern.compile("(?i)slot|empty|hint");
+    private static final java.util.regex.Pattern HINT_PATH =
+        java.util.regex.Pattern.compile("(?i)slot|empty|hint|trashcan");
     /** Folders of the world's textures, whose pictures are never slot hints. */
     private static final List<String> WORLD_FOLDERS = List.of("block", "entity", "particle", "models", "armor");
     static final Path SCREENS = Path.of("src/main/resources/civitatum_hud/restyled_screens.txt");

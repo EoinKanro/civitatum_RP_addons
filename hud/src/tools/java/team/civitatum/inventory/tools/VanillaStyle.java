@@ -52,6 +52,8 @@ public final class VanillaStyle {
     /** Vanilla's hints of empty slots (a smithing template, armour, lapis), items drawn in a slot as a grey shape. */
     private static final String HINTS = "assets/minecraft/textures/item/empty_";
     private static final int HINT_SIZE = 16, MAX_HINT_GREYS = 3;
+    /** How far the channels of a hint drawn in one grey may stray: TrashSlot's can is a bluish {@code 192022}. */
+    private static final int FLAT_HINT_TOLERANCE = 12;
     /**
      * Where a sprite lies on its screen's background, so its stone grain continues the background's. Vanilla draws a
      * partly filled sprite with the same offset into the sprite as on the screen.
@@ -257,23 +259,25 @@ public final class VanillaStyle {
 
     /**
      * Whether a picture is a hint of an empty slot: an item's size, all of it opaque greys, a shape in one or two of
-     * them (with a third for a highlight at most), as vanilla's and the mods' copies of them are.
+     * them (with a third for a highlight at most), as vanilla's and the mods' copies of them are. A shape in one grey
+     * may have a little more of a tint ({@link #FLAT_HINT_TOLERANCE}).
      */
     static boolean isHint(BufferedImage image) {
         if (image.getWidth() != HINT_SIZE || image.getHeight() != HINT_SIZE) return false;
         var colours = new java.util.HashSet<Integer>();
+        int spread = 0;
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int argb = image.getRGB(x, y);
                 if (argb >>> 24 == 0) continue;
+                if (argb >>> 24 != 0xFF) return false;
                 int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
-                if (argb >>> 24 != 0xFF || Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) > GREY_TOLERANCE) {
-                    return false;
-                }
+                spread = Math.max(spread, Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)));
                 colours.add(argb);
             }
         }
-        return !colours.isEmpty() && colours.size() <= MAX_HINT_GREYS;
+        int tolerance = colours.size() == 1 ? FLAT_HINT_TOLERANCE : GREY_TOLERANCE;
+        return !colours.isEmpty() && colours.size() <= MAX_HINT_GREYS && spread <= tolerance;
     }
 
     /**
