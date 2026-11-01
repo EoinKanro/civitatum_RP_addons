@@ -8,6 +8,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import team.civitatum.hud.client.AbilitySelection;
 import team.civitatum.starclock.CivitatumStarclock;
 import team.civitatum.starclock.registry.ModItems;
 
@@ -22,10 +23,10 @@ public final class InventoryAbilityBridge {
 
     private static final class Linked {
         static void register() {
-            team.civitatum.inventory.client.AbilitySelection.register(CivitatumStarclock.ID, player -> {
+            AbilitySelection.register(CivitatumStarclock.ID, player -> {
                 int charges = TowerKeyClient.charges();
                 if (charges <= 0) return List.of();
-                return List.of(new team.civitatum.inventory.client.AbilitySelection.Ability(
+                return List.of(new AbilitySelection.Ability(
                         "civitatum_starclock:tower_key",
                         Component.translatable("ability.civitatum_starclock.tower_key"),
                         new ItemStack(ModItems.TOWER_KEY.get(), charges),
