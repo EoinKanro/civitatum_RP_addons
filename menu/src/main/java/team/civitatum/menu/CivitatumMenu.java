@@ -42,8 +42,8 @@ public final class CivitatumMenu {
     }
 
     private void initialized(ScreenEvent.Init.Post event) {
-        if (event.getScreen() instanceof SeasonalTitleScreen) {
-            ForeignButtons.remove(event);
+        if (event.getScreen() instanceof SeasonalTitleScreen screen) {
+            ForeignButtons.arrange(screen, event);
         }
     }
 

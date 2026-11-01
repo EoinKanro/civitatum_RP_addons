@@ -9,6 +9,7 @@
 | [couple-interactions](couple-interactions/) | Civitatum Couple Interactions | `civitatum_couple` | 0.2.0-alpha.1 | `civitatum-couple-interactions-0.2.0-alpha.1.jar` |
 | [books](books/) | Civitatum Books | `civitatum_books` | 0.1.0 | `civitatum-books-0.1.0.jar` |
 | [menu](menu/) | Civitatum Menu | `civitatum_menu` | 0.1.0 | `civitatum-menu-0.1.0.jar` |
+| [starclock](starclock/) | Civitatum Starclock | `civitatum_starclock` | 0.1.0 | `civitatum-starclock-0.1.0.jar` |
 
 Описание, управление и сборка каждого мода — в README его модуля. Все моды распространяются под лицензией MIT ([LICENSE.txt](LICENSE.txt)).
 

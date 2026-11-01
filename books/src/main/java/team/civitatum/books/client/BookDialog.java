@@ -49,6 +49,12 @@ final class BookDialog extends Screen {
         imageImport = true;
     }
 
+    /** The book's save timer and server timeout keep running while this dialog covers it. */
+    @Override
+    public void tick() {
+        book.tick();
+    }
+
     BookScreen book() {
         return book;
     }

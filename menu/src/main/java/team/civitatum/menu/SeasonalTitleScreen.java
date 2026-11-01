@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import net.minecraft.Util;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -25,6 +26,9 @@ import org.lwjgl.glfw.GLFW;
  */
 public final class SeasonalTitleScreen extends TitleScreen {
     private static final ResourceLocation LOGO = CivitatumMenu.resource("textures/label.png");
+    /** The same logo with its subtitle redrawn in English; shown for every language but {@link #RUSSIAN}. */
+    private static final ResourceLocation LOGO_EN = CivitatumMenu.resource("textures/label_en.png");
+    private static final String RUSSIAN = "ru_ru";
     /** Virtual canvas every coordinate of the layout is given on; the screen scales it to fit. */
     private static final float CANVAS_WIDTH = 960.0F;
     private static final float CANVAS_HEIGHT = 540.0F;
@@ -37,11 +41,17 @@ public final class SeasonalTitleScreen extends TitleScreen {
     private static final int CALENDAR_CHECK_TICKS = 1200;
     /** Vanilla's own copyright line, already translated by the game. */
     private static final Component COPYRIGHT = Component.translatable("title.credits");
+    /** Side of a top-right button; it and the spacing below are on the virtual canvas like the rest of the menu. */
+    private static final int TOP_RIGHT_SIZE = 20;
+    private static final int TOP_RIGHT_MARGIN = 3;
+    private static final int TOP_RIGHT_GAP = 3;
     private static ResourceLocation loadedBackground;
     private static Season loadedSeason;
     private float scale;
     private float virtualWidth;
     private float virtualHeight;
+    /** Screen x of the left edge of the top-right button row; the music label ends before it. */
+    private int topRightLeft;
     private double panX;
     private double panY;
     private long lastFrame;
@@ -75,20 +85,16 @@ public final class SeasonalTitleScreen extends TitleScreen {
 
         this.add(left - 1, y + 46, 200, "wardrobe", () -> Wardrobe.open(this));
         this.add(left, y + 68, 200, "mods", () -> ModsMenu.open(this));
-        this.add(left, y + 94, 98, "options",
+        this.add(left, y + 90, 200, "options",
             () -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options)));
-        this.add(left + 101, y + 94, 98, "quit", this.minecraft::stop);
+        this.add(left, y + 116, 200, "quit", this.minecraft::stop);
+        this.topRightLeft = this.width - Math.round((float)TOP_RIGHT_MARGIN * this.scale);
         if (c.showLanguageAndAccessibility) {
-            this.add(
-                (int)this.virtualWidth - 46,
-                3,
-                20,
-                "language",
-                () -> this.minecraft.setScreen(
-                    new LanguageSelectScreen(this, this.minecraft.options, this.minecraft.getLanguageManager()))
-            );
-            this.add((int)this.virtualWidth - 23, 3, 20, "accessibility",
+            this.addTopRightIcon("accessibility", Component.translatable("options.accessibility"),
                 () -> this.minecraft.setScreen(new AccessibilityOptionsScreen(this, this.minecraft.options)));
+            this.addTopRightIcon("language", Component.translatable("options.language"),
+                () -> this.minecraft.setScreen(
+                    new LanguageSelectScreen(this, this.minecraft.options, this.minecraft.getLanguageManager())));
         }
 
         this.season = Season.resolve(c.season, LocalDate.now(), c.southernHemisphere);
@@ -110,6 +116,32 @@ public final class SeasonalTitleScreen extends TitleScreen {
                 action
             )
         );
+    }
+
+    /** {@code icon}: the texture {@code textures/icon/<icon>.png}. */
+    private void addTopRightIcon(String icon, Component label, Runnable action) {
+        this.addRenderableWidget(this.placeTopRight(new IconMenuButton(0, 0, this.topRightSize(), label,
+            CivitatumMenu.resource("textures/icon/" + icon + ".png"), this.scale, action)));
+    }
+
+    /**
+     * A text button in the top-right row, left of the buttons already there; the caller adds it to the screen.
+     * Stands in for the buttons other mods add to this screen, see {@link ForeignButtons}.
+     */
+    TextMenuButton topRightText(Component label, Runnable action) {
+        int size = this.topRightSize();
+        return this.placeTopRight(new TextMenuButton(0, 0, size, size, label, this.scale, action));
+    }
+
+    private int topRightSize() {
+        return Math.max(1, Math.round((float)TOP_RIGHT_SIZE * this.scale));
+    }
+
+    private <T extends AbstractWidget> T placeTopRight(T widget) {
+        this.topRightLeft -= widget.getWidth();
+        widget.setPosition(this.topRightLeft, Math.round((float)TOP_RIGHT_MARGIN * this.scale));
+        this.topRightLeft -= Math.round((float)TOP_RIGHT_GAP * this.scale);
+        return widget;
     }
 
     private Component multiplayerDisabledReason() {
@@ -179,10 +211,12 @@ public final class SeasonalTitleScreen extends TitleScreen {
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
         int logoX = Math.round((this.virtualWidth - (float)c.logoWidth) / 2.0F);
-        graphics.blit(LOGO, logoX, c.logoTop, c.logoWidth, c.logoHeight,
+        ResourceLocation logo = RUSSIAN.equals(this.minecraft.getLanguageManager().getSelected()) ? LOGO : LOGO_EN;
+        graphics.blit(logo, logoX, c.logoTop, c.logoWidth, c.logoHeight,
             0.0F, 0.0F, LOGO_WIDTH, LOGO_HEIGHT, LOGO_WIDTH, LOGO_HEIGHT);
         RenderSystem.disableBlend();
-        String music = this.font.plainSubstrByWidth(MenuMusic.label(), Math.max(100, (int)this.virtualWidth - 105));
+        String music = this.font.plainSubstrByWidth(MenuMusic.label(),
+            Math.max(100, (int)((float)this.topRightLeft / this.scale) - 8));
         graphics.drawString(this.font, music, 4, 6, -1, true);
         String footer = this.font.plainSubstrByWidth(Language.getInstance().getOrDefault(c.footer),
             (int)this.virtualWidth / 2 - 12);

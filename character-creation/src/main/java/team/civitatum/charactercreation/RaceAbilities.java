@@ -61,7 +61,7 @@ public final class RaceAbilities {
         Vec3 destination = null;
         LivingEntity single = null;
         if (r.id.equals("astral_elf") || r.id.equals("goblin")) {
-            Vec3 vector = r.id.equals("goblin") ? new Vec3(p.getLookAngle().x, 0, p.getLookAngle().z).normalize().scale(-3) : p.getLookAngle().scale(6);
+            Vec3 vector = r.id.equals("goblin") ? facing(p).scale(-3) : p.getLookAngle().scale(6);
             destination = safeDestination(p, vector);
             if (destination.distanceToSqr(p.position()) < .09) { message(p, Civitatum.message("no_room")); return; }
         }
@@ -99,7 +99,7 @@ public final class RaceAbilities {
                 RaceService.modifier(p, Attributes.KNOCKBACK_RESISTANCE, "ability_knockback", .50, AttributeModifier.Operation.ADD_VALUE);
             }
             case "forest_algnor" -> {
-                Vec3 forward = new Vec3(p.getLookAngle().x, 0, p.getLookAngle().z).normalize().scale(.62);
+                Vec3 forward = facing(p).scale(.62);
                 p.setDeltaMovement(forward.x, .42, forward.z); p.hurtMarked = true;
             }
             case "city_algnor" -> {
@@ -205,6 +205,14 @@ public final class RaceAbilities {
         }
         return best;
     }
+    /**
+     * Horizontal unit vector the player faces. Taken from the yaw, not from the look vector: looking straight up or
+     * down, the look vector has no horizontal part to normalize.
+     */
+    private static Vec3 facing(ServerPlayer p) {
+        return Vec3.directionFromRotation(0, p.getYRot());
+    }
+
     private static boolean sight(ServerPlayer p, Vec3 target) {
         return p.level().clip(new ClipContext(p.getEyePosition(), target, ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, p)).getType() == HitResult.Type.MISS;
     }
