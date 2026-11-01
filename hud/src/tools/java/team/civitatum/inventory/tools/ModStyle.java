@@ -78,16 +78,34 @@ final class ModStyle {
      * least it must keep after recolouring; one that came closer is pushed towards dark or light by that share.
      */
     private static final int STOOD_OUT = 0x20, MIN_CONTRAST = 0x20;
-    /** Share of strong colours that makes a small picture a coloured drawing, see {@link #colouredDrawing}. */
+    /**
+     * Share of strong colours that makes a small picture a coloured drawing, an icon of something rather than a grey
+     * button, see {@link #frame}.
+     */
     private static final double MIN_COLOURED = 0.25;
     /** Brightness step between greys of one frame, and the least length of a frame, see {@link #frame}. */
     private static final int FRAME_STEP = 0x30, MIN_FRAME = 12;
+    /**
+     * Share of strong colours in a patch on a small button's face that makes it an item's picture (Waystones'
+     * sharestone and ender eye): the item keeps its own colours, its grey stone too, only the button around it is
+     * restyled, see {@link #item}. Counted within the patch: a wide white bevel would thin it out.
+     */
+    private static final double MIN_ITEM_COLOURS = 0.1;
+    /** Channels of a near grey of a small picture may differ this much, warm ones too (MineColonies' C1BBBA). */
+    private static final int NEAR_GREY = 12;
+    /**
+     * How much wider a light plate's shading is spread from its lightest grey (MineColonies' pale research buttons, a
+     * white glyph with grey shading): the icons' ramp halves differences, this gives back most of them.
+     */
+    private static final double PLATE_STRETCH = 1.6;
     /** Share of a coloured drawing's grey ground that makes it a button's face (Curios' bow on a vanilla button). */
     private static final double MIN_DRAWING_GROUND = 0.25;
     /** Blue over red and over green of a hover's light, pale lilac included; share of it a plain sibling may have. */
     private static final int HOVER_TINT = 8;
     private static final double MAX_PLAIN_BLUE = 0.05;
     private static final double CONTRAST_PUSH = 0.75;
+    /** Width of a small button's outline and bevel along its edge, see {@link #keepContrast}. */
+    private static final int BEVEL = 3;
     /**
      * Least share of the ground, and most of a colour pushed off it: a drawing is small on a clear ground. A picture
      * of a few large areas (a plain button) keeps them as recoloured.
@@ -276,6 +294,15 @@ final class ModStyle {
             }
         }
         int was = brightness(ground), now = (int) (sum / n);
+        // a light drawing on the ground (a white glyph) makes the dark around it its outline, which stays dark; the
+        // light bevel along a button's edge is no drawing
+        boolean lightDrawing = false;
+        for (int y = BEVEL; y < image.getHeight() - BEVEL && !lightDrawing; y++) {
+            for (int x = BEVEL; x < image.getWidth() - BEVEL; x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0xFF && brightness(argb) - was >= STOOD_OUT) lightDrawing = true;
+            }
+        }
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
                 int argb = image.getRGB(x, y);
@@ -284,7 +311,10 @@ final class ModStyle {
                 if (Math.abs(apart) < STOOD_OUT || Math.abs(brightness(recoloured) - now) >= MIN_CONTRAST) continue;
                 // keep the drawing darker or lighter than its ground, unless our dark ground leaves no room for darker
                 int towards = apart < 0 ? VanillaStyle.OUTLINE : VanillaStyle.LIT_GOLD;
-                if (apart < 0 && now - brightness(VanillaStyle.OUTLINE) < MIN_CONTRAST) towards = VanillaStyle.LIT_GOLD;
+                if (apart < 0 && now - brightness(VanillaStyle.OUTLINE) < MIN_CONTRAST) {
+                    if (lightDrawing) continue;
+                    towards = VanillaStyle.LIT_GOLD;
+                }
                 out.setRGB(x, y, VanillaStyle.mix(recoloured, towards, CONTRAST_PUSH));
             }
         }
@@ -326,29 +356,23 @@ final class ModStyle {
     }
 
     /**
+     * Whether a pixel of a hovered button is its dark blue shade over a grey of the plain one (Waystones' 293947 over
+     * 373737): too dark for a hover's light, it takes the plain one's grey, restyled as the hovered button's.
+     */
+    private static boolean hoverShade(BufferedImage plain, int x, int y, int shifted) {
+        if (plain.getWidth() <= x || plain.getHeight() <= y) return false;
+        int under = plain.getRGB(x, y), r = shifted >> 16 & 0xFF, g = shifted >> 8 & 0xFF, b = shifted & 0xFF;
+        return under != shifted && under >>> 24 == 0xFF && VanillaStyle.neutral(under)
+            && b > r && b >= g && brightest(shifted) < DARKEST_COLOUR;
+    }
+
+    /**
      * Whether a colour is blue or lilac at all, pale ones included ({@link #HOVER_TINT}); a near black outline with a
      * cool cast is not, and neither is purple (red over green), a drawing's colour.
      */
     private static boolean hoverTint(int argb) {
         int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
         return b - r >= HOVER_TINT && b - g >= HOVER_TINT && g >= r && b >= DARKEST_COLOUR;
-    }
-
-    /**
-     * Whether a small picture is a coloured drawing, an icon of something rather than a grey button: much of it in
-     * strong colours ({@link #MIN_COLOURED}).
-     */
-    private static boolean colouredDrawing(BufferedImage image) {
-        int visible = 0, coloured = 0;
-        for (int y = 0; y < image.getHeight(); y++) {
-            for (int x = 0; x < image.getWidth(); x++) {
-                int argb = image.getRGB(x, y);
-                if (argb >>> 24 == 0) continue;
-                visible++;
-                if (saturation(argb) >= STRONG_COOL && brightest(argb) >= DARKEST_COLOUR) coloured++;
-            }
-        }
-        return visible > 0 && coloured >= MIN_COLOURED * visible;
     }
 
     /**
@@ -396,6 +420,51 @@ final class ModStyle {
         return frame;
     }
 
+    /**
+     * The item drawn on a small button's face ({@link #MIN_ITEM_COLOURS}), null when there is none: the patches off
+     * the face that hold strong colours and keep off the button's edge. The bevel touches the edge, a white glyph
+     * beside the item (Waystones' spiral) holds no colour, and a hover's blue is no item's colour; they are restyled.
+     */
+    private static boolean[][] item(java.util.function.IntBinaryOperator pixels, int width, int height, int ground) {
+        var item = new boolean[height][width];
+        var seen = new boolean[height][width];
+        boolean any = false;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = pixels.applyAsInt(x, y);
+                if (seen[y][x] || argb >>> 24 != 0xFF || argb == ground) continue;
+                var patch = new ArrayList<int[]>();
+                var queue = new java.util.ArrayDeque<int[]>();
+                queue.add(new int[]{x, y});
+                seen[y][x] = true;
+                boolean edge = false;
+                int strong = 0;
+                while (!queue.isEmpty()) {
+                    int[] at = queue.poll();
+                    patch.add(at);
+                    int colour = pixels.applyAsInt(at[0], at[1]);
+                    if (saturation(colour) >= STRONG_COOL && brightest(colour) >= DARKEST_COLOUR
+                        && !VanillaStyle.anyBlue(colour) && !VanillaStyle.vanillaHover(colour)) strong++;
+                    for (int[] step : new int[][]{{1, 0}, {-1, 0}, {0, 1}, {0, -1}}) {
+                        int nx = at[0] + step[0], ny = at[1] + step[1];
+                        if (nx < 0 || ny < 0 || nx >= width || ny >= height
+                            || pixels.applyAsInt(nx, ny) >>> 24 != 0xFF) {
+                            edge = true;
+                            continue;
+                        }
+                        if (seen[ny][nx] || pixels.applyAsInt(nx, ny) == ground) continue;
+                        seen[ny][nx] = true;
+                        queue.add(new int[]{nx, ny});
+                    }
+                }
+                if (edge || strong < MIN_ITEM_COLOURS * patch.size()) continue;
+                any = true;
+                for (int[] at : patch) item[at[1]][at[0]] = true;
+            }
+        }
+        return any ? item : null;
+    }
+
     /** Whether a colour covers so much of a picture ({@code share}) that it is the ground the drawing is on. */
     private static boolean clearGround(BufferedImage image, int colour, double share) {
         int opaque = 0, count = 0;
@@ -416,18 +485,61 @@ final class ModStyle {
     }
 
     /**
-     * The most common opaque colour of a picture, its ground; 0 when it has none. Its outline is not, however much of
-     * a small picture it takes ({@link #DARKEST_GROUND}).
+     * The most common opaque colour of a picture no brighter than {@code lightest}, its ground; 0 when it has none.
+     * Its outline is not, however much of a small picture it takes ({@link #DARKEST_GROUND}).
      */
-    private static int ground(java.util.function.IntBinaryOperator pixels, int width, int height) {
+    private static int ground(java.util.function.IntBinaryOperator pixels, int width, int height, int lightest) {
         var counts = new HashMap<Integer, Integer>();
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int argb = pixels.applyAsInt(x, y);
-                if (argb >>> 24 == 0xFF && brightness(argb) >= DARKEST_GROUND) counts.merge(argb, 1, Integer::sum);
+                int level = brightness(argb);
+                if (argb >>> 24 == 0xFF && level >= DARKEST_GROUND && level <= lightest) {
+                    counts.merge(argb, 1, Integer::sum);
+                }
             }
         }
         return counts.entrySet().stream().max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(0);
+    }
+
+    /** The share of a picture's visible pixels in strong colours, see {@link #MIN_COLOURED}. */
+    private static double strongShare(BufferedImage image) {
+        int visible = 0, coloured = 0;
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y);
+                if (argb >>> 24 == 0) continue;
+                visible++;
+                if (saturation(argb) >= STRONG_COOL && brightest(argb) >= DARKEST_COLOUR) coloured++;
+            }
+        }
+        return visible == 0 ? 0 : coloured / (double) visible;
+    }
+
+    /** Whether a colour of a small picture is near enough a grey to be one, warm or not ({@link #NEAR_GREY}). */
+    private static boolean nearGrey(int argb) {
+        int r = argb >> 16 & 0xFF, g = argb >> 8 & 0xFF, b = argb & 0xFF;
+        return Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b)) <= NEAR_GREY;
+    }
+
+    /** The lightest grey of a picture, the top of its plate's shading. */
+    private static int lightestGrey(java.util.function.IntBinaryOperator pixels, int width, int height) {
+        int lightest = 0;
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int argb = pixels.applyAsInt(x, y);
+                if (argb >>> 24 == 0xFF && (VanillaStyle.neutral(argb) || nearGrey(argb))) {
+                    lightest = Math.max(lightest, brightness(argb));
+                }
+            }
+        }
+        return lightest;
+    }
+
+    /** A grey of a light plate set {@link #PLATE_STRETCH} times further off its lightest, which turns white. */
+    private static int stretched(int argb, int lightest) {
+        int level = Math.max(0, (int) Math.round(0xFF - (lightest - brightness(argb)) * PLATE_STRETCH));
+        return argb & 0xFF000000 | Math.min(0xFF, level) * 0x010101;
     }
 
     /** Whether a small picture is a coloured drawing in cool colours, see {@link #MIN_COOL_DRAWING}. */
@@ -519,16 +631,25 @@ final class ModStyle {
         };
         boolean[][] slots = VanillaStyle.slots(pixels, width, height);
         boolean small = Math.max(width, height) <= SMALL;
-        boolean coolDrawing = small && coolDrawing(image);
-        // a coloured blue button (Structurize's) keeps its blues; a hovered one's blue is still the hover's
-        boolean ownBlues = coolDrawing && !HOVER.matcher(file).find();
         BufferedImage plain = plainSibling(path, file);
         boolean hoverOver = plain != null;
         String palette2 = hoverOver ? file + "_highlighted" : file;
-        // a hover's lilac light is no drawing's colour: the white icon under it is recoloured whole
-        int ground = small ? ground(pixels, width, height) : 0;
-        boolean[][] frame = small && !hoverOver && colouredDrawing(image)
-            ? frame(pixels, width, height, clearGround(image, ground, MIN_DRAWING_GROUND) ? ground : 0) : null;
+        // a hover's lilac light is no drawing's colour: the icon under it is recoloured whole, its pale lilac too
+        boolean coolDrawing = small && !hoverOver && coolDrawing(image);
+        // a coloured blue button (Structurize's) keeps its blues; a hovered one's blue is still the hover's
+        boolean ownBlues = coolDrawing && !HOVER.matcher(file).find();
+        int ground = small ? ground(pixels, width, height, 0xFF) : 0;
+        boolean faced = clearGround(image, ground, MIN_DRAWING_GROUND);
+        // a hovered button's white bevel may outnumber its face (Waystones' sharestone)
+        int face = small ? ground(pixels, width, height, LIGHTEST_GROUND) : 0;
+        boolean[][] item = small && file.contains("button") && clearGround(image, face, MIN_DRAWING_GROUND)
+            ? item(pixels, width, height, face) : null;
+        boolean[][] frame = small && (item != null || !hoverOver && strongShare(image) >= MIN_COLOURED)
+            ? frame(pixels, width, height, faced ? ground : 0) : null;
+        // a light plate or a white glyph: its shading spread wider, so the icons' ramp keeps its depth
+        boolean lightPlate = small && frame == null && brightness(ground) > LIGHTEST_GROUND
+            && clearGround(image, ground, MIN_GROUND);
+        int lightest = lightPlate ? lightestGrey(pixels, width, height) : 0xFF;
         style.flat(small);
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
@@ -540,12 +661,16 @@ final class ModStyle {
                 else if (opaque && (hoverOver ? hoverLight(image, plain, x, y, shifted)
                     : hoverBlue && VanillaStyle.anyBlue(shifted))) {
                     recoloured = style.litBlue(shifted, x, y, file);
+                } else if (opaque && hoverOver && hoverShade(plain, x, y, shifted)) {
+                    recoloured = style.recolour(plain.getRGB(x, y), x, y, palette2);
                 } else if (ownBlues && !neutral && !VanillaStyle.vanillaHover(shifted)) recoloured = shifted;
+                else if (item != null && item[y][x]) recoloured = shifted;
                 else if (frame != null && neutral && !frame[y][x]) recoloured = style.iconGrey(shifted, true);
                 else if (small && coolDrawing && VanillaStyle.coolGrey(shifted)) recoloured = shifted;
-                else if (small && frame == null && opaque && neutral
+                else if (small && frame == null && opaque && (neutral || nearGrey(shifted))
                     && (shifted != ground || brightness(ground) > LIGHTEST_GROUND)) {
-                    recoloured = style.iconGrey(shifted, hoverOver);
+                    int grey = lightPlate ? stretched(shifted, lightest) : shifted;
+                    recoloured = style.iconGrey(grey, hoverOver);
                 } else recoloured = style.recolour(shifted, x, y, palette2);
                 if (argb >>> 24 != 0) visible++;
                 if (recoloured != argb) changed++;
