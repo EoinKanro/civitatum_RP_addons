@@ -51,11 +51,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int CATEGORY_ROW_HEIGHT = 220;
     /** Z step between stacked windows; items are drawn up to 210 above their window. */
     private static final int WINDOW_Z = 40, OVERLAY_Z = 210, TOP_Z = 400;
-    /**
-     * TrashSlot's cell, by the items window's bottom right corner: left of the resize grip, in the row of the item
-     * count, under the hotbar. Its gap keeps the count clear of it.
-     */
-    private static final int TRASH_RIGHT = 30, TRASH_BOTTOM = 21, TRASH_GAP = 4;
+    /** Between the item count and TrashSlot's cell, which stands under the last cell of the hotbar. */
+    private static final int TRASH_GAP = 4;
     /**
      * Accessories' classic menu: a column of accessory slots with a cosmetic column on its left, eight rows in view.
      * The menu creates them at x = -46 (cosmetic) and -26, y = 8 + 18 * row, rows shifted by the scrolled index.
@@ -389,6 +386,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private int pitch() { return SLOT; }
     private int columns() { return Math.clamp((items.width - 20) / pitch(), 1, 9); }
     private int hotbarPitch() { return SLOT; }
+    private int hotbarX(int cell) {
+        return items.x + (items.width - HOTBAR * hotbarPitch()) / 2 + cell * hotbarPitch();
+    }
     private int hotbarTop() { return items.y + items.height - 24 - hotbarPitch(); }
 
     public boolean isSlotCovered(Slot slot) {
@@ -543,7 +543,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     private void placePlayerSlots() {
         int cols = columns(), cell = pitch(), gx = items.x + (items.width - cols * cell) / 2, rows = mainRows();
-        int totalRows = (MAIN + cols - 1) / cols, hotbarPitch = hotbarPitch();
+        int totalRows = (MAIN + cols - 1) / cols;
         playerRow = Math.clamp(playerRow, 0, Math.max(0, totalRows - rows));
         playerScroll = new RowScrollBar(gx + cols * cell + 2, gridTop(), rows * cell, playerRow, rows, totalRows);
         for (var slot : menu.slots) {
@@ -553,7 +553,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             if (i >= HOTBAR && i < MAIN_END && r >= 0 && r < rows) {
                 assign(slot, items, gx + (i - HOTBAR) % cols * cell, gridTop() + r * cell);
             } else if (i >= 0 && i < HOTBAR) {
-                assign(slot, items, items.x + (items.width - HOTBAR * hotbarPitch) / 2 + i * hotbarPitch, hotbarTop());
+                assign(slot, items, hotbarX(i), hotbarTop());
             } else if (i >= MAIN_END && i <= ARMOR_END && equipment.visible) {
                 assign(slot, equipment, equipment.x + 10, armorY(ARMOR_END - i));
             } else if (i == OFFHAND && equipment.visible) {
@@ -717,7 +717,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
      */
     private void placeTrash() {
         trash = TrashSlotBridge.slot();
-        int x = items.x + items.width - TRASH_RIGHT, y = items.y + items.height - TRASH_BOTTOM;
+        // under the hotbar's last cell, as the next row of a grid would be
+        int x = hotbarX(HOTBAR - 1), y = hotbarTop() + SLOT;
         if (trash != null && (!TrashSlotBridge.shown() || !items.visible
             || covered(items, x - 1, y - 1, ITEM + 2, ITEM + 2))) {
             // off the screen, as our hidden slots are: TrashSlot would still take a click at its last place
@@ -1024,7 +1025,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
                 if (matches(slot.getItem())) matched++;
             }
         }
-        int room = trash != null ? items.width - 10 - (TRASH_RIGHT + 1) - TRASH_GAP : items.width - 20;
+        int room = trash != null ? trash.x - 1 - TRASH_GAP - (items.x + 10) : items.width - 20;
         String count = font.plainSubstrByWidth(tr("items_count", matched, occupied).getString(), room);
         g.drawString(font, count, items.x + 10, items.y + items.height - 16, MUTED, false);
     }
