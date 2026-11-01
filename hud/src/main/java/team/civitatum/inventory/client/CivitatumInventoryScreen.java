@@ -149,7 +149,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     @Override
     protected void init() {
-        // before TrashSlot, after this, looks up how it shows its cell on the screen
+        // TrashSlot's parts, for the cell drawn in the items window
         TrashSlotBridge.register();
         super.init();
         leftPos = 0;
