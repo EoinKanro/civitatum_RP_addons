@@ -13,6 +13,9 @@ dependencies {
     // Xaero's Minimap neoforge-1.21.1-26.6.0 (Modrinth version id): optional at runtime, only the mixins in
     // team.civitatum.hud.xaero touch it, and they are applied only when it is installed
     compileOnly 'maven.modrinth:xaeros-minimap:irjR7dHk'
+    // JEI neoforge-1.21.1-19.57.0.451 (Modrinth version id): optional at runtime, only JeiPlugin and JeiBrowser touch
+    // it, and JEI loads the plugin only when it is installed
+    compileOnly 'maven.modrinth:jei:RI8WCow6'
 }
 
 // Generators for the mod's textures; not part of the mod jar.

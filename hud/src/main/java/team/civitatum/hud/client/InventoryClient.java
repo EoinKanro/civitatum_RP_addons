@@ -28,6 +28,8 @@ public final class InventoryClient {
     public static final KeyMapping ACTIVATE = mapping("activate_key", GLFW.GLFW_KEY_BACKSLASH);
     public static final KeyMapping NEXT = mapping("next_ability", GLFW.GLFW_KEY_PAGE_DOWN);
     public static final KeyMapping PREVIOUS = mapping("previous_ability", GLFW.GLFW_KEY_PAGE_UP);
+    /** JEI on its own, out of the inventory; ";" is free among the pack's mods. */
+    public static final KeyMapping JEI = mapping("jei_browser", GLFW.GLFW_KEY_SEMICOLON);
     private static boolean skipBackpack;
 
     private static KeyMapping mapping(String name, int key) {
@@ -39,6 +41,7 @@ public final class InventoryClient {
             event.register(ACTIVATE);
             event.register(NEXT);
             event.register(PREVIOUS);
+            event.register(JEI);
         });
         mod.addListener(CivitatumHud::register);
         mod.addListener(InventoryClient::addStylePack);
@@ -86,6 +89,8 @@ public final class InventoryClient {
         while (NEXT.consumeClick()) if (inWorld) AbilitySelection.cycle(mc.player, 1);
         while (PREVIOUS.consumeClick()) if (inWorld) AbilitySelection.cycle(mc.player, -1);
         while (ACTIVATE.consumeClick()) if (inWorld && !mc.player.isSpectator()) AbilitySelection.activate(mc.player);
+        // the browser's class names JEI's: it is loaded only with JEI there
+        while (JEI.consumeClick()) if (inWorld && CompatBridge.loaded("jei")) team.civitatum.hud.jei.JeiBrowser.open();
     }
 
     public static void personalInventory(boolean equipment) {

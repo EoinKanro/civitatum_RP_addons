@@ -68,6 +68,7 @@
   "key.civitatum_hud.activate_key": "Activate selected ability / spell",
   "key.civitatum_hud.next_ability": "Select next ability / spell",
   "key.civitatum_hud.previous_ability": "Select previous ability / spell",
+  "key.civitatum_hud.jei_browser": "Open JEI on its own",
   "gui.civitatum_hud.hidden_on_body": "Not shown on the character (Ctrl+RMB)",
   "gui.civitatum_hud.settings": "Civitatum HUD Settings",
   "gui.civitatum_hud.hotbar": "Hotbar: %s",
