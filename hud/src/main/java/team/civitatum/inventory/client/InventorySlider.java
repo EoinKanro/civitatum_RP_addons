@@ -8,8 +8,8 @@ import net.minecraft.network.chat.Component;
 
 /** A slider drawn like {@link MorrowindButton}: a stone track in a frame and a framed stone handle. */
 public final class InventorySlider extends AbstractSliderButton {
-    /** Slot scale moves in 5% steps, transparency and the HUD sizes in 1% steps. */
-    private static final double SCALE_STEPS = 20, PERCENT_STEPS = 100;
+    /** The HUD sizes move in 1% steps. */
+    private static final double PERCENT_STEPS = 100;
     /** As wide as vanilla's handle. */
     private static final int HANDLE = 8;
     private static final int TEXT = 0xFFE8D9B7, DISABLED_TEXT = 0xFF90846C, LIT_SHADE = 0x205F4824;
@@ -46,9 +46,7 @@ public final class InventorySlider extends AbstractSliderButton {
 
     @Override
     protected void applyValue() {
-        // The slot scale is the only slider that starts at 1 (100%).
-        double steps = min == 1 ? SCALE_STEPS : PERCENT_STEPS;
-        double actual = Math.round((min + (max - min) * value) * steps) / steps;
+        double actual = Math.round((min + (max - min) * value) * PERCENT_STEPS) / PERCENT_STEPS;
         value = (actual - min) / (max - min);
         change.accept(actual);
     }

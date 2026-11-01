@@ -590,7 +590,7 @@ public final class VanillaStyle {
         return 0xFF000000 | (int) (r / n) << 16 | (int) (g / n) << 8 | (int) (b / n);
     }
 
-    /** The stone as the windows draw it by default, at its own translucency. */
+    /** The stone as the windows draw it, at its own alpha (opaque, see {@link StoneTexture}). */
     private int glass(int x, int y) {
         return stone.getRGB(x % stone.getWidth(), y % stone.getHeight());
     }

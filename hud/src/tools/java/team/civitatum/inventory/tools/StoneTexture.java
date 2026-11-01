@@ -9,7 +9,7 @@ import javax.imageio.ImageIO;
 
 /**
  * Generates the stone background of the inventory windows, {@code textures/gui/stone.png}: 32x32 dark brown noise
- * with diagonal veins, alpha 102 everywhere.
+ * with diagonal veins, opaque: the windows, buttons and the restyled screens are one solid stone.
  *
  * <p>The noise comes from {@link Random} with a fixed seed, so every run produces the same image.
  *
@@ -22,7 +22,7 @@ public final class StoneTexture {
     // Picked out of the first 300 million seeds to look like the original Python texture: same brightness, spread and
     // grain of the noise, and the closest placement of light and dark patches.
     private static final int SEED = 297860597;
-    private static final int ALPHA = 102;
+    private static final int ALPHA = 0xFF;
 
     private static final Path DEFAULT_OUTPUT =
             Path.of("src/main/resources/assets/civitatum_hud/textures/gui/stone.png");

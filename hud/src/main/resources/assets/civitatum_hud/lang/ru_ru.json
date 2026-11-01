@@ -64,7 +64,6 @@
   "gui.civitatum_hud.attributes.base": "Базовое: ",
   "gui.civitatum_hud.attributes.dynamic": "По ситуации",
   "gui.civitatum_hud.attributes.dynamic_hint": "Значение зависит от действия и цели.",
-  "gui.civitatum_hud.transparency": "Прозрачность: %s%%",
   "gui.civitatum_hud.abilities": "Способности",
   "key.civitatum_hud.activate_key": "Применить выбранный дар / заклинание",
   "key.civitatum_hud.next_ability": "Выбрать следующий дар / заклинание",

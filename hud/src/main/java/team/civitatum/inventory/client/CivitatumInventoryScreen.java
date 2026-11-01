@@ -232,11 +232,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         var reset = button(tr("reset"), b -> resetLayout(), 66);
         reset.setPosition(width - 72, 4);
         powersButton = button(tr("powers"), b -> togglePowers(), 54);
-        var preferences = InventoryPreferences.get();
-        var opacity = addWidget(new InventorySlider("transparency", preferences.transparency, 0, 0.9,
-            v -> InventoryPreferences.get().transparency = v));
-        opacity.setPosition(width - 162, height - 20);
-        widgets.add(opacity);
         compactToggle = compact ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
             updateVisibility();
@@ -1201,10 +1196,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
 
     @Override
     public boolean mouseDragged(double mx, double my, int button, double dx, double dy) {
-        // AbstractContainerScreen only drags items and does not pass the drag on, so a slider would move by clicks only
-        if (dragging == null && button == 0 && isDragging() && getFocused() instanceof InventorySlider slider) {
-            return slider.mouseDragged(mx, my, button, dx, dy);
-        }
         if (dragging == null) return super.mouseDragged(mx, my, button, dx, dy);
         int ddx = (int) mx - dragOffsetX, ddy = (int) my - dragOffsetY;
         int nx = anchorX, ny = anchorY, right = anchorX + anchorW, bottom = anchorY + anchorH;

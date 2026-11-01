@@ -12,9 +12,8 @@ import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.ResourceLocation;
 import org.joml.Matrix4f;
 
-/** Original tiled textures; panel alpha 102/255 = 40% opacity / 60% transparency. */
+/** Original tiled textures; the stone is opaque, as the restyled vanilla and mod screens are. */
 public final class MorrowindSkin {
-    public static final int PANEL_ALPHA = 102;
     /** The lit gold of a frame, see-through: a slot under the cursor, here and in the restyled vanilla screens. */
     public static final int SLOT_HOVER = 0x60E2C18A;
     /** The same gold, opaque: the rim AE2 draws around the slot under the cursor. */
@@ -30,7 +29,6 @@ public final class MorrowindSkin {
         g.flush();
         RenderSystem.enableBlend();
         RenderSystem.defaultBlendFunc();
-        g.setColor(1, 1, 1, (float) ((1 - InventoryPreferences.get().transparency) * 255 / PANEL_ALPHA));
         // The vertices GuiGraphics.blit would emit tile by tile, as one mesh and one draw call for the whole panel.
         RenderSystem.setShaderTexture(0, STONE);
         RenderSystem.setShader(GameRenderer::getPositionTexShader);

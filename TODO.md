@@ -1,7 +1,4 @@
-# TODO
-
-убрать slot size
-добавить transparency
+# TODOу
 
 добавить trash slot
 
