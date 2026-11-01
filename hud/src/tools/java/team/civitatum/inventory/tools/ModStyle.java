@@ -270,7 +270,9 @@ final class ModStyle {
     /**
      * Pixels of a small picture that stood out from its ground (its most common colour) and were recoloured into it
      * get their difference back: darker ones towards the outline, lighter ones towards the lit gold. Otherwise a grey
-     * icon on a hovered button's blue turns as brown as the button.
+     * icon on a hovered button's blue turns as brown as the button. They get as much as they had, no more: a dim plus
+     * on Stellaris' dark button stays dim. A strong colour left as it was is told by its hue and stays (Dragon
+     * Survival's green).
      */
     private static void keepContrast(BufferedImage image, BufferedImage out) {
         var counts = new HashMap<Integer, Integer>();
@@ -307,6 +309,7 @@ final class ModStyle {
             for (int x = 0; x < image.getWidth(); x++) {
                 int argb = image.getRGB(x, y);
                 if (argb >>> 24 != 0xFF || argb == ground || counts.get(argb) > MAX_DRAWING * opaque) continue;
+                if (out.getRGB(x, y) == argb && saturation(argb) >= STRONG_COOL) continue;
                 int apart = brightness(argb) - was, recoloured = out.getRGB(x, y);
                 if (Math.abs(apart) < STOOD_OUT || Math.abs(brightness(recoloured) - now) >= MIN_CONTRAST) continue;
                 // keep the drawing darker or lighter than its ground, unless our dark ground leaves no room for darker
@@ -315,7 +318,10 @@ final class ModStyle {
                     if (lightDrawing) continue;
                     towards = VanillaStyle.LIT_GOLD;
                 }
-                out.setRGB(x, y, VanillaStyle.mix(recoloured, towards, CONTRAST_PUSH));
+                int target = now + Integer.signum(brightness(towards) - now) * Math.max(Math.abs(apart), MIN_CONTRAST);
+                double way = brightness(towards) - brightness(recoloured);
+                double push = way == 0 ? 0 : Math.min(CONTRAST_PUSH, (target - brightness(recoloured)) / way);
+                if (push > 0) out.setRGB(x, y, VanillaStyle.mix(recoloured, towards, push));
             }
         }
     }
@@ -364,6 +370,13 @@ final class ModStyle {
         int under = plain.getRGB(x, y), r = shifted >> 16 & 0xFF, g = shifted >> 8 & 0xFF, b = shifted & 0xFF;
         return under != shifted && under >>> 24 == 0xFF && VanillaStyle.neutral(under)
             && b > r && b >= g && brightest(shifted) < DARKEST_COLOUR;
+    }
+
+    /** Whether the plain sibling of a hovered picture is grey, or not there, at {@code x, y}. */
+    private static boolean overGrey(BufferedImage plain, int x, int y) {
+        if (plain.getWidth() <= x || plain.getHeight() <= y) return true;
+        int under = plain.getRGB(x, y);
+        return under >>> 24 != 0xFF || VanillaStyle.neutral(under);
     }
 
     /**
@@ -432,7 +445,7 @@ final class ModStyle {
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 int argb = pixels.applyAsInt(x, y);
-                if (seen[y][x] || argb >>> 24 != 0xFF || argb == ground) continue;
+                if (seen[y][x] || !inItem(argb, ground)) continue;
                 var patch = new ArrayList<int[]>();
                 var queue = new java.util.ArrayDeque<int[]>();
                 queue.add(new int[]{x, y});
@@ -452,7 +465,7 @@ final class ModStyle {
                             edge = true;
                             continue;
                         }
-                        if (seen[ny][nx] || pixels.applyAsInt(nx, ny) == ground) continue;
+                        if (seen[ny][nx] || !inItem(pixels.applyAsInt(nx, ny), ground)) continue;
                         seen[ny][nx] = true;
                         queue.add(new int[]{nx, ny});
                     }
@@ -463,6 +476,15 @@ final class ModStyle {
             }
         }
         return any ? item : null;
+    }
+
+    /**
+     * Whether a pixel may be a part of an item on a button's face: not the face, and not white, which is the
+     * picture's light (the label of Waystones' floppy disk) and goes gold as any icon's does.
+     */
+    private static boolean inItem(int argb, int ground) {
+        boolean white = VanillaStyle.neutral(argb) && brightness(argb) > LIGHTEST_GROUND;
+        return argb >>> 24 == 0xFF && argb != ground && !white;
     }
 
     /** Whether a colour covers so much of a picture ({@code share}) that it is the ground the drawing is on. */
@@ -670,7 +692,8 @@ final class ModStyle {
                 else if (small && frame == null && opaque && (neutral || nearGrey(shifted))
                     && (shifted != ground || brightness(ground) > LIGHTEST_GROUND)) {
                     int grey = lightPlate ? stretched(shifted, lightest) : shifted;
-                    recoloured = style.iconGrey(grey, hoverOver);
+                    // a hover's light over the mod's own warm drawing (Ars Zero's cream arrow) is no lit button
+                    recoloured = style.iconGrey(grey, hoverOver && overGrey(plain, x, y));
                 } else recoloured = style.recolour(shifted, x, y, palette2);
                 if (argb >>> 24 != 0) visible++;
                 if (recoloured != argb) changed++;
