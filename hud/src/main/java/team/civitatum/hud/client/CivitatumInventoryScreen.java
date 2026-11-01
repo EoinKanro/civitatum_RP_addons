@@ -53,6 +53,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int WINDOW_Z = 40, OVERLAY_Z = 210, TOP_Z = 400;
     /** Between the item count and TrashSlot's cell, which stands under the last cell of the hotbar. */
     private static final int TRASH_GAP = 4;
+    /** Sets TrashSlot's cell apart from the hotbar; the 7 px under the cell, 2 of them the window's frame, leave 3. */
+    private static final int TRASH_TOP_GAP = 2;
     /**
      * Accessories' classic menu: a column of accessory slots with a cosmetic column on its left, eight rows in view.
      * The menu creates them at x = -46 (cosmetic) and -26, y = 8 + 18 * row, rows shifted by the scrolled index.
@@ -717,8 +719,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
      */
     private void placeTrash() {
         trash = TrashSlotBridge.slot();
-        // under the hotbar's last cell, as the next row of a grid would be
-        int x = hotbarX(HOTBAR - 1), y = hotbarTop() + SLOT;
+        // under the hotbar's last cell, a little lower than the next row of a grid would be
+        int x = hotbarX(HOTBAR - 1), y = hotbarTop() + SLOT + TRASH_TOP_GAP;
         if (trash != null && (!TrashSlotBridge.shown() || !items.visible
             || covered(items, x - 1, y - 1, ITEM + 2, ITEM + 2))) {
             // off the screen, as our hidden slots are: TrashSlot would still take a click at its last place
