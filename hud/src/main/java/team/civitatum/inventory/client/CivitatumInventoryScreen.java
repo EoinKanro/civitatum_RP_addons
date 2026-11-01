@@ -237,12 +237,6 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             v -> InventoryPreferences.get().transparency = v));
         opacity.setPosition(width - 162, height - 20);
         widgets.add(opacity);
-        var scale = addWidget(new InventorySlider("slot_scale", preferences.slotScale, 1, 2, v -> {
-            InventoryPreferences.get().slotScale = v;
-            positionSlots();
-        }));
-        scale.setPosition(width - 162, height - 40);
-        widgets.add(scale);
         compactToggle = compact ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
             updateVisibility();
@@ -387,39 +381,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return false;
     }
 
-    private double itemScale() {
-        double value = InventoryPreferences.get().slotScale;
-        // A joint backpack view needs room for two grids of two rows each.
-        if (kind == CompatBridge.Kind.BACKPACK) {
-            value = Math.min(value, Math.max(1, (hotbarTop() - gridTop() - 20) / (2.0 * SLOT)));
-        }
-        return value;
-    }
-
-    private float hotbarScale() {
-        return (float) Math.min(InventoryPreferences.get().slotScale, Math.max(1, (items.width - 20) / (9.0 * SLOT)));
-    }
-
-    private float slotScale(Slot slot) {
-        var owner = owners.get(slot);
-        if (owner == items && slot.container == player.getInventory() && slot.getContainerSlot() < HOTBAR) {
-            return hotbarScale();
-        }
-        if (owner == accessories) return accessoryScale();
-        return owner == items ? (float) itemScale() : 1F;
-    }
-
-    /** The slot scale, reduced so the eight classic rows fit between the title and the cosmetics button. */
-    private float accessoryScale() {
-        float space = (items.height - ACCESSORIES_TOP - ACCESSORIES_BOTTOM) / (float) (CLASSIC_ROWS * SLOT);
-        return (float) Math.min(InventoryPreferences.get().slotScale, Math.max(1, space));
-    }
-
-    private int accessoryPitch() { return Math.round(SLOT * accessoryScale()); }
-    public int slotPixels(Slot slot) { return Math.round(ITEM * slotScale(slot)); }
-    private int pitch() { return (int) Math.round(SLOT * itemScale()); }
+    private int accessoryPitch() { return SLOT; }
+    public int slotPixels(Slot slot) { return ITEM; }
+    private int pitch() { return SLOT; }
     private int columns() { return Math.clamp((items.width - 20) / pitch(), 1, 9); }
-    private int hotbarPitch() { return Math.round(SLOT * hotbarScale()); }
+    private int hotbarPitch() { return SLOT; }
     private int hotbarTop() { return items.y + items.height - 24 - hotbarPitch(); }
 
     public boolean isSlotCovered(Slot slot) {
@@ -766,10 +732,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         int size = slotPixels(slot);
         renderSlotFrame(g, slot.x - 1, slot.y - 1, size + 2);
         g.pose().pushPose();
-        float scale = slotScale(slot);
-        g.pose().translate(slot.x, slot.y, -95);
-        g.pose().scale(scale, scale, 1);
-        g.pose().translate(-slot.x, -slot.y, 0);
+        g.pose().translate(0, 0, -95);
         super.renderSlot(g, slot);
         g.flush();
         g.pose().popPose();
@@ -953,7 +916,7 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         accessoryRowCount = rows.size();
         accessoryMaxRow = Math.max(0, rows.size() - CLASSIC_ROWS);
         accessoryRow = Math.clamp(accessoryRow, 0, accessoryMaxRow);
-        int cell = accessoryPitch(), size = Math.round(ITEM * accessoryScale());
+        int cell = accessoryPitch(), size = ITEM;
         int main = mainAccessoryX(), looks = cosmeticAccessoryX(), top = accessories.y + ACCESSORIES_TOP;
         boolean cosmetics = cosmeticsShown(), here = topPane(mx, my) == accessories;
         for (int r = 0; r < CLASSIC_ROWS && accessoryRow + r < rows.size(); r++) {

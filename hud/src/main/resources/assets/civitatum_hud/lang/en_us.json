@@ -65,7 +65,6 @@
   "gui.civitatum_hud.attributes.dynamic": "Situational",
   "gui.civitatum_hud.attributes.dynamic_hint": "The value depends on the action and target.",
   "gui.civitatum_hud.transparency": "Transparency: %s%%",
-  "gui.civitatum_hud.slot_scale": "Slot size: %s%%",
   "gui.civitatum_hud.abilities": "Abilities",
   "key.civitatum_hud.activate_key": "Activate selected ability / spell",
   "key.civitatum_hud.next_ability": "Select next ability / spell",
