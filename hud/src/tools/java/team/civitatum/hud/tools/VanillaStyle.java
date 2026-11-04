@@ -31,10 +31,11 @@ public final class VanillaStyle {
     static final Path PACK = Path.of("src/main/resources/resourcepacks/civitatum_style");
     private static final Path OUTPUT = PACK.resolve("assets/minecraft/textures/gui");
     private static final String VANILLA = "assets/minecraft/textures/gui/";
-    /** Screens of blocks; villager and horse screens belong to entities and keep vanilla's look. */
+    /** Screens of blocks and the creative inventory; villager and horse screens belong to entities and keep vanilla's look. */
     static final List<String> CONTAINERS = List.of("generic_54", "shulker_box", "dispenser", "hopper",
         "furnace", "blast_furnace", "smoker", "crafting_table", "brewing_stand", "anvil", "enchanting_table",
-        "grindstone", "smithing", "stonecutter", "loom", "cartography_table", "beacon", "crafter");
+        "grindstone", "smithing", "stonecutter", "loom", "cartography_table", "beacon", "crafter",
+        "creative_inventory/tab_inventory", "creative_inventory/tab_items", "creative_inventory/tab_item_search");
     /**
      * Sprites drawn over those screens: fills of arrows and flames, scrollers, slot hints, buttons. They carry the same
      * greys plus a few of their own, so a sprite left vanilla would show a light grey patch on the stone.
@@ -42,13 +43,7 @@ public final class VanillaStyle {
     private static final List<String> SPRITE_FOLDERS = List.of("container/furnace", "container/blast_furnace",
         "container/smoker", "container/crafter", "container/stonecutter", "container/loom",
         "container/cartography_table", "container/brewing_stand", "container/beacon", "container/smithing",
-        "container/anvil", "container/grindstone", "recipe_book");
-    /**
-     * Single sprites of screens that are not restyled themselves: the creative inventory's scroll thumb, which mods
-     * borrow for their own lists (Tom's Storage terminals). On the creative tabs it is gold on vanilla's grey.
-     */
-    private static final List<String> BORROWED_SPRITES = List.of("container/creative_inventory/scroller",
-        "container/creative_inventory/scroller_disabled");
+        "container/anvil", "container/grindstone", "container/creative_inventory", "recipe_book");
     /** Vanilla's hints of empty slots (a smithing template, armour, lapis), items drawn in a slot as a grey shape. */
     private static final String HINTS = "assets/minecraft/textures/item/empty_";
     private static final int HINT_SIZE = 16, MAX_HINT_GREYS = 3;
@@ -185,6 +180,8 @@ public final class VanillaStyle {
         style.run(Path.of(args[0]));
         if (args.length == 2) {
             new ModStyle(style).run(Path.of(args[1]));
+            // the full run has cleared the pack, the sidebar's buttons included
+            SidebarIcons.main(args);
         } else {
             System.out.println("No mods folder: mods' screens and slot hints left as they are");
         }
@@ -212,7 +209,7 @@ public final class VanillaStyle {
                 if (!name.endsWith(".png") || !name.startsWith(VANILLA + "sprites/")) continue;
                 String sprite = name.substring(VANILLA.length() + "sprites/".length());
                 String folder = sprite.substring(0, sprite.lastIndexOf('/'));
-                if (SPRITE_FOLDERS.contains(folder) || BORROWED_SPRITES.contains(sprite.replace(".png", ""))) {
+                if (SPRITE_FOLDERS.contains(folder)) {
                     restyle(zip, "sprites/" + sprite);
                 }
             }
