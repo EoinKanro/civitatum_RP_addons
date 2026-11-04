@@ -28,8 +28,8 @@ public final class InventoryClient {
     public static final KeyMapping ACTIVATE = mapping("activate_key", GLFW.GLFW_KEY_BACKSLASH);
     public static final KeyMapping NEXT = mapping("next_ability", GLFW.GLFW_KEY_PAGE_DOWN);
     public static final KeyMapping PREVIOUS = mapping("previous_ability", GLFW.GLFW_KEY_PAGE_UP);
-    /** JEI on its own, out of the inventory; ";" is free among the pack's mods. */
-    public static final KeyMapping JEI = mapping("jei_browser", GLFW.GLFW_KEY_SEMICOLON);
+    /** JEI on its own, out of the inventory; the apostrophe is free among the pack's mods. */
+    public static final KeyMapping JEI = mapping("jei_browser", GLFW.GLFW_KEY_APOSTROPHE);
     private static boolean skipBackpack;
 
     private static KeyMapping mapping(String name, int key) {
