@@ -8,10 +8,10 @@ public final class InventoryPanel {
     private static final int EDGE = 4;
     /** Size of the resize grip in the lower right corner. */
     private static final int GRIP = 10;
-    /** Screen space kept free: the top button row and the sliders below. */
     /** Free space between a window and the screen edge. */
-    private static final int MARGIN = 4;
-    private static final int TOP_BAR = 25, BOTTOM_BAR = 44;
+    public static final int MARGIN = 4;
+    /** Screen space kept free at the top for the button row. */
+    public static final int TOP_BAR = 25;
     public final String id;
     public final int minWidth, minHeight;
     private final int defaultX, defaultY, defaultWidth, defaultHeight;
@@ -57,9 +57,9 @@ public final class InventoryPanel {
 
     public void constrain(int screenWidth, int screenHeight) {
         width = Math.min(screenWidth - 2 * MARGIN, Math.max(minWidth, width));
-        height = Math.min(screenHeight - TOP_BAR - BOTTOM_BAR, Math.max(minHeight, height));
+        height = Math.min(screenHeight - TOP_BAR - MARGIN, Math.max(minHeight, height));
         x = Math.max(MARGIN, Math.min(screenWidth - width - MARGIN, x));
-        y = Math.max(TOP_BAR, Math.min(screenHeight - height - BOTTOM_BAR, y));
+        y = Math.max(TOP_BAR, Math.min(screenHeight - height - MARGIN, y));
     }
 
     public void restore(InventoryPreferences.SavedPanel saved, int sw, int sh) {

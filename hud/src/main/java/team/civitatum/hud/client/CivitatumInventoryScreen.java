@@ -37,6 +37,9 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int SLOT = 18, ITEM = 16;
     /** Left edge of the screen title in the wide layout. */
     private static final int TITLE_X = 10;
+    private static final int RESET_WIDTH = 66;
+    /** The hint under the windows takes this much height; a window moved over it hides it. */
+    private static final int FOOTER_BOTTOM = 16;
     /** Main inventory: slots 9..35 of the player inventory; 0..8 are the hotbar, 36..39 armour, 40 the off hand. */
     private static final int HOTBAR = 9, MAIN = 27, MAIN_END = 36, ARMOR_END = 39, OFFHAND = 40;
     /** Menu slots of the vanilla player menu; Curios adds its own slots after them. */
@@ -236,8 +239,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         cosmetics = addWidget(new MorrowindIconButton(COSMETIC_ICON, tr("cosmetics"), this::cosmeticsShown,
             b -> toggleCosmetics()));
         widgets.add(cosmetics);
-        var reset = button(tr("reset"), b -> resetLayout(), 66);
-        reset.setPosition(width - 72, 4);
+        var reset = button(tr("reset"), b -> resetLayout(), RESET_WIDTH);
+        reset.setPosition(width - RESET_WIDTH - SidebarRow.RIGHT_MARGIN, 4);
         powersButton = button(tr("powers"), b -> togglePowers(), 54);
         compactToggle = compact ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
@@ -847,9 +850,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         g.pose().pushPose();
         g.pose().translate(0, 0, TOP_Z);
         for (var b : widgets) if (widgetOwner(b) == null && b.visible) b.render(g, mx, my, tick);
-        String footer = tr(compact ? "footer_short" : "footer").getString();
-        footer = font.plainSubstrByWidth(footer, Math.max(80, width - 176));
-        g.drawString(font, footer, 8, height - 14, MUTED, false);
+        if (panels.stream().noneMatch(p -> p.visible && p.y + p.height > height - FOOTER_BOTTOM)) {
+            String footer = tr(compact ? "footer_short" : "footer").getString();
+            footer = font.plainSubstrByWidth(footer, Math.max(80, width - 176));
+            g.drawString(font, footer, 8, height - 14, MUTED, false);
+        }
         g.flush();
         g.pose().popPose();
     }
@@ -1266,16 +1271,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             bottom += ddy;
         } else {
             if ((resizeMask & InventoryPanel.LEFT) != 0) {
-                nx = Math.max(4, Math.min(right - dragging.minWidth, anchorX + ddx));
+                nx = Math.max(InventoryPanel.MARGIN, Math.min(right - dragging.minWidth, anchorX + ddx));
             }
             if ((resizeMask & InventoryPanel.RIGHT) != 0) {
-                right = Math.min(width - 4, Math.max(nx + dragging.minWidth, anchorX + anchorW + ddx));
+                right = Math.min(width - InventoryPanel.MARGIN, Math.max(nx + dragging.minWidth, anchorX + anchorW + ddx));
             }
             if ((resizeMask & InventoryPanel.TOP) != 0) {
-                ny = Math.max(25, Math.min(bottom - dragging.minHeight, anchorY + ddy));
+                ny = Math.max(InventoryPanel.TOP_BAR, Math.min(bottom - dragging.minHeight, anchorY + ddy));
             }
             if ((resizeMask & InventoryPanel.BOTTOM) != 0) {
-                bottom = Math.min(height - 44, Math.max(ny + dragging.minHeight, anchorY + anchorH + ddy));
+                bottom = Math.min(height - InventoryPanel.MARGIN, Math.max(ny + dragging.minHeight, anchorY + anchorH + ddy));
             }
         }
         dragging.x = nx;

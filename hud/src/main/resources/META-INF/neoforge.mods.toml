@@ -27,6 +27,12 @@ versionRange="[26.6.0,)"
 ordering="NONE"
 side="CLIENT"
 [[dependencies.civitatum_hud]]
+modId="ftblibrary"
+type="optional"
+versionRange="[2101.1.37,)"
+ordering="NONE"
+side="CLIENT"
+[[dependencies.civitatum_hud]]
 modId="parcool"
 type="optional"
 versionRange="[4.0.1.2,)"
@@ -38,6 +44,10 @@ config="civitatum_hud.mixins.json"
 [[mixins]]
 config="civitatum_hud.xaero.mixins.json"
 requiredMods=["xaerominimap"]
+# the sidebar in one row at the place of the former sliders: applied only with FTB Library installed
+[[mixins]]
+config="civitatum_hud.ftblibrary.mixins.json"
+requiredMods=["ftblibrary"]
 # the stamina icons in the HUD's colours: applied only with ParCool installed
 [[mixins]]
 config="civitatum_hud.parcool.mixins.json"
