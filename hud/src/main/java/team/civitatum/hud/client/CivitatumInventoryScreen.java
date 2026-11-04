@@ -38,6 +38,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     /** Left edge of the screen title in the wide layout. */
     private static final int TITLE_X = 10;
     private static final int RESET_WIDTH = 66;
+    /** Space a window leaves below itself by default; it may be moved or stretched closer to the edge. */
+    private static final int DEFAULT_FREE_BELOW = 44;
     /** The hint under the windows takes this much height; a window moved over it hides it. */
     private static final int FOOTER_BOTTOM = 16;
     /** Main inventory: slots 9..35 of the player inventory; 0..8 are the hotbar, 36..39 armour, 40 the off hand. */
@@ -174,7 +176,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         // The accessories window docks on the left of the equipment window and shifts the whole group right.
         int aw = accessoriesShown() ? ACCESSORIES_MIN_WIDTH : 0;
         int start = compact ? 4 + aw : Math.max(6 + aw, (width - 584 - aw) / 2 + aw), y = compact ? 28 : 32;
-        int h = Math.min(backpack || kind == CompatBridge.Kind.AETHER ? 302 : 236, height - 54);
+        int h = Math.min(backpack || kind == CompatBridge.Kind.AETHER ? 302 : 236,
+            height - InventoryPanel.TOP_BAR - DEFAULT_FREE_BELOW);
         int ew = compact ? Math.clamp(width - 212 - aw, 112, 142) : 146;
         int gridMinHeight = backpack ? 171 : 164;
         accessories = new InventoryPanel("accessories", start - aw, y, ACCESSORIES_MIN_WIDTH, h, ACCESSORIES_MIN_WIDTH,
@@ -908,10 +911,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return equipment.y + MODEL_TOP + modelHeight() + 4;
     }
 
-    /** Item position of an armour slot, head (0) to feet (3): the column spans the model's height, frames included. */
+    /** Item position of an armour slot, head (0) to feet (3), within the model's height, see {@link ArmorColumn}. */
     private int armorY(int row) {
         int top = equipment.y + MODEL_TOP + 1, bottom = equipment.y + MODEL_TOP + modelHeight() - SLOT + 1;
-        return top + (bottom - top) * row / (ARMOR.length - 1);
+        return top + ArmorColumn.offset(row, bottom - top);
     }
 
     private int statusRowY() {
