@@ -14,33 +14,40 @@ import java.util.Map;
 import team.civitatum.starclock.prediction.Constellation;
 import team.civitatum.starclock.prediction.Orientation;
 
-/** Сообщение показывает то же, что карта игрока этой ступени; добавлены только имя и примерное ожидание. */
+/** Сообщение показывает то же, что карта игрока этой ступени; добавлено только его имя. */
 public final class PredictionMessage {
     /** Содержимое карты без классов Minecraft: сообщение собирается и проверяется отдельно от игры. */
     public record Card(Constellation sign, Orientation orientation, String tier, String category, String target) {}
 
     public static final String IMAGE_NAME = "card.png";
     private static final int EMBED_COLOR = 0xE3C07B;
-    private static final long TICKS_PER_MINUTE = 1200;
-    /** Шаг округления: срок остаётся примерным, точная задержка в сообщение не попадает. */
-    private static final long WAIT_STEP_MINUTES = 10;
     private static final String TARGET_PLAYER = "player";
 
-    public static String json(String player, Card card, long delayTicks) {
-        return json(player, card, delayTicks, language("ru_ru"), language("en_us"));
-    }
-
-    static String json(String player, Card card, long delayTicks,
-                       Map<String, String> russian, Map<String, String> english) {
-        var embed = new JsonObject();
+    public static String read(String player, Card card) {
+        var russian = language("ru_ru");
+        var english = language("en_us");
+        var embed = embed(section(russian, player, card) + "\n\n" + section(english, player, card));
         embed.addProperty("title", text(russian, "ui.civitatum_starclock.card")
                 + " / " + text(english, "ui.civitatum_starclock.card"));
-        embed.addProperty("color", EMBED_COLOR);
-        embed.addProperty("description", section(russian, player, card, delayTicks)
-                + "\n\n" + section(english, player, card, delayTicks));
         var image = new JsonObject();
         image.addProperty("url", "attachment://" + IMAGE_NAME);
         embed.add("image", image);
+        return message(embed);
+    }
+
+    public static String cancelled(int count) {
+        return message(embed(text(language("ru_ru"), "discord.civitatum_starclock.cancelled", count)
+                + "\n\n" + text(language("en_us"), "discord.civitatum_starclock.cancelled", count)));
+    }
+
+    private static JsonObject embed(String description) {
+        var embed = new JsonObject();
+        embed.addProperty("color", EMBED_COLOR);
+        embed.addProperty("description", description);
+        return embed;
+    }
+
+    private static String message(JsonObject embed) {
         var embeds = new JsonArray();
         embeds.add(embed);
         // Текст не должен никого упоминать, что бы ни оказалось в имени игрока.
@@ -52,12 +59,7 @@ public final class PredictionMessage {
         return message.toString();
     }
 
-    public static long waitMinutes(long delayTicks) {
-        long steps = Math.round((double) delayTicks / TICKS_PER_MINUTE / WAIT_STEP_MINUTES);
-        return Math.max(1, steps) * WAIT_STEP_MINUTES;
-    }
-
-    private static String section(Map<String, String> language, String player, Card card, long delayTicks) {
+    private static String section(Map<String, String> language, String player, Card card) {
         // Подчёркивание в нике иначе становится курсивом Discord.
         String name = player.replace("_", "\\_");
         var lines = new ArrayList<String>();
@@ -76,7 +78,6 @@ public final class PredictionMessage {
                     ? name : text(language, "target.civitatum_starclock." + card.target())));
         }
         lines.add(text(language, "discord.civitatum_starclock.player", name));
-        lines.add(text(language, "discord.civitatum_starclock.wait", waitMinutes(delayTicks)));
         return String.join("\n", lines);
     }
 

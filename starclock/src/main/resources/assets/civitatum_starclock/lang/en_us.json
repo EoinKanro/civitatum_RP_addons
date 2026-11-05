@@ -8,7 +8,7 @@
   "orientation.civitatum_starclock.upright": "Upright",
   "orientation.civitatum_starclock.reversed": "Reversed",
   "discord.civitatum_starclock.player": "Player: %s",
-  "discord.civitatum_starclock.wait": "Comes true in about %s min of server uptime.",
+  "discord.civitatum_starclock.cancelled": "All pending predictions have been cancelled. Cancelled: %s.",
   "command.civitatum_starclock.cooldown.reset": "Ritual cooldown has been reset.",
   "command.civitatum_starclock.cooldown.none": "The ritual cooldown is not running.",
   "command.civitatum_starclock.prediction.empty": "No pending predictions.",

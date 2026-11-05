@@ -164,7 +164,7 @@ public final class RitualManager {
                 finished.tier.strength() >= 2 ? plan.category() : "",
                 finished.tier.strength() >= 3 ? plan.target() : "");
         PacketDistributor.sendToPlayer(player, card);
-        DiscordNotifier.predictionRead(player.getGameProfile().getName(), card, delay);
+        DiscordNotifier.predictionRead(player.getGameProfile().getName(), card);
     }
 
     @SubscribeEvent

@@ -23,49 +23,53 @@ class DiscordMessageTest {
 
     @Test
     void messageHasBothLanguagesImageAndNoMentions() {
-        var json = PredictionMessage.json("Some_One",
-                card(Constellation.BEAST, Orientation.UPRIGHT, "I", "", ""), 36000);
+        var json = PredictionMessage.read("Some_One",
+                card(Constellation.BEAST, Orientation.UPRIGHT, "I", "", ""));
         var message = JsonParser.parseString(json).getAsJsonObject();
         assertTrue(message.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").isEmpty());
         assertEquals("attachment://" + PredictionMessage.IMAGE_NAME, message.getAsJsonArray("embeds").get(0)
                 .getAsJsonObject().getAsJsonObject("image").get("url").getAsString());
         var text = description(json);
         for (String part : new String[] {"**Зверь** — Прямое положение", "Стая и чутьё.", "Игрок: Some\\_One",
-                "примерно через 30 мин", "**Beast**", "about 30 min"}) {
+                "**Beast**", "Player: Some\\_One"}) {
             assertTrue(text.contains(part), part + " нет в: " + text);
         }
+        assertFalse(text.contains("мин"), "Срок не публикуется: " + text);
     }
 
     @Test
     void messageShowsOnlyWhatTheCardOfThisTierShows() {
-        var first = description(PredictionMessage.json("A",
-                card(Constellation.BEAST, Orientation.REVERSED, "I", "", ""), 6000));
+        var first = description(PredictionMessage.read("A",
+                card(Constellation.BEAST, Orientation.REVERSED, "I", "", "")));
         assertFalse(first.contains("Событие:"));
         assertFalse(first.contains("Цель:"));
-        var third = description(PredictionMessage.json("Reader",
-                card(Constellation.BEAST, Orientation.REVERSED, "III", "spawn", "player"), 6000));
+        var third = description(PredictionMessage.read("Reader",
+                card(Constellation.BEAST, Orientation.REVERSED, "III", "spawn", "player")));
         assertTrue(third.contains("Событие: Призыв"));
         // На карте здесь «Вы», но в общем канале это было бы неверно.
         assertTrue(third.contains("Цель: Reader"));
-        var world = description(PredictionMessage.json("Reader",
-                card(Constellation.BEAST, Orientation.REVERSED, "III", "effect", "nearby_wolf"), 6000));
+        var world = description(PredictionMessage.read("Reader",
+                card(Constellation.BEAST, Orientation.REVERSED, "III", "effect", "nearby_wolf")));
         assertTrue(world.contains("Цель: Ближайший волк"));
     }
 
     @Test
     void serpentHasNoOrientation() {
-        var text = description(PredictionMessage.json("A",
-                card(Constellation.SERPENT, Orientation.NONE, "I", "", ""), 6000));
+        var text = description(PredictionMessage.read("A",
+                card(Constellation.SERPENT, Orientation.NONE, "I", "", "")));
         assertTrue(text.startsWith("**Змей**\n"));
         assertFalse(text.contains("положение"));
     }
 
     @Test
-    void waitIsRoundedToTenMinutesAndNeverZero() {
-        assertEquals(10, PredictionMessage.waitMinutes(200));
-        assertEquals(10, PredictionMessage.waitMinutes(6000));
-        assertEquals(30, PredictionMessage.waitMinutes(36000));
-        assertEquals(80, PredictionMessage.waitMinutes(96000));
+    void cancellationHasCountInBothLanguagesAndNoImage() {
+        var json = PredictionMessage.cancelled(3);
+        var message = JsonParser.parseString(json).getAsJsonObject();
+        assertTrue(message.getAsJsonObject("allowed_mentions").getAsJsonArray("parse").isEmpty());
+        assertFalse(message.getAsJsonArray("embeds").get(0).getAsJsonObject().has("image"));
+        var text = description(json);
+        assertTrue(text.contains("Отменено: 3."), text);
+        assertTrue(text.contains("Cancelled: 3."), text);
     }
 
     @Test

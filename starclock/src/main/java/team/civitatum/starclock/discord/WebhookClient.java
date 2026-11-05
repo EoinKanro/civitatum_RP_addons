@@ -12,10 +12,17 @@ public final class WebhookClient {
     /** Discord отклоняет запросы со стандартным User-Agent Java; формат взят из его документации. */
     private static final String USER_AGENT = "DiscordBot (civitatum_starclock, 0.1.0)";
 
-    /** Блокирует поток до ответа, поэтому вызывается только из рабочего потока DiscordNotifier. */
+    public static int post(String url, String json) throws IOException {
+        return send(url, "application/json", bytes(json));
+    }
+
     public static int post(String url, String json, byte[] image, String imageName) throws IOException {
         String boundary = UUID.randomUUID().toString();
-        byte[] body = multipart(boundary, json, image, imageName);
+        return send(url, "multipart/form-data; boundary=" + boundary, multipart(boundary, json, image, imageName));
+    }
+
+    /** Блокирует поток до ответа, поэтому вызывается только из рабочего потока DiscordNotifier. */
+    private static int send(String url, String contentType, byte[] body) throws IOException {
         var connection = (HttpURLConnection) URI.create(url).toURL().openConnection();
         try {
             connection.setConnectTimeout(TIMEOUT_MILLIS);
@@ -23,7 +30,7 @@ public final class WebhookClient {
             connection.setRequestMethod("POST");
             connection.setDoOutput(true);
             connection.setRequestProperty("User-Agent", USER_AGENT);
-            connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+            connection.setRequestProperty("Content-Type", contentType);
             connection.setFixedLengthStreamingMode(body.length);
             try (var output = connection.getOutputStream()) {
                 output.write(body);

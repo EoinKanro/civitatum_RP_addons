@@ -11,6 +11,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import team.civitatum.starclock.data.PendingPrediction;
 import team.civitatum.starclock.data.StarClockData;
+import team.civitatum.starclock.discord.DiscordNotifier;
 import team.civitatum.starclock.prediction.PredictionService;
 
 public final class StarclockCommands {
@@ -83,6 +84,7 @@ public final class StarclockCommands {
         }
         source.sendSuccess(() -> Component.translatable("command.civitatum_starclock.prediction.cancelled",
                 cancelled), true);
+        DiscordNotifier.predictionsCancelled(cancelled);
         return cancelled;
     }
 

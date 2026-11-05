@@ -8,7 +8,7 @@
   "orientation.civitatum_starclock.upright": "Прямое положение",
   "orientation.civitatum_starclock.reversed": "Перевёрнутое положение",
   "discord.civitatum_starclock.player": "Игрок: %s",
-  "discord.civitatum_starclock.wait": "Сбудется примерно через %s мин работы сервера.",
+  "discord.civitatum_starclock.cancelled": "Все ожидавшие предсказания отменены. Отменено: %s.",
   "command.civitatum_starclock.cooldown.reset": "Кулдаун обряда сброшен.",
   "command.civitatum_starclock.cooldown.none": "Кулдаун обряда сейчас не идёт.",
   "command.civitatum_starclock.prediction.empty": "Ожидающих предсказаний нет.",
