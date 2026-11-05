@@ -37,6 +37,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
     private static final int SLOT = 18, ITEM = 16;
     /** Left edge of the screen title in the wide layout. */
     private static final int TITLE_X = 10;
+    private static final int RESET_WIDTH = 66;
+    /** Space a window leaves below itself by default; it may be moved or stretched closer to the edge. */
+    private static final int DEFAULT_FREE_BELOW = 44;
+    /** The hint under the windows takes this much height; a window moved over it hides it. */
+    private static final int FOOTER_BOTTOM = 16;
     /** Main inventory: slots 9..35 of the player inventory; 0..8 are the hotbar, 36..39 armour, 40 the off hand. */
     private static final int HOTBAR = 9, MAIN = 27, MAIN_END = 36, ARMOR_END = 39, OFFHAND = 40;
     /** Menu slots of the vanilla player menu; Curios adds its own slots after them. */
@@ -171,7 +176,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         // The accessories window docks on the left of the equipment window and shifts the whole group right.
         int aw = accessoriesShown() ? ACCESSORIES_MIN_WIDTH : 0;
         int start = compact ? 4 + aw : Math.max(6 + aw, (width - 584 - aw) / 2 + aw), y = compact ? 28 : 32;
-        int h = Math.min(backpack || kind == CompatBridge.Kind.AETHER ? 302 : 236, height - 54);
+        int h = Math.min(backpack || kind == CompatBridge.Kind.AETHER ? 302 : 236,
+            height - InventoryPanel.TOP_BAR - DEFAULT_FREE_BELOW);
         int ew = compact ? Math.clamp(width - 212 - aw, 112, 142) : 146;
         int gridMinHeight = backpack ? 171 : 164;
         accessories = new InventoryPanel("accessories", start - aw, y, ACCESSORIES_MIN_WIDTH, h, ACCESSORIES_MIN_WIDTH,
@@ -236,8 +242,8 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         cosmetics = addWidget(new MorrowindIconButton(COSMETIC_ICON, tr("cosmetics"), this::cosmeticsShown,
             b -> toggleCosmetics()));
         widgets.add(cosmetics);
-        var reset = button(tr("reset"), b -> resetLayout(), 66);
-        reset.setPosition(width - 72, 4);
+        var reset = button(tr("reset"), b -> resetLayout(), RESET_WIDTH);
+        reset.setPosition(width - RESET_WIDTH - SidebarRow.RIGHT_MARGIN, 4);
         powersButton = button(tr("powers"), b -> togglePowers(), 54);
         compactToggle = compact ? button(tr(compactInfo ? "equipment" : "information"), b -> {
             compactInfo = !compactInfo;
@@ -847,9 +853,11 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         g.pose().pushPose();
         g.pose().translate(0, 0, TOP_Z);
         for (var b : widgets) if (widgetOwner(b) == null && b.visible) b.render(g, mx, my, tick);
-        String footer = tr(compact ? "footer_short" : "footer").getString();
-        footer = font.plainSubstrByWidth(footer, Math.max(80, width - 176));
-        g.drawString(font, footer, 8, height - 14, MUTED, false);
+        if (panels.stream().noneMatch(p -> p.visible && p.y + p.height > height - FOOTER_BOTTOM)) {
+            String footer = tr(compact ? "footer_short" : "footer").getString();
+            footer = font.plainSubstrByWidth(footer, Math.max(80, width - 176));
+            g.drawString(font, footer, 8, height - 14, MUTED, false);
+        }
         g.flush();
         g.pose().popPose();
     }
@@ -903,10 +911,10 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
         return equipment.y + MODEL_TOP + modelHeight() + 4;
     }
 
-    /** Item position of an armour slot, head (0) to feet (3): the column spans the model's height, frames included. */
+    /** Item position of an armour slot, head (0) to feet (3), within the model's height, see {@link ArmorColumn}. */
     private int armorY(int row) {
         int top = equipment.y + MODEL_TOP + 1, bottom = equipment.y + MODEL_TOP + modelHeight() - SLOT + 1;
-        return top + (bottom - top) * row / (ARMOR.length - 1);
+        return top + ArmorColumn.offset(row, bottom - top);
     }
 
     private int statusRowY() {
@@ -1266,16 +1274,16 @@ public final class CivitatumInventoryScreen extends AbstractContainerScreen<Abst
             bottom += ddy;
         } else {
             if ((resizeMask & InventoryPanel.LEFT) != 0) {
-                nx = Math.max(4, Math.min(right - dragging.minWidth, anchorX + ddx));
+                nx = Math.max(InventoryPanel.MARGIN, Math.min(right - dragging.minWidth, anchorX + ddx));
             }
             if ((resizeMask & InventoryPanel.RIGHT) != 0) {
-                right = Math.min(width - 4, Math.max(nx + dragging.minWidth, anchorX + anchorW + ddx));
+                right = Math.min(width - InventoryPanel.MARGIN, Math.max(nx + dragging.minWidth, anchorX + anchorW + ddx));
             }
             if ((resizeMask & InventoryPanel.TOP) != 0) {
-                ny = Math.max(25, Math.min(bottom - dragging.minHeight, anchorY + ddy));
+                ny = Math.max(InventoryPanel.TOP_BAR, Math.min(bottom - dragging.minHeight, anchorY + ddy));
             }
             if ((resizeMask & InventoryPanel.BOTTOM) != 0) {
-                bottom = Math.min(height - 44, Math.max(ny + dragging.minHeight, anchorY + anchorH + ddy));
+                bottom = Math.min(height - InventoryPanel.MARGIN, Math.max(ny + dragging.minHeight, anchorY + anchorH + ddy));
             }
         }
         dragging.x = nx;

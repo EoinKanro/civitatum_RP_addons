@@ -31,10 +31,11 @@ public final class VanillaStyle {
     static final Path PACK = Path.of("src/main/resources/resourcepacks/civitatum_style");
     private static final Path OUTPUT = PACK.resolve("assets/minecraft/textures/gui");
     private static final String VANILLA = "assets/minecraft/textures/gui/";
-    /** Screens of blocks; villager and horse screens belong to entities and keep vanilla's look. */
+    /** Screens of blocks and the creative inventory; villager and horse screens belong to entities and keep vanilla's look. */
     static final List<String> CONTAINERS = List.of("generic_54", "shulker_box", "dispenser", "hopper",
         "furnace", "blast_furnace", "smoker", "crafting_table", "brewing_stand", "anvil", "enchanting_table",
-        "grindstone", "smithing", "stonecutter", "loom", "cartography_table", "beacon", "crafter");
+        "grindstone", "smithing", "stonecutter", "loom", "cartography_table", "beacon", "crafter",
+        "creative_inventory/tab_inventory", "creative_inventory/tab_items", "creative_inventory/tab_item_search");
     /**
      * Sprites drawn over those screens: fills of arrows and flames, scrollers, slot hints, buttons. They carry the same
      * greys plus a few of their own, so a sprite left vanilla would show a light grey patch on the stone.
@@ -42,13 +43,21 @@ public final class VanillaStyle {
     private static final List<String> SPRITE_FOLDERS = List.of("container/furnace", "container/blast_furnace",
         "container/smoker", "container/crafter", "container/stonecutter", "container/loom",
         "container/cartography_table", "container/brewing_stand", "container/beacon", "container/smithing",
-        "container/anvil", "container/grindstone", "recipe_book");
+        "container/anvil", "container/grindstone", "container/creative_inventory", "recipe_book");
+    /** The vanilla hotbar, shown in creative and spectator modes, where the HUD of this mod is switched off. */
+    private static final String HOTBAR = "hud/hotbar", HOTBAR_SELECTION = "hud/hotbar_selection";
+    private static final String OFFHAND_LEFT = "hud/hotbar_offhand_left", OFFHAND_RIGHT = "hud/hotbar_offhand_right";
     /**
-     * Single sprites of screens that are not restyled themselves: the creative inventory's scroll thumb, which mods
-     * borrow for their own lists (Tom's Storage terminals). On the creative tabs it is gold on vanilla's grey.
+     * The off hand's picture and the slot in it. The game puts the item at (3, 4) on the left picture and at (10, 4)
+     * on the right one, so a slot of a hotbar's cell size around the item starts at (0, 1) and (7, 1). Vanilla's own
+     * frames there are uneven, with gaps and see-through corners, so these are drawn by this geometry.
      */
-    private static final List<String> BORROWED_SPRITES = List.of("container/creative_inventory/scroller",
-        "container/creative_inventory/scroller_disabled");
+    private static final int OFFHAND_WIDTH = 29, OFFHAND_HEIGHT = 24, OFFHAND_CELL = 22, OFFHAND_Y = 1;
+    private static final int OFFHAND_LEFT_X = 0, OFFHAND_RIGHT_X = 7;
+    /** The rings of a hotbar's cell around its see-through middle: the outline, stone, the bevel. */
+    private static final int OFFHAND_OUTLINE = 0, OFFHAND_STONE = 1, OFFHAND_BEVEL = 2;
+    /** Vanilla's outlines are black; a grey above this is part of the slot's frame. */
+    private static final int HOTBAR_OUTLINE_GREY = 0x20;
     /** Vanilla's hints of empty slots (a smithing template, armour, lapis), items drawn in a slot as a grey shape. */
     private static final String HINTS = "assets/minecraft/textures/item/empty_";
     private static final int HINT_SIZE = 16, MAX_HINT_GREYS = 3;
@@ -185,6 +194,8 @@ public final class VanillaStyle {
         style.run(Path.of(args[0]));
         if (args.length == 2) {
             new ModStyle(style).run(Path.of(args[1]));
+            // the full run has cleared the pack, the sidebar's buttons included
+            SidebarIcons.main(args);
         } else {
             System.out.println("No mods folder: mods' screens and slot hints left as they are");
         }
@@ -212,10 +223,17 @@ public final class VanillaStyle {
                 if (!name.endsWith(".png") || !name.startsWith(VANILLA + "sprites/")) continue;
                 String sprite = name.substring(VANILLA.length() + "sprites/".length());
                 String folder = sprite.substring(0, sprite.lastIndexOf('/'));
-                if (SPRITE_FOLDERS.contains(folder) || BORROWED_SPRITES.contains(sprite.replace(".png", ""))) {
+                if (SPRITE_FOLDERS.contains(folder)) {
                     restyle(zip, "sprites/" + sprite);
                 }
             }
+        }
+        try (var zip = new ZipFile(jar.toFile())) {
+            BufferedImage bar = sprite(zip, HOTBAR);
+            write(hotbar(bar), OUTPUT.resolve("sprites/" + HOTBAR + ".png"));
+            write(offhand(OFFHAND_LEFT_X, slotAlpha(bar)), OUTPUT.resolve("sprites/" + OFFHAND_LEFT + ".png"));
+            write(offhand(OFFHAND_RIGHT_X, slotAlpha(bar)), OUTPUT.resolve("sprites/" + OFFHAND_RIGHT + ".png"));
+            write(hotbarSelection(sprite(zip, HOTBAR_SELECTION)), OUTPUT.resolve("sprites/" + HOTBAR_SELECTION + ".png"));
         }
         // border sizes are ours: the bevels need three pixels, vanilla's disabled button and slider keep only one
         sprite("button", button(GOLD, 0), 200, 20, 3);
@@ -323,6 +341,89 @@ public final class VanillaStyle {
                 Files.write(OUTPUT.resolve(name + ".mcmeta"), in.readAllBytes());
             }
         }
+    }
+
+    private static BufferedImage sprite(ZipFile zip, String name) throws IOException {
+        var entry = zip.getEntry(VANILLA + "sprites/" + name + ".png");
+        if (entry == null) throw new IOException("No " + name + " in " + zip.getName());
+        try (InputStream in = zip.getInputStream(entry)) {
+            return ImageIO.read(in);
+        }
+    }
+
+    /**
+     * Vanilla's hotbar shape in the look of the windows: stone between the slots, a gold bevel around each, the slots
+     * as see-through as vanilla's, so the world still shows behind the items.
+     */
+    private BufferedImage hotbar(BufferedImage image) {
+        var out = new BufferedImage(image.getWidth(), image.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                int argb = image.getRGB(x, y), alpha = argb >>> 24;
+                if (alpha == 0) continue;
+                out.setRGB(x, y, alpha != 0xFF ? alpha << 24 | recess(x, y) & 0xFFFFFF : hotbarFrame(image, x, y));
+            }
+        }
+        return out;
+    }
+
+    /** How see-through the hotbar's slots are. */
+    private static int slotAlpha(BufferedImage bar) {
+        for (int y = 0; y < bar.getHeight(); y++) {
+            for (int x = 0; x < bar.getWidth(); x++) {
+                if (seeThrough(bar, x, y)) return bar.getRGB(x, y) >>> 24;
+            }
+        }
+        throw new IllegalStateException("The hotbar has no see-through slots");
+    }
+
+    /** The off hand's slot alone on its picture, a cell of the hotbar with its outline closed all around. */
+    private BufferedImage offhand(int cellX, int alpha) {
+        var out = new BufferedImage(OFFHAND_WIDTH, OFFHAND_HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        for (int dy = 0; dy < OFFHAND_CELL; dy++) {
+            for (int dx = 0; dx < OFFHAND_CELL; dx++) {
+                int x = cellX + dx, y = OFFHAND_Y + dy;
+                int ring = Math.min(Math.min(dx, dy), Math.min(OFFHAND_CELL - 1 - dx, OFFHAND_CELL - 1 - dy));
+                int colour = switch (ring) {
+                    case OFFHAND_OUTLINE -> OUTLINE;
+                    case OFFHAND_STONE -> stone(x, y);
+                    case OFFHAND_BEVEL -> dx == ring || dy == ring ? GOLD : SHADOW;
+                    default -> alpha << 24 | recess(x, y) & 0xFFFFFF;
+                };
+                out.setRGB(x, y, colour);
+            }
+        }
+        return out;
+    }
+
+    private int hotbarFrame(BufferedImage image, int x, int y) {
+        if ((grey(image.getRGB(x, y)) & 0xFF) <= HOTBAR_OUTLINE_GREY) return OUTLINE;
+        if (seeThrough(image, x + 1, y) || seeThrough(image, x, y + 1)) return GOLD;
+        if (seeThrough(image, x - 1, y) || seeThrough(image, x, y - 1)) return SHADOW;
+        return stone(x, y);
+    }
+
+    private static boolean seeThrough(BufferedImage image, int x, int y) {
+        if (x < 0 || y < 0 || x >= image.getWidth() || y >= image.getHeight()) return false;
+        int alpha = image.getRGB(x, y) >>> 24;
+        return alpha != 0 && alpha != 0xFF;
+    }
+
+    /**
+     * The mark of the selected slot: the outline and one ring of lit gold, as thin as the slots' own bevels. The middle
+     * stays clear, so the slot's frame shows through. Vanilla's three pixel wide ring looks heavy in solid gold.
+     */
+    private static BufferedImage hotbarSelection(BufferedImage image) {
+        int width = image.getWidth(), height = image.getHeight();
+        var out = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                int ring = Math.min(Math.min(x, y), Math.min(width - 1 - x, height - 1 - y));
+                if (ring == 0) out.setRGB(x, y, OUTLINE);
+                else if (ring == 1) out.setRGB(x, y, LIT_GOLD);
+            }
+        }
+        return out;
     }
 
     /** One pixel of a vanilla screen or sprite {@code file} in our palette; {@code x, y} place the stone grain. */

@@ -16,6 +16,7 @@ import net.minecraft.client.gui.screens.inventory.CartographyTableScreen;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CrafterScreen;
 import net.minecraft.client.gui.screens.inventory.CraftingScreen;
+import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.DispenserScreen;
 import net.minecraft.client.gui.screens.inventory.EnchantmentScreen;
 import net.minecraft.client.gui.screens.inventory.FurnaceScreen;
@@ -43,7 +44,7 @@ public final class RestyledScreens {
         BlastFurnaceScreen.class, SmokerScreen.class, CraftingScreen.class, BrewingStandScreen.class,
         AnvilScreen.class, EnchantmentScreen.class, GrindstoneScreen.class, SmithingScreen.class,
         StonecutterScreen.class, LoomScreen.class, CartographyTableScreen.class, BeaconScreen.class,
-        CrafterScreen.class);
+        CrafterScreen.class, CreativeModeInventoryScreen.class);
     private static final Set<String> MOD_SCREENS = read();
 
     /** Whether text of this colour is a label on a dark background now. Labels are passed without alpha or opaque. */
