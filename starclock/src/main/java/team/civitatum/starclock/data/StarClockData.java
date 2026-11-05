@@ -18,7 +18,7 @@ import team.civitatum.starclock.config.StarClockConfig;
 
 public final class StarClockData extends SavedData {
     private static final Gson JSON = new Gson();
-    private long lastRitual = -1L;
+    private RitualCooldown cooldown;
     private Long readingSeed;
     private final Map<UUID, PendingPrediction> pending = new LinkedHashMap<>();
     private final Map<UUID, TimedSpawn> spawns = new LinkedHashMap<>();
@@ -34,7 +34,10 @@ public final class StarClockData extends SavedData {
 
     public static StarClockData load(CompoundTag tag, HolderLookup.Provider registries) {
         StarClockData data = new StarClockData();
-        data.lastRitual = tag.contains("LastRitual") ? tag.getLong("LastRitual") : -1L;
+        // Старый LastRitual считан по gameTime и не переводится в dayTime: такой кулдаун просто заканчивается.
+        if (tag.contains("CooldownElapsed", Tag.TAG_LONG)) {
+            data.cooldown = new RitualCooldown(tag.getLong("CooldownElapsed"), tag.getLong("CooldownSeenDayTime"));
+        }
         if (tag.contains("ReadingSeed", Tag.TAG_LONG)) data.readingSeed = tag.getLong("ReadingSeed");
         data.read(tag, "Pending", PendingPrediction.class).forEach(value -> data.pending.put(value.id(), value));
         data.read(tag, "Spawns", TimedSpawn.class).forEach(value -> data.spawns.put(value.entity(), value));
@@ -71,8 +74,11 @@ public final class StarClockData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        tag.putInt("SchemaVersion", 3);
-        tag.putLong("LastRitual", lastRitual);
+        tag.putInt("SchemaVersion", 4);
+        if (cooldown != null) {
+            tag.putLong("CooldownElapsed", cooldown.elapsed());
+            tag.putLong("CooldownSeenDayTime", cooldown.seenDayTime());
+        }
         if (readingSeed != null) tag.putLong("ReadingSeed", readingSeed);
         tag.put("Pending", write(pending.values()));
         tag.put("Spawns", write(spawns.values()));
@@ -94,16 +100,27 @@ public final class StarClockData extends SavedData {
         return readingSeed;
     }
 
-    public long remainingCooldown(long gameTime) {
-        if (lastRitual < 0) return 0;
-        long elapsed = Math.max(0, gameTime - lastRitual);
-        return Math.max(0, StarClockConfig.COOLDOWN_DAYS.get() * 24000L - elapsed);
+    public void advanceCooldown(long dayTime) {
+        if (cooldown == null) return;
+        var advanced = cooldown.advance(dayTime);
+        if (advanced.equals(cooldown)) return;
+        cooldown = advanced.remaining(cooldownTicks()) > 0 ? advanced : null;
+        setDirty();
     }
 
-    public void schedule(long gameTime, PendingPrediction prediction) {
+    public long remainingCooldown(long dayTime) {
+        advanceCooldown(dayTime);
+        return cooldown == null ? 0 : cooldown.remaining(cooldownTicks());
+    }
+
+    private static long cooldownTicks() {
+        return StarClockConfig.COOLDOWN_DAYS.get() * RitualCooldown.DAY_TICKS;
+    }
+
+    public void schedule(long dayTime, PendingPrediction prediction) {
         if (pending.containsKey(prediction.id())) throw new IllegalArgumentException("Повтор предсказания");
         pending.put(prediction.id(), prediction);
-        lastRitual = gameTime;
+        cooldown = RitualCooldown.start(dayTime);
         readingSeed = null;
         setDirty();
     }
@@ -190,7 +207,7 @@ public final class StarClockData extends SavedData {
     }
 
     public void resetCooldown() {
-        lastRitual = -1;
+        cooldown = null;
         setDirty();
     }
 }

@@ -36,7 +36,7 @@ public final class RitualManager {
         try { StarClockConfig.validate(); }
         catch (IllegalArgumentException error) { failure = "configuration"; }
         if (failure == null && active != null) failure = "busy";
-        long remaining = StarClockData.get(player.server).remainingCooldown(player.server.overworld().getGameTime());
+        long remaining = StarClockData.get(player.server).remainingCooldown(player.server.overworld().getDayTime());
         if (failure == null && remaining > 0) {
             long days = (remaining + 23_999L) / 24_000L;
             player.displayClientMessage(Component.translatable("message.civitatum_starclock.cooldown", days), true);
@@ -156,7 +156,7 @@ public final class RitualManager {
         var pending = new PendingPrediction(finished.session, player.getUUID(),
                 player.level().dimension().location().toString(), pos.getX(), pos.getY(), pos.getZ(),
                 now + delay, finished.tier.strength(), plan, false, 0, 0, 0);
-        StarClockData.get(player.server).schedule(now, pending);
+        StarClockData.get(player.server).schedule(player.server.overworld().getDayTime(), pending);
         active = null;
         player.stopUsingItem();
         PacketDistributor.sendToPlayer(player, new ShowCardPayload(finished.session, sign, orientation, finished.tier,
