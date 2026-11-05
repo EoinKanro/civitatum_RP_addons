@@ -1,8 +1,6 @@
 package team.civitatum.starclock.prediction.handlers;
 
 import com.google.gson.JsonObject;
-import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobSpawnType;
 import net.minecraft.world.entity.npc.WanderingTrader;
@@ -12,17 +10,14 @@ import team.civitatum.starclock.data.TimedSpawn;
 import team.civitatum.starclock.prediction.ActionContext;
 import team.civitatum.starclock.prediction.Constellation;
 import team.civitatum.starclock.prediction.Parameters;
+import team.civitatum.starclock.prediction.VillagersReborn;
 import team.civitatum.starclock.prediction.WorldSafety;
 import team.civitatum.starclock.trader.SignTrades;
 
 public final class TraderHandler implements ActionHandler {
-    // Ванильного торговца Villagers Reborn заменил бы своим, и замена не получила бы товары знака.
-    private static final ResourceLocation REBORN_TRADER =
-            ResourceLocation.fromNamespaceAndPath("slimpatch", "wandering_trader");
-
     @Override
     public boolean run(ActionContext context, JsonObject params) {
-        var type = BuiltInRegistries.ENTITY_TYPE.getOptional(REBORN_TRADER).orElse(EntityType.WANDERING_TRADER);
+        var type = VillagersReborn.resolve(EntityType.WANDERING_TRADER);
         if (!(type.create(context.level()) instanceof WanderingTrader trader)) {
             throw new IllegalStateException("Не удалось создать торговца");
         }
