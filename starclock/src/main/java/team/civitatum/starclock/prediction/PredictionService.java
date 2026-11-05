@@ -114,7 +114,7 @@ public final class PredictionService {
         long now = server.overworld().getGameTime();
         if (now % 20 != 0) return;
         var data = StarClockData.get(server);
-        data.advanceCooldown(server.overworld().getDayTime());
+        data.advanceCooldowns(server.overworld().getDayTime());
         cleanup(server, data, now);
         int budget = 64;
         for (var pending : data.pending()) {

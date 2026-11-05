@@ -14,7 +14,7 @@ public final class StarClockConfig {
 
     static {
         var builder = new ModConfigSpec.Builder();
-        COOLDOWN_DAYS = builder.comment("Общий кулдаун в игровых сутках.").defineInRange("cooldownDays", 8, 1, 3650);
+        COOLDOWN_DAYS = builder.comment("Кулдаун обряда у каждого игрока, игровые сутки.").defineInRange("cooldownDays", 8, 1, 3650);
         TIMER_MIN = builder.comment("Минимальная задержка, тики.").defineInRange("timerMinTicks", 6000, 1, 24000000);
         TIMER_MAX = builder.comment("Максимальная задержка I и II ступеней, тики.").defineInRange("timerMaxTicks", 96000, 1, 24000000);
         TIMER_THIRD_MAX = builder.comment("Максимальная задержка III ступени, тики.").defineInRange("timerThirdMaxTicks", 72000, 1, 24000000);

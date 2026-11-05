@@ -37,7 +37,8 @@ public final class RitualManager {
         try { StarClockConfig.validate(); }
         catch (IllegalArgumentException error) { failure = "configuration"; }
         if (failure == null && active != null) failure = "busy";
-        long remaining = StarClockData.get(player.server).remainingCooldown(player.server.overworld().getDayTime());
+        long remaining = StarClockData.get(player.server)
+                .remainingCooldown(player.getUUID(), player.server.overworld().getDayTime());
         if (failure == null && remaining > 0) {
             long days = (remaining + 23_999L) / 24_000L;
             player.displayClientMessage(Component.translatable("message.civitatum_starclock.cooldown", days), true);
@@ -122,7 +123,7 @@ public final class RitualManager {
                 return;
             }
             if (active.preparationFinished && now - active.preparationStartedAt >= RitualRules.PREPARATION_TICKS) {
-                active.readingSeed = StarClockData.get(server).readingSeed();
+                active.readingSeed = StarClockData.get(server).readingSeed(active.player);
                 active.drawingStartedAt = now;
                 sendState(player);
             }

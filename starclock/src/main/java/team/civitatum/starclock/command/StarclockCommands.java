@@ -33,14 +33,13 @@ public final class StarclockCommands {
 
     private static int resetCooldown(CommandContext<CommandSourceStack> context) {
         var source = context.getSource();
-        var data = data(context);
-        if (data.remainingCooldown(source.getServer().overworld().getDayTime()) <= 0) {
+        int reset = data(context).resetCooldowns(source.getServer().overworld().getDayTime());
+        if (reset == 0) {
             source.sendFailure(Component.translatable("command.civitatum_starclock.cooldown.none"));
             return 0;
         }
-        data.resetCooldown();
-        source.sendSuccess(() -> Component.translatable("command.civitatum_starclock.cooldown.reset"), true);
-        return 1;
+        source.sendSuccess(() -> Component.translatable("command.civitatum_starclock.cooldown.reset", reset), true);
+        return reset;
     }
 
     private static int list(CommandContext<CommandSourceStack> context) {
