@@ -138,6 +138,19 @@ public final class StarClockData extends SavedData {
         if (pending.remove(id) != null) setDirty();
     }
 
+    public boolean hasPrediction(UUID id) {
+        return pending.containsKey(id);
+    }
+
+    public int clearPredictions() {
+        int count = pending.size();
+        if (count > 0) {
+            pending.clear();
+            setDirty();
+        }
+        return count;
+    }
+
     public void addSpawn(TimedSpawn spawn) {
         spawns.put(spawn.entity(), spawn);
         setDirty();

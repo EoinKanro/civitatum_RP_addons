@@ -41,6 +41,16 @@ class PendingPredictionTest {
     }
 
     @Test
+    void forcedDueTimeSkipsTheWaitAndRetryDelayButKeepsProgress() throws Exception {
+        var value = pending().advance().retry(100).dueAt(100);
+        assertTrue(value.isDue(100));
+        assertEquals(1, value.nextAction());
+        assertEquals(pending().plan(), value.plan());
+        // Уже наступивший срок не сдвигается вперёд.
+        assertEquals(50000, pending().dueAt(60000).dueGameTime());
+    }
+
+    @Test
     void actionParametersCannotBeChangedThroughThePublicView() throws Exception {
         var value = pending();
         var copy = value.plan().actions().getFirst().params();
