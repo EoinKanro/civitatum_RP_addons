@@ -23,6 +23,11 @@ public enum Constellation {
         return "sign.civitatum_starclock." + id;
     }
 
+    public String meaningKey(Orientation orientation) {
+        return translationKey() + "." + (orientation == Orientation.NONE ? "any"
+                : orientation == Orientation.UPRIGHT ? "upright" : "reversed");
+    }
+
     public static Constellation draw(RandomGenerator random) {
         return SIGNS[random.nextInt(SIGNS.length)];
     }

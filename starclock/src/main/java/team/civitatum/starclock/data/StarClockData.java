@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -18,8 +19,8 @@ import team.civitatum.starclock.config.StarClockConfig;
 
 public final class StarClockData extends SavedData {
     private static final Gson JSON = new Gson();
-    private long lastRitual = -1L;
-    private Long readingSeed;
+    private final Map<UUID, RitualCooldown> cooldowns = new LinkedHashMap<>();
+    private final Map<UUID, ReadingSeed> readingSeeds = new LinkedHashMap<>();
     private final Map<UUID, PendingPrediction> pending = new LinkedHashMap<>();
     private final Map<UUID, TimedSpawn> spawns = new LinkedHashMap<>();
     private final Map<String, TimedBlock> blocks = new LinkedHashMap<>();
@@ -34,8 +35,10 @@ public final class StarClockData extends SavedData {
 
     public static StarClockData load(CompoundTag tag, HolderLookup.Provider registries) {
         StarClockData data = new StarClockData();
-        data.lastRitual = tag.contains("LastRitual") ? tag.getLong("LastRitual") : -1L;
-        if (tag.contains("ReadingSeed", Tag.TAG_LONG)) data.readingSeed = tag.getLong("ReadingSeed");
+        // Прежние общие кулдаун и выбор не принадлежат никакому игроку и не переносятся: они просто заканчиваются.
+        data.read(tag, "Cooldowns", RitualCooldown.class).forEach(value -> data.cooldowns.put(value.player(), value));
+        data.read(tag, "ReadingSeeds", ReadingSeed.class)
+                .forEach(value -> data.readingSeeds.put(value.player(), value));
         data.read(tag, "Pending", PendingPrediction.class).forEach(value -> data.pending.put(value.id(), value));
         data.read(tag, "Spawns", TimedSpawn.class).forEach(value -> data.spawns.put(value.entity(), value));
         data.read(tag, "Blocks", TimedBlock.class).forEach(value -> data.blocks.put(value.key(), value));
@@ -71,9 +74,9 @@ public final class StarClockData extends SavedData {
 
     @Override
     public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
-        tag.putInt("SchemaVersion", 3);
-        tag.putLong("LastRitual", lastRitual);
-        if (readingSeed != null) tag.putLong("ReadingSeed", readingSeed);
+        tag.putInt("SchemaVersion", 5);
+        tag.put("Cooldowns", write(cooldowns.values()));
+        tag.put("ReadingSeeds", write(readingSeeds.values()));
         tag.put("Pending", write(pending.values()));
         tag.put("Spawns", write(spawns.values()));
         tag.put("Blocks", write(blocks.values()));
@@ -85,26 +88,44 @@ public final class StarClockData extends SavedData {
         return tag;
     }
 
-    // До завершения обряда сохраняется один выбор для всего мира, включая перезапуски.
-    public long readingSeed() {
-        if (readingSeed == null) {
-            readingSeed = UUID.randomUUID().getMostSignificantBits();
+    // До завершения обряда у игрока сохраняется один выбор, включая перезапуски.
+    public long readingSeed(UUID player) {
+        var seed = readingSeeds.get(player);
+        if (seed == null) {
+            seed = new ReadingSeed(player, UUID.randomUUID().getMostSignificantBits());
+            readingSeeds.put(player, seed);
             setDirty();
         }
-        return readingSeed;
+        return seed.seed();
     }
 
-    public long remainingCooldown(long gameTime) {
-        if (lastRitual < 0) return 0;
-        long elapsed = Math.max(0, gameTime - lastRitual);
-        return Math.max(0, StarClockConfig.COOLDOWN_DAYS.get() * 24000L - elapsed);
+    public void advanceCooldowns(long dayTime) {
+        var iterator = cooldowns.entrySet().iterator();
+        while (iterator.hasNext()) {
+            var entry = iterator.next();
+            var advanced = entry.getValue().advance(dayTime);
+            if (advanced.equals(entry.getValue())) continue;
+            if (advanced.remaining(cooldownTicks()) > 0) entry.setValue(advanced);
+            else iterator.remove();
+            setDirty();
+        }
     }
 
-    public void schedule(long gameTime, PendingPrediction prediction) {
+    public long remainingCooldown(UUID player, long dayTime) {
+        advanceCooldowns(dayTime);
+        var cooldown = cooldowns.get(player);
+        return cooldown == null ? 0 : cooldown.remaining(cooldownTicks());
+    }
+
+    private static long cooldownTicks() {
+        return StarClockConfig.COOLDOWN_DAYS.get() * RitualCooldown.DAY_TICKS;
+    }
+
+    public void schedule(long dayTime, PendingPrediction prediction) {
         if (pending.containsKey(prediction.id())) throw new IllegalArgumentException("Повтор предсказания");
         pending.put(prediction.id(), prediction);
-        lastRitual = gameTime;
-        readingSeed = null;
+        cooldowns.put(prediction.player(), RitualCooldown.start(prediction.player(), dayTime));
+        readingSeeds.remove(prediction.player());
         setDirty();
     }
 
@@ -119,6 +140,16 @@ public final class StarClockData extends SavedData {
 
     public void removePrediction(UUID id) {
         if (pending.remove(id) != null) setDirty();
+    }
+
+    public boolean hasPrediction(UUID id) {
+        return pending.containsKey(id);
+    }
+
+    public int cancelPredictions(Predicate<UUID> players) {
+        int before = pending.size();
+        if (pending.values().removeIf(prediction -> players.test(prediction.player()))) setDirty();
+        return before - pending.size();
     }
 
     public void addSpawn(TimedSpawn spawn) {
@@ -189,8 +220,10 @@ public final class StarClockData extends SavedData {
         return true;
     }
 
-    public void resetCooldown() {
-        lastRitual = -1;
-        setDirty();
+    public int resetCooldowns(long dayTime, Predicate<UUID> players) {
+        advanceCooldowns(dayTime);
+        int before = cooldowns.size();
+        if (cooldowns.keySet().removeIf(players)) setDirty();
+        return before - cooldowns.size();
     }
 }

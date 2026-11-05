@@ -115,7 +115,7 @@ public final class LootHandler implements ActionHandler {
             context.player().containerMenu.broadcastChanges();
         } else {
             context.player().addEffect(new net.minecraft.world.effect.MobEffectInstance(
-                    net.minecraft.world.effect.MobEffects.HUNGER, 400));
+                    net.minecraft.world.effect.MobEffects.HUNGER, 400 * context.tier()));
         }
     }
 }

@@ -5,6 +5,7 @@ import com.mojang.logging.LogUtils;
 import org.slf4j.Logger;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.config.ModConfig;
+import team.civitatum.starclock.command.StarclockCommands;
 import team.civitatum.starclock.config.StarClockConfig;
 import team.civitatum.starclock.prediction.PredictionService;
 import net.neoforged.bus.api.IEventBus;
@@ -29,6 +30,7 @@ public final class CivitatumStarclock {
         bus.addListener(StarclockNetwork::register);
         NeoForge.EVENT_BUS.register(RitualManager.class);
         NeoForge.EVENT_BUS.register(PredictionService.class);
+        NeoForge.EVENT_BUS.register(StarclockCommands.class);
     }
 
     public static ResourceLocation resource(String path) {

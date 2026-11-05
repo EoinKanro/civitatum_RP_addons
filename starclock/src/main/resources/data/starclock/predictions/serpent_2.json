@@ -17,7 +17,7 @@
             "radius": 8,
             "effects": [
               {
-                "id": "minecraft:poison",
+                "id": "minecraft:wither",
                 "seconds": 10,
                 "level": 1
               }

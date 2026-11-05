@@ -52,7 +52,9 @@ public final class EffectHandler implements ActionHandler {
             int amount = params.get("experienceLevels").getAsInt();
             player.giveExperienceLevels(amount < 0 ? -Math.min(-amount, player.experienceLevel) : amount);
         }
-        if (params.has("fireSeconds")) player.igniteForSeconds(params.get("fireSeconds").getAsFloat());
+        if (params.has("fireSeconds")) {
+            player.igniteForSeconds(SafeNumbers.scaled(params.get("fireSeconds").getAsInt(), context.tier()));
+        }
         if (params.has("peaceSeconds")) {
             var pos = player.blockPosition();
             context.data().addZone(new PeaceZone(context.level().dimension().location().toString(),

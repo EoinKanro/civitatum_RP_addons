@@ -25,6 +25,11 @@ public record PendingPrediction(UUID id, UUID player, String dimension, int x, i
         return now >= dueGameTime && now >= retryAfter;
     }
 
+    public PendingPrediction dueAt(long now) {
+        return new PendingPrediction(id, player, dimension, x, y, z, Math.min(dueGameTime, now), tier, plan,
+                waited, nextAction, attempts, 0);
+    }
+
     public PendingPrediction waiting() {
         return new PendingPrediction(id, player, dimension, x, y, z, dueGameTime, tier, plan,
                 true, nextAction, attempts, retryAfter);

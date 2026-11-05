@@ -20,13 +20,15 @@ import team.civitatum.starclock.prediction.ActionContext;
 import team.civitatum.starclock.prediction.ItemFactory;
 import team.civitatum.starclock.prediction.Parameters;
 import team.civitatum.starclock.prediction.SafeNumbers;
+import team.civitatum.starclock.prediction.VillagersReborn;
 import team.civitatum.starclock.prediction.WorldSafety;
 
 public final class SpawnHandler implements ActionHandler {
     @Override
     public boolean run(ActionContext context, JsonObject params) {
-        var type = BuiltInRegistries.ENTITY_TYPE.getOptional(ResourceLocation.parse(params.get("entity").getAsString()))
-                .orElseThrow(() -> new IllegalArgumentException("Неизвестная сущность"));
+        var type = VillagersReborn.resolve(BuiltInRegistries.ENTITY_TYPE
+                .getOptional(ResourceLocation.parse(params.get("entity").getAsString()))
+                .orElseThrow(() -> new IllegalArgumentException("Неизвестная сущность")));
         int count = Parameters.integer(params, "count", 1);
         if (Parameters.flag(params, "scale", true)) count = SafeNumbers.scaled(count, context.tier());
         int minimum = Parameters.integer(params, "distance", 8);
@@ -53,7 +55,6 @@ public final class SpawnHandler implements ActionHandler {
             positions.add(position);
             entities.add(entity);
         }
-        int spawned = 0;
         for (int i = 0; i < entities.size(); i++) {
             Mob mob = (Mob) entities.get(i);
             Vec3 pos = positions.get(i);
@@ -65,18 +66,19 @@ public final class SpawnHandler implements ActionHandler {
             long expires = context.now() + lifetime * 20L;
             if (lifetime > 0) mob.getPersistentData().putLong("StarclockExpires", expires);
             if (!context.level().addFreshEntity(mob)) continue;
-            spawned++;
             if (lifetime > 0) {
                 context.data().addSpawn(new TimedSpawn(mob.getUUID(),
                         context.level().dimension().location().toString(), expires));
             }
         }
-        // Отмена части спавнов другим модом не должна дублировать уже появившихся мобов.
-        return spawned > 0;
+        // Отмена спавна другим модом окончательна: он мог поставить вместо моба своего, и повтор плодил бы новых.
+        return true;
     }
 
     private void configure(ActionContext context, JsonObject params, Mob mob) {
         mob.getPersistentData().putUUID("StarclockOwner", context.player().getUUID());
+        // Без метки Villagers Reborn заменил бы и своего разбойника новым мобом без срока, снаряжения и цели.
+        mob.getPersistentData().putBoolean("slimpatch_replaced", true);
         String mode = Parameters.text(params, "mode", "default");
         if (mob instanceof IronGolem golem && "ally".equals(mode)) {
             golem.setPlayerCreated(true);

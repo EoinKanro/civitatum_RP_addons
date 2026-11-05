@@ -1,6 +1,7 @@
 package team.civitatum.starclock.prediction;
 
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -40,6 +41,44 @@ import team.civitatum.starclock.prediction.handlers.DurabilityHandler;
 public final class PredictionService {
     private record DamageGuard(UUID player, int tier) {}
     private static final ThreadLocal<DamageGuard> DAMAGE_GUARD = new ThreadLocal<>();
+    /** Предел действий в одном плане (PredictionPlan): столько хватает, чтобы исполнить его за один проход. */
+    private static final int ACTIONS_PER_RUN = 16;
+
+    public record Fulfillment(int fulfilled, int waiting, int retrying) {
+        public int total() {
+            return fulfilled + waiting + retrying;
+        }
+    }
+
+    /**
+     * Срок наступает сразу у предсказаний выбранных игроков. Предсказание без доступного игрока исполнить не на ком:
+     * оно сработает обычным путём при входе, возрождении или на ближайшей секундной проверке.
+     */
+    public static Fulfillment fulfill(MinecraftServer server, Predicate<UUID> players) {
+        var data = StarClockData.get(server);
+        long now = server.overworld().getGameTime();
+        int fulfilled = 0;
+        int waiting = 0;
+        int retrying = 0;
+        for (var pending : data.pending()) {
+            if (!players.test(pending.player())) continue;
+            var due = pending.dueAt(now);
+            data.update(due);
+            var player = server.getPlayerList().getPlayer(due.player());
+            if (!isAvailable(player)) {
+                waiting++;
+                continue;
+            }
+            execute(player, data, due, now, ACTIONS_PER_RUN);
+            if (data.hasPrediction(due.id())) retrying++;
+            else fulfilled++;
+        }
+        return new Fulfillment(fulfilled, waiting, retrying);
+    }
+
+    private static boolean isAvailable(ServerPlayer player) {
+        return player != null && player.isAlive() && !player.isSpectator();
+    }
 
     public static void guardedDamage(ActionContext context, float amount, boolean magic) {
         DamageGuard previous = DAMAGE_GUARD.get();
@@ -77,17 +116,18 @@ public final class PredictionService {
         long now = server.overworld().getGameTime();
         if (now % 20 != 0) return;
         var data = StarClockData.get(server);
+        data.advanceCooldowns(server.overworld().getDayTime());
         cleanup(server, data, now);
         int budget = 64;
         for (var pending : data.pending()) {
             if (budget <= 0) break;
             if (!pending.isDue(now)) continue;
             var player = server.getPlayerList().getPlayer(pending.player());
-            if (player == null || !player.isAlive() || player.isSpectator()) {
+            if (!isAvailable(player)) {
                 if (!pending.waited()) data.update(pending.waiting());
                 continue;
             }
-            budget -= execute(player, data, pending, now, Math.min(budget, 16));
+            budget -= execute(player, data, pending, now, Math.min(budget, ACTIONS_PER_RUN));
         }
     }
 
@@ -150,7 +190,7 @@ public final class PredictionService {
         for (var pending : data.pending()) {
             if (budget <= 0) break;
             if (pending.player().equals(player.getUUID()) && pending.isDue(now) && player.isAlive()) {
-                budget -= execute(player, data, pending, now, Math.min(budget, 16));
+                budget -= execute(player, data, pending, now, Math.min(budget, ACTIONS_PER_RUN));
             }
         }
     }

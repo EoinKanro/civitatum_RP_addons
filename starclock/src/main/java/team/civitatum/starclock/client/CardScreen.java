@@ -79,8 +79,7 @@ public final class CardScreen extends Screen {
                 y = paragraph(graphics, Component.translatable("orientation.civitatum_starclock." + position),
                         x + 18, y, 201, 0xFFE8DCC0) + 16;
             }
-            String meaning = card.sign().translationKey() + "." + (card.orientation() == Orientation.NONE
-                    ? "any" : card.orientation() == Orientation.UPRIGHT ? "upright" : "reversed");
+            String meaning = card.sign().meaningKey(card.orientation());
             y = paragraph(graphics, Component.translatable(meaning), x, y, 219, 0xFFE8DCC0) + 18;
             if (!card.category().isEmpty()) {
                 y = paragraph(graphics, Component.translatable("ui.civitatum_starclock.event_type",
