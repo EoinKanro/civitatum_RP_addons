@@ -21,6 +21,7 @@ import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import team.civitatum.starclock.data.StarClockData;
+import team.civitatum.starclock.discord.DiscordNotifier;
 import team.civitatum.starclock.item.StarToolItem;
 import team.civitatum.starclock.network.CancelRitualPayload;
 import team.civitatum.starclock.network.RitualStatePayload;
@@ -159,9 +160,11 @@ public final class RitualManager {
         StarClockData.get(player.server).schedule(player.server.overworld().getDayTime(), pending);
         active = null;
         player.stopUsingItem();
-        PacketDistributor.sendToPlayer(player, new ShowCardPayload(finished.session, sign, orientation, finished.tier,
+        var card = new ShowCardPayload(finished.session, sign, orientation, finished.tier,
                 finished.tier.strength() >= 2 ? plan.category() : "",
-                finished.tier.strength() >= 3 ? plan.target() : ""));
+                finished.tier.strength() >= 3 ? plan.target() : "");
+        PacketDistributor.sendToPlayer(player, card);
+        DiscordNotifier.predictionRead(player.getGameProfile().getName(), card, delay);
     }
 
     @SubscribeEvent

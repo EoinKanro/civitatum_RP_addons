@@ -11,7 +11,6 @@ public final class StarClockConfig {
     public static final ModConfigSpec.IntValue TIMER_THIRD_MAX;
     public static final ModConfigSpec.BooleanValue DESTRUCTIVE_EVENTS;
     public static final ModConfigSpec.IntValue TRADER_LIFETIME;
-    public static final ModConfigSpec.ConfigValue<String> WEBHOOK_URL;
 
     static {
         var builder = new ModConfigSpec.Builder();
@@ -22,8 +21,6 @@ public final class StarClockConfig {
         DESTRUCTIVE_EVENTS = builder.comment("Разрешить блоковые действия из дополнительных таблиц. По умолчанию выключено.")
                 .define("destructiveEvents", false);
         TRADER_LIFETIME = builder.comment("Время жизни торговца, секунды.").defineInRange("traderLifetimeSeconds", 600, 30, 86400);
-        WEBHOOK_URL = builder.comment("Адрес Discord-вебхука; пустая строка отключает отправку.")
-                .define("webhookUrl", "");
         SPEC = builder.build();
     }
 
