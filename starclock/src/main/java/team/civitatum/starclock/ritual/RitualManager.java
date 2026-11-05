@@ -1,6 +1,10 @@
 package team.civitatum.starclock.ritual;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 import team.civitatum.starclock.config.StarClockConfig;
 import team.civitatum.starclock.prediction.PredictionPlan;
 import team.civitatum.starclock.prediction.PredictionRegistry;
@@ -28,15 +32,15 @@ import team.civitatum.starclock.network.RitualStatePayload;
 import team.civitatum.starclock.network.ShowCardPayload;
 import team.civitatum.starclock.prediction.Constellation;
 
-// Единственный активный обряд резервирует весь мир, включая подготовку.
+// Предсказание действует вокруг одного игрока, поэтому обряды разных игроков друг другу не мешают.
 public final class RitualManager {
-    private static RitualState active;
+    private static final Map<UUID, RitualState> ACTIVE = new HashMap<>();
 
     public static boolean start(ServerPlayer player, InteractionHand hand, ItemStack stack, StarToolItem tool) {
         String failure = conditionFailure(player);
         try { StarClockConfig.validate(); }
         catch (IllegalArgumentException error) { failure = "configuration"; }
-        if (failure == null && active != null) failure = "busy";
+        if (failure == null && ACTIVE.containsKey(player.getUUID())) failure = "busy";
         long remaining = StarClockData.get(player.server)
                 .remainingCooldown(player.getUUID(), player.server.overworld().getDayTime());
         if (failure == null && remaining > 0) {
@@ -48,9 +52,10 @@ public final class RitualManager {
             player.displayClientMessage(Component.translatable("message.civitatum_starclock." + failure), true);
             return false;
         }
-        active = new RitualState(player.getUUID(), hand, stack, tool.kind(), tool.tier(),
+        var state = new RitualState(player.getUUID(), hand, stack, tool.kind(), tool.tier(),
                 player.server.overworld().getGameTime());
-        sendState(player);
+        ACTIVE.put(player.getUUID(), state);
+        sendState(player, state);
         return true;
     }
 
@@ -66,37 +71,33 @@ public final class RitualManager {
     }
 
     public static void beginDrawing(ServerPlayer player) {
-        if (ownsRitual(player) && !active.isDrawing()) {
+        var state = ACTIVE.get(player.getUUID());
+        if (state != null && !state.isDrawing()) {
             // Ванильный счётчик использования может закончиться до ServerTickEvent.Post.
-            active.preparationFinished = true;
+            state.preparationFinished = true;
         }
     }
 
     public static void release(ServerPlayer player) {
-        if (ownsRitual(player) && !active.isDrawing() && !active.preparationFinished) {
+        var state = ACTIVE.get(player.getUUID());
+        if (state != null && !state.isDrawing() && !state.preparationFinished) {
             cancel(player, "released");
         }
     }
 
-
-    public static boolean isActive(java.util.UUID player) {
-        return active != null && active.player.equals(player);
+    public static boolean isActive(UUID player) {
+        return ACTIVE.containsKey(player);
     }
 
-    private static boolean ownsRitual(ServerPlayer player) {
-        return active != null && active.player.equals(player.getUUID());
-    }
-
-    private static void sendState(ServerPlayer player) {
-        PacketDistributor.sendToPlayer(player, new RitualStatePayload(active.session, active.hand,
-                active.kind, active.tier, active.isDrawing(),
-                active.isDrawing() ? active.drawingStartedAt : active.preparationStartedAt,
-                active.isDrawing() ? Constellation.draw(new Random(active.readingSeed)) : null));
+    private static void sendState(ServerPlayer player, RitualState state) {
+        PacketDistributor.sendToPlayer(player, new RitualStatePayload(state.session, state.hand,
+                state.kind, state.tier, state.isDrawing(),
+                state.isDrawing() ? state.drawingStartedAt : state.preparationStartedAt,
+                state.isDrawing() ? Constellation.draw(new Random(state.readingSeed)) : null));
     }
 
     private static void cancel(ServerPlayer player, String reason) {
-        var previous = active;
-        active = null;
+        var previous = ACTIVE.remove(player.getUUID());
         if (previous == null) return;
         player.stopUsingItem();
         PacketDistributor.sendToPlayer(player, new CancelRitualPayload(previous.session, reason));
@@ -104,37 +105,39 @@ public final class RitualManager {
 
     @SubscribeEvent
     public static void tick(ServerTickEvent.Post event) {
-        if (active == null) return;
-        MinecraftServer server = event.getServer();
-        ServerPlayer player = server.getPlayerList().getPlayer(active.player);
+        if (ACTIVE.isEmpty()) return;
+        // Копия: завершение и отмена убирают обряд из карты прямо во время обхода.
+        for (var state : List.copyOf(ACTIVE.values())) tick(event.getServer(), state);
+    }
+
+    private static void tick(MinecraftServer server, RitualState state) {
+        ServerPlayer player = server.getPlayerList().getPlayer(state.player);
         if (player == null) {
-            active = null;
+            ACTIVE.remove(state.player);
             return;
         }
         String failure = conditionFailure(player);
-        if (failure != null || player.getItemInHand(active.hand) != active.stack) {
+        if (failure != null || player.getItemInHand(state.hand) != state.stack) {
             cancel(player, failure == null ? "changed_item" : failure);
             return;
         }
         long now = server.overworld().getGameTime();
-        if (!active.isDrawing()) {
-            if (!active.preparationFinished && (!player.isUsingItem() || player.getUsedItemHand() != active.hand)) {
+        if (!state.isDrawing()) {
+            if (!state.preparationFinished && (!player.isUsingItem() || player.getUsedItemHand() != state.hand)) {
                 cancel(player, "released");
                 return;
             }
-            if (active.preparationFinished && now - active.preparationStartedAt >= RitualRules.PREPARATION_TICKS) {
-                active.readingSeed = StarClockData.get(server).readingSeed(active.player);
-                active.drawingStartedAt = now;
-                sendState(player);
+            if (state.preparationFinished && now - state.preparationStartedAt >= RitualRules.PREPARATION_TICKS) {
+                state.readingSeed = StarClockData.get(server).readingSeed(state.player);
+                state.drawingStartedAt = now;
+                sendState(player, state);
             }
-        } else if (now - active.drawingStartedAt >= RitualRules.DRAWING_TICKS) {
-            finish(player, now);
+        } else if (now - state.drawingStartedAt >= RitualRules.DRAWING_TICKS) {
+            finish(player, state, now);
         }
     }
 
-
-    private static void finish(ServerPlayer player, long now) {
-        RitualState finished = active;
+    private static void finish(ServerPlayer player, RitualState finished, long now) {
         Random random = new Random(finished.readingSeed);
         Constellation sign = Constellation.draw(random);
         var orientation = sign.drawOrientation(random);
@@ -159,7 +162,7 @@ public final class RitualManager {
                 player.level().dimension().location().toString(), pos.getX(), pos.getY(), pos.getZ(),
                 now + delay, finished.tier.strength(), plan, false, 0, 0, 0);
         StarClockData.get(player.server).schedule(player.server.overworld().getDayTime(), pending);
-        active = null;
+        ACTIVE.remove(player.getUUID());
         player.stopUsingItem();
         var card = new ShowCardPayload(finished.session, sign, orientation, finished.tier,
                 finished.tier.strength() >= 2 ? plan.category() : "",
@@ -170,19 +173,19 @@ public final class RitualManager {
 
     @SubscribeEvent
     public static void damaged(LivingDamageEvent.Post event) {
-        if (event.getNewDamage() > 0 && event.getEntity() instanceof ServerPlayer player && ownsRitual(player)) {
+        if (event.getNewDamage() > 0 && event.getEntity() instanceof ServerPlayer player) {
             cancel(player, "damaged");
         }
     }
 
     @SubscribeEvent
     public static void logout(PlayerEvent.PlayerLoggedOutEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player && ownsRitual(player)) active = null;
+        if (event.getEntity() instanceof ServerPlayer player) ACTIVE.remove(player.getUUID());
     }
 
     @SubscribeEvent
     public static void stopping(ServerStoppingEvent event) {
-        active = null;
+        ACTIVE.clear();
     }
 
     private RitualManager() {}

@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
@@ -145,13 +146,10 @@ public final class StarClockData extends SavedData {
         return pending.containsKey(id);
     }
 
-    public int clearPredictions() {
-        int count = pending.size();
-        if (count > 0) {
-            pending.clear();
-            setDirty();
-        }
-        return count;
+    public int cancelPredictions(Predicate<UUID> players) {
+        int before = pending.size();
+        if (pending.values().removeIf(prediction -> players.test(prediction.player()))) setDirty();
+        return before - pending.size();
     }
 
     public void addSpawn(TimedSpawn spawn) {
@@ -222,13 +220,10 @@ public final class StarClockData extends SavedData {
         return true;
     }
 
-    public int resetCooldowns(long dayTime) {
+    public int resetCooldowns(long dayTime, Predicate<UUID> players) {
         advanceCooldowns(dayTime);
-        int count = cooldowns.size();
-        if (count > 0) {
-            cooldowns.clear();
-            setDirty();
-        }
-        return count;
+        int before = cooldowns.size();
+        if (cooldowns.keySet().removeIf(players)) setDirty();
+        return before - cooldowns.size();
     }
 }

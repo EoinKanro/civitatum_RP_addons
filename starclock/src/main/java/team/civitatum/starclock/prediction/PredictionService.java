@@ -1,6 +1,7 @@
 package team.civitatum.starclock.prediction;
 
 import java.util.UUID;
+import java.util.function.Predicate;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -50,16 +51,17 @@ public final class PredictionService {
     }
 
     /**
-     * Срок наступает сразу у всей очереди. Предсказание без доступного игрока исполнить не на ком:
+     * Срок наступает сразу у предсказаний выбранных игроков. Предсказание без доступного игрока исполнить не на ком:
      * оно сработает обычным путём при входе, возрождении или на ближайшей секундной проверке.
      */
-    public static Fulfillment fulfillAll(MinecraftServer server) {
+    public static Fulfillment fulfill(MinecraftServer server, Predicate<UUID> players) {
         var data = StarClockData.get(server);
         long now = server.overworld().getGameTime();
         int fulfilled = 0;
         int waiting = 0;
         int retrying = 0;
         for (var pending : data.pending()) {
+            if (!players.test(pending.player())) continue;
             var due = pending.dueAt(now);
             data.update(due);
             var player = server.getPlayerList().getPlayer(due.player());
